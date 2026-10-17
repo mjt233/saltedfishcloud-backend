@@ -5,10 +5,10 @@ import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedProtocolException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -35,8 +35,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.util.Deque;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * 系统资源管理控制器

@@ -2,11 +2,11 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
-import com.sfc.cloud.model.SfcResult;
+import com.sfc.common.model.SfcResult;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.sfc.cloud.data.id.SfcIdUtil;
@@ -38,9 +38,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.sfc.cloud.data.utils.SfcClassUtils;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 /**
  * 默认的插件管理器

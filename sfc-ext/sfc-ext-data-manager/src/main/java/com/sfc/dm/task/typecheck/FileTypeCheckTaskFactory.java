@@ -8,7 +8,7 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.AsyncTaskFactory;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;

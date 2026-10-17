@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.sfc.cloud.data.service.SfcCrudService;
 

@@ -7,7 +7,7 @@ import com.sfc.cloud.model.ServiceDefinition;
 import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceRegistry;
 import com.sfc.ext.nacos.config.SysNacosProperties;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 

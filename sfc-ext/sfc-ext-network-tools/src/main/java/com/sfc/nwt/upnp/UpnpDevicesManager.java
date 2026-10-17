@@ -7,7 +7,7 @@ import com.sfc.nwt.upnp.model.NotifySsdpMessage;
 import com.sfc.nwt.upnp.model.SsdpMessage;
 import com.sfc.nwt.upnp.model.UpnpDevice;
 import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.SmartLifecycle;
 

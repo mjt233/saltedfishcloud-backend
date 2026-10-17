@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.ext;
 
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
-import com.xiaotao.saltedfishcloud.annotations.ConfigSelectOption;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
+import com.sfc.common.annotations.ConfigSelectOption;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.URL;

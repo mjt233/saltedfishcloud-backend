@@ -1,17 +1,17 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginProperty;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

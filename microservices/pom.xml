@@ -27,6 +27,7 @@
         <module>sfc-remote-client</module>
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>
+        <module>sfc-ai-service</module>
     </modules>
 
     <properties>

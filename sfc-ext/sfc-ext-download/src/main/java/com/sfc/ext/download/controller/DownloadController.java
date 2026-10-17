@@ -3,7 +3,7 @@ package com.sfc.ext.download.controller;
 import com.sfc.ext.download.DownloadService;
 import com.sfc.ext.download.model.po.DownloadTaskInfo;
 import com.sfc.ext.download.model.DownloadTaskParams;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.TaskType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.sfc.cloud.data.validation.SfcUID;

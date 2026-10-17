@@ -5,7 +5,7 @@ import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceDiscovery;
 import com.sfc.cloud.registry.ServiceRegistry;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;

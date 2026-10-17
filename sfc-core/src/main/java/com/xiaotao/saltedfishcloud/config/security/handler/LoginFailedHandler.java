@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.config.security.handler;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 

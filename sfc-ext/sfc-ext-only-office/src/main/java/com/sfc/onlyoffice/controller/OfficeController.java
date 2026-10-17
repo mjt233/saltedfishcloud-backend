@@ -5,9 +5,9 @@ import com.onlyoffice.model.documenteditor.Config;
 import com.sfc.onlyoffice.model.OfficeConfigProperty;
 import com.sfc.onlyoffice.service.OfficeService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,8 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 @Controller

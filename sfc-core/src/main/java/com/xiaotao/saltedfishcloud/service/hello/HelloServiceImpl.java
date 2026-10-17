@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.hello;
 
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.sfc.cloud.data.utils.SfcFunc;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.PropertyUtils;
+import com.sfc.common.utils.SfcFunc;
+import com.sfc.common.utils.SfcTypeUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;

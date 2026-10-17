@@ -6,9 +6,9 @@ import com.xiaotao.saltedfishcloud.model.MQMessage;
 import com.xiaotao.saltedfishcloud.model.vo.MQMessageRecord;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
-import com.sfc.cloud.data.utils.SfcClassUtils;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcTypeUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;

@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.service.wrap;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.constant.error.ShareError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.RedisKeyGenerator;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import com.sfc.cloud.utils.SfcStringUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 
 @Service
 @RequiredArgsConstructor

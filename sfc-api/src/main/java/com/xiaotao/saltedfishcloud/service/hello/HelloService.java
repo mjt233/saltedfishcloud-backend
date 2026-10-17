@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.hello;
 
-import com.sfc.cloud.data.utils.SfcFunc;
+import com.sfc.common.utils.SfcFunc;
 
 import java.util.Map;
 import java.util.function.Supplier;

@@ -2,7 +2,7 @@ package com.sfc.ext.webdav.core;
 
 import com.sfc.ext.webdav.model.property.WebDavProperty;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import io.milton.http.annotated.AnnotationResourceFactory;
 import io.milton.servlet.MiltonFilter;
 import jakarta.servlet.ServletContext;

@@ -1,14 +1,14 @@
 package com.sfc.dm.task.detect.scanner;
 
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.FileRecordService;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.node.FileTree;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 

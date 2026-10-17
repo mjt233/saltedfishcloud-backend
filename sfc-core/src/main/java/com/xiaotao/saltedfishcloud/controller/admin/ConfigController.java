@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.xiaotao.saltedfishcloud.model.NameValueType;
-import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.PluginConfigNodeInfo;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;

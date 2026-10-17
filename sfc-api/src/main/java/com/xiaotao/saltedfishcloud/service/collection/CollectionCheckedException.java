@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.collection;
 
 import com.xiaotao.saltedfishcloud.constant.error.CollectionError;
-import com.sfc.cloud.model.json.SfcJsonResult;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.common.exception.SfcJsonException;
 
 public class CollectionCheckedException extends SfcJsonException {
     public CollectionCheckedException(String extra) {

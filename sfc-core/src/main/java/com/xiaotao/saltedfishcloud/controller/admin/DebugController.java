@@ -4,7 +4,7 @@ import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
 import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import com.xiaotao.saltedfishcloud.model.po.Config;
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
 import org.springframework.web.bind.annotation.*;
 

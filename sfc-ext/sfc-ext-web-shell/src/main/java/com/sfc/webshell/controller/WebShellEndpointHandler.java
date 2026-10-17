@@ -1,12 +1,12 @@
 package com.sfc.webshell.controller;
 
-import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.common.constant.SfcCommonError;
 import com.sfc.rpc.RPCRegistry;
 import com.sfc.webshell.constans.WebShellMQTopic;
 import com.sfc.webshell.model.ShellSessionRecord;
 import com.sfc.webshell.service.ShellExecuteRPCService;
 import com.sfc.webshell.service.ShellExecuteService;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;

@@ -1,19 +1,18 @@
 package com.sfc.mcp.controller;
 
-import com.sfc.mcp.model.McpOperationResult;
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
-import com.sfc.cloud.constant.SfcSysRole;
+import com.sfc.common.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.resource.FileLinkService;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.validator.FileNameValidator;
 import com.xiaotao.saltedfishcloud.validator.ValidPathValidator;
 import com.sfc.cloud.data.validation.SfcUID;
@@ -35,7 +34,6 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 
 /**
  * MCP 模块网盘文件传输 Controller。

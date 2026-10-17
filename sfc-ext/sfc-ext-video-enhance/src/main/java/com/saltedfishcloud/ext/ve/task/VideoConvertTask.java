@@ -32,8 +32,8 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Scanner;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 /**
  * 异步任务实例模板 - 视频编码转换任务

@@ -5,7 +5,7 @@ import com.sfc.pxeboot.model.enums.BootItemType;
 import com.sfc.pxeboot.model.enums.IsoBootMethod;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.service.BootItemService;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 

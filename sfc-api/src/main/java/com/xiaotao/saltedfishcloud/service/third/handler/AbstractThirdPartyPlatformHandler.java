@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyPlatformHandler;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamCopyResult;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.InputStreamSource;

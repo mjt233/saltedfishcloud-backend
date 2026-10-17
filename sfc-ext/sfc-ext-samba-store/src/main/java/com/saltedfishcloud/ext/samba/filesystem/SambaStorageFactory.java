@@ -2,14 +2,14 @@ package com.saltedfishcloud.ext.samba.filesystem;
 
 import com.saltedfishcloud.ext.samba.SambaStorage;
 import com.saltedfishcloud.ext.samba.SambaProperty;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.CollectionUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;

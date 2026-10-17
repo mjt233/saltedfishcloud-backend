@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.function.IOExceptionBiConsumer;
 import com.xiaotao.saltedfishcloud.model.DiskFileAttributes;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
@@ -18,7 +18,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 import static com.xiaotao.saltedfishcloud.constant.ByteSize._1KiB;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 
 @UtilityClass
 public class DiskFileSystemUtils {

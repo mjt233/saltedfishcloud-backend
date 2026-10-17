@@ -1,6 +1,10 @@
 package com.sfc.ext.webdav.store.model;
 
-import com.xiaotao.saltedfishcloud.annotations.*;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigSelectOption;
+import com.sfc.common.enums.ConfigKeyNameStrategy;
 import lombok.Data;
 
 @Data

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file;
 
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.ToString;

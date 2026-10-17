@@ -5,7 +5,7 @@ import com.sfc.archive.ArchiveEngineDecompressor;
 import com.sfc.archive.engine.AbstractArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.EncryptionCapability;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import org.springframework.core.io.Resource;
 
 import java.io.IOException;

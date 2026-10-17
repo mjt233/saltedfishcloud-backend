@@ -12,8 +12,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
-import com.sfc.cloud.utils.SfcStringUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 
 public class ObjectUtils {
     private ObjectUtils() {}

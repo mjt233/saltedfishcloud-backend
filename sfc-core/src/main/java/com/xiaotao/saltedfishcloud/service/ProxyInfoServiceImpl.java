@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.constant.CacheNames;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.ProxyInfoRepo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import com.xiaotao.saltedfishcloud.utils.http.IgnoreSSLHttpRequestFactory;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.cloud.data.validation.SfcUIDValidator;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;

@@ -1,6 +1,6 @@
 package com.sfc.ext.webdav.model.property;
 
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 
 import java.util.Optional;
 

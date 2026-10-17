@@ -7,7 +7,7 @@ import com.sfc.nwt.upnp.model.UpnpDevice;
 import com.sfc.nwt.upnp.model.xml.device.UpnpDescribe;
 import com.sfc.nwt.upnp.model.xml.service.av.Scpd;
 import com.xiaotao.saltedfishcloud.model.Pair;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;

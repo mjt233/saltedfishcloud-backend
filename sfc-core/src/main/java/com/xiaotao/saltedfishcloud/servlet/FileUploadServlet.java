@@ -2,9 +2,9 @@ package com.xiaotao.saltedfishcloud.servlet;
 
 import com.xiaotao.saltedfishcloud.helper.http.HttpMultipartRequestParser;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.resource.ResourceService;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;

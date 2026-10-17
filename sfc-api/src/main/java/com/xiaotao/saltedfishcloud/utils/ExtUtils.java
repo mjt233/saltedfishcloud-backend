@@ -1,7 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.sfc.common.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StreamUtils;
@@ -15,8 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 @Slf4j
 public class ExtUtils {

@@ -3,7 +3,7 @@ package com.sfc.quickshare.controller;
 import com.sfc.quickshare.model.QuickShare;
 import com.sfc.quickshare.service.QuickShareService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.BreakPoint;
 import com.xiaotao.saltedfishcloud.service.breakpoint.annotation.MergeFile;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;

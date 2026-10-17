@@ -4,7 +4,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelper;
 import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
 import com.saltedfishcloud.ext.ve.model.*;
 import com.saltedfishcloud.ext.ve.utils.StringParser;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

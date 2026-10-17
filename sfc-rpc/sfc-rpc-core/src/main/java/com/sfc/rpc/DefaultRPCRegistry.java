@@ -2,7 +2,7 @@ package com.sfc.rpc;
 
 import com.sfc.rpc.support.RPCMethodActionHandler;
 import com.sfc.rpc.util.RPCActionDefinitionUtils;
-import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcClassUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cglib.proxy.Enhancer;

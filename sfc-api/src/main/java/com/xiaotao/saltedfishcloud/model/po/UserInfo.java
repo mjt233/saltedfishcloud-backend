@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.sfc.cloud.data.model.SfcBaseModel;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import lombok.Getter;

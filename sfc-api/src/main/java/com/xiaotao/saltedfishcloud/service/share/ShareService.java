@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.param.WrapParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;

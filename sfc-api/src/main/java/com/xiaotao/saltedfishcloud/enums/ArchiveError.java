@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.enums;
 
-import com.sfc.cloud.exception.SfcErrorInfo;
+import com.sfc.common.exception.SfcErrorInfo;
 import lombok.Getter;
 
 @Getter

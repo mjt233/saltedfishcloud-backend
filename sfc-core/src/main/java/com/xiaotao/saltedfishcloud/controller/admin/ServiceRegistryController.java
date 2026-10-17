@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.controller.admin;
 
 import com.sfc.cloud.model.ServiceInstance;
 import com.sfc.cloud.registry.ServiceDiscovery;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.annotation.security.RolesAllowed;
 import org.springframework.web.bind.annotation.GetMapping;

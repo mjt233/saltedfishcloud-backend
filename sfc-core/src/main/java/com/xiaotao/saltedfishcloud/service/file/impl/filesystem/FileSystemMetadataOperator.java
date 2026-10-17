@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.file.impl.filesystem;
 
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;

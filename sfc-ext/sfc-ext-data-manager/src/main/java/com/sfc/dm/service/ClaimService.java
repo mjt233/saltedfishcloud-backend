@@ -13,8 +13,8 @@ import com.sfc.dm.model.po.ClaimRecord;
 import com.sfc.dm.model.po.InvalidDataRecord;
 import com.sfc.dm.repo.ClaimRecordRepo;
 import com.sfc.dm.repo.InvalidDataRecordRepo;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
@@ -43,8 +43,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 /**
  * 认领服务（仅UNIQUE模式）

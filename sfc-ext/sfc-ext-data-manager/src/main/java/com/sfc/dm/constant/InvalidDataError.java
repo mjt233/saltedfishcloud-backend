@@ -1,6 +1,6 @@
 package com.sfc.dm.constant;
 
-import com.sfc.cloud.exception.SfcErrorInfo;
+import com.sfc.common.exception.SfcErrorInfo;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 

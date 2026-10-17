@@ -2,9 +2,9 @@ package com.sfc.cloud.filter;
 
 import com.sfc.cloud.auth.SfcInternalAuthConstants;
 import com.sfc.cloud.config.SfcGatewayProperties;
-import com.sfc.cloud.model.UserPrincipal;
+import com.sfc.common.model.UserPrincipal;
 import com.sfc.cloud.trust.SfcTrustHeaders;
-import com.sfc.cloud.utils.SecureUtils;
+import com.sfc.common.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;

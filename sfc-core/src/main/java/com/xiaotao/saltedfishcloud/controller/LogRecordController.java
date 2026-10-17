@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.sfc.cloud.constant.SfcSysRole;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.constant.SfcSysRole;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
 import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;

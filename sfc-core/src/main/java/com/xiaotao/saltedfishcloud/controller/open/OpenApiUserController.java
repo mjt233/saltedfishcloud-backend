@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.controller.open;
 
 import com.xiaotao.saltedfishcloud.constant.StandardScopes;
-import com.sfc.cloud.constant.SfcSysRole;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.constant.SfcSysRole;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.vo.OpenUserVo;
 import io.swagger.v3.oas.annotations.Operation;

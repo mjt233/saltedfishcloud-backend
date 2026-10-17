@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.model.param;
 
 import lombok.Data;
 import lombok.experimental.Accessors;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.param.SfcPageableRequest;
 
 /**
  * 评论列表查询参数，用于按话题ID或评论ID分页查询评论。

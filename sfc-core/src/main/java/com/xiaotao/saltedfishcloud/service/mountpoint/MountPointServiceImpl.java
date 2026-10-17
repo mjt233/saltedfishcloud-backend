@@ -1,11 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.mountpoint;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.common.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.dao.jpa.MountPointRepo;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.exception.UnsupportedFileSystemProtocolException;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
@@ -37,8 +37,8 @@ import java.nio.file.NoSuchFileException;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 @Service
 @Slf4j

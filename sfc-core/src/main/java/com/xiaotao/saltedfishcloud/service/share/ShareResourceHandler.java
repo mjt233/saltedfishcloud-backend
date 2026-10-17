@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.share;
 
 import com.xiaotao.saltedfishcloud.constant.ResourceProtocol;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.PermissionInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
@@ -11,8 +11,8 @@ import com.xiaotao.saltedfishcloud.service.resource.AbstractResourceProtocolHand
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareExtractorDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;

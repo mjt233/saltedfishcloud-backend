@@ -2,8 +2,8 @@ package com.sfc.dm.service;
 
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 import groovy.lang.Binding;
 import org.codehaus.groovy.control.customizers.ImportCustomizer;
 

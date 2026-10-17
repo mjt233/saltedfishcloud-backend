@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.utils;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 
 class StringUtilsTest {
 

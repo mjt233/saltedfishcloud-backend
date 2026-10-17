@@ -14,8 +14,8 @@ import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.cache.CacheKeyPrefixes;
 import com.xiaotao.saltedfishcloud.cache.CacheService;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
 import com.xiaotao.saltedfishcloud.utils.*;
 import com.sfc.cloud.data.validation.SfcUID;
@@ -34,9 +34,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static com.saltedfishcloud.ext.ve.constant.VEConstants.*;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 
 @Service
 @Slf4j

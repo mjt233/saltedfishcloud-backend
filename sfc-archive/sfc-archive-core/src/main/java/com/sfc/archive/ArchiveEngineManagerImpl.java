@@ -1,7 +1,7 @@
 package com.sfc.archive;
 
 import com.sfc.archive.model.ArchiveEngineProperty;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.Resource;
 

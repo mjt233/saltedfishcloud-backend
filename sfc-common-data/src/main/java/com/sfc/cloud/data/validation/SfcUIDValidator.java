@@ -1,10 +1,10 @@
 package com.sfc.cloud.data.validation;
 
-import com.sfc.cloud.constant.SfcCommonError;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcCommonError;
+import com.sfc.common.constant.SfcUserConstants;
 import com.sfc.cloud.data.identity.CurrentUserHolder;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.utils.SfcTypeUtils;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
 

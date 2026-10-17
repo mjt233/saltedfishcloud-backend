@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.service.comment;
 
 import com.xiaotao.saltedfishcloud.cache.CacheService;
 import com.xiaotao.saltedfishcloud.dao.jpa.CommentRepo;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.config.CommentRateLimitConfig;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
 import com.xiaotao.saltedfishcloud.model.po.Comment;

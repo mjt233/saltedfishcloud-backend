@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.constant.error;
 
 import lombok.Getter;
-import com.sfc.cloud.exception.SfcErrorInfo;
+import com.sfc.common.exception.SfcErrorInfo;
 
 @Getter
 public enum CollectionError implements SfcErrorInfo {

@@ -6,7 +6,7 @@ import com.github.houbb.sensitive.word.support.deny.WordDenys;
 import com.xiaotao.saltedfishcloud.model.config.CommentSafeConfig;
 import com.xiaotao.saltedfishcloud.model.config.SysSafeConfig;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import com.sfc.common.utils.PropertyUtils;
 import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;

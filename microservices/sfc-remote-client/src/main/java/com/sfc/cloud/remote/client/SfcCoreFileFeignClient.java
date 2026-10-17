@@ -1,9 +1,9 @@
 package com.sfc.cloud.remote.client;
 
-import com.sfc.cloud.remote.constants.SfcServiceName;
-import com.sfc.cloud.remote.model.SfcFileInfo;
-import com.sfc.cloud.model.json.SfcJsonResult;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.constants.SfcServiceName;
+import com.sfc.cloud.model.SfcFileInfo;
+import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.common.model.SfcPageInfo;
 import feign.Response;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
@@ -81,6 +81,23 @@ public interface SfcCoreFileFeignClient {
                                @RequestParam("path") String path,
                                @RequestParam("oldName") String oldName,
                                @RequestParam("newName") String newName);
+
+    /**
+     * 创建目录。
+     *
+     * <p>目标按「父路径 + 名称」定位，父级目录不存在时由 core 连同父级一并创建
+     * （等价于 {@code mkdir -p}），因此无需先确认父目录存在。目录名称不合法
+     * （含 {@code \ / : * " < > | ?} 或为 {@code .}、{@code ..}）时 core 返回 400。</p>
+     *
+     * @param uid  资源所属用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
+     * @param path 新目录所在的父路径，根目录为 "/"
+     * @param name 新目录名称，只含名称本身，不含目录
+     * @return core 的响应信封（含执行结果状态码）
+     */
+    @PostMapping("mkdirs")
+    SfcJsonResult<Void> mkdirs(@RequestParam("uid") long uid,
+                               @RequestParam("path") String path,
+                               @RequestParam("name") String name);
 
     /**
      * 复制文件。

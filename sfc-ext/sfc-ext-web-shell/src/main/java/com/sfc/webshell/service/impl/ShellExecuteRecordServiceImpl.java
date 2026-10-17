@@ -4,7 +4,7 @@ import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 import com.sfc.webshell.model.po.ShellExecuteRecord;
 import com.sfc.webshell.repo.ShellExecuteRecordRepo;
 import com.sfc.webshell.service.ShellExecuteRecordService;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.service.ClusterService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.springframework.beans.factory.annotation.Autowired;

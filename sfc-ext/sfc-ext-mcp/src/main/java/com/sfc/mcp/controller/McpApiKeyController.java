@@ -1,6 +1,6 @@
 package com.sfc.mcp.controller;
 
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.sfc.mcp.model.McpApiKey;
 import com.sfc.mcp.model.vo.McpApiKeyVO;
 import com.sfc.mcp.service.McpApiKeyService;

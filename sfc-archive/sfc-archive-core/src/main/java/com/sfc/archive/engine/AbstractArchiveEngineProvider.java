@@ -3,8 +3,8 @@ package com.sfc.archive.engine;
 import com.sfc.archive.ArchiveEngineProvider;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.CompressionLevel;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.utils.SfcStringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

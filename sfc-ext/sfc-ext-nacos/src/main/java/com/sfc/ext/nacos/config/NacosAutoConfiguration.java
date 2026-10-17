@@ -7,7 +7,7 @@ import com.alibaba.nacos.api.naming.NamingService;
 import com.sfc.ext.nacos.NacosServiceDiscovery;
 import com.sfc.ext.nacos.NacosServiceRegistry;
 import com.xiaotao.saltedfishcloud.config.SysProperties;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;

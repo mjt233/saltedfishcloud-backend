@@ -6,7 +6,7 @@ import com.saltedfishcloud.ext.ve.core.FFMpegHelperImpl;
 import com.saltedfishcloud.ext.ve.model.VEProperty;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.InitializingBean;

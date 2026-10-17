@@ -6,7 +6,7 @@ import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.service.StaticPublishRPCClient;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
 import com.sfc.staticpublish.service.StaticPublishService;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import org.apache.catalina.LifecycleException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;

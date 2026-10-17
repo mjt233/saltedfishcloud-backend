@@ -16,6 +16,7 @@
 | `sfc-remote-client` | 远程客户端 SDK（库）：调用 sfc-core 网盘文件操作的 OpenFeign 声明式接口 |
 | `sfc-gateway` | 独立网关（Spring Cloud Gateway Server WebFlux）：整站唯一入口与微服务代理 |
 | `sfc-demo-service` | 微服务示例：演示最简工程结构、注册发现、远程调用与接口鉴权 |
+| [`sfc-ai-service`](../../../microservices/sfc-ai-service/) | **AI 助手服务**（端口 `8091`）：原宿主插件 `sfc-ext-ai`，Phase 2 迁为独立微服务——WebSocket 流式 AI 对话 + LLM 提供商/模型 CRUD，**独立 SQLite `ai.db`**，身份取自 `X-Sfc-Uid`，网盘操作经 `sfc-remote-client` 回调 core。前端影响见其[适配清单](../../../microservices/sfc-ai-service/docs/frontend-adaptation-checklist.md) |
 
 依赖方向：`sfc-common` → `sfc-common-data` / `sfc-remote-client` / `sfc-gateway` / `sfc-demo-service`。
 

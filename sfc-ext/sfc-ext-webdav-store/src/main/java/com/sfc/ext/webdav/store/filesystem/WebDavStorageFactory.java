@@ -7,8 +7,8 @@ import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
-import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.PropertyUtils;
+import com.sfc.common.utils.SfcStringUtils;
 
 import java.io.IOException;
 import java.util.Map;

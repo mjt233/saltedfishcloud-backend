@@ -3,7 +3,7 @@ package com.sfc.ext.webdav.service;
 import com.sfc.ext.webdav.dao.WebDavAuthRepo;
 import com.sfc.ext.webdav.enums.Constants;
 import com.sfc.ext.webdav.model.po.WebDavAuth;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.LockUtils;

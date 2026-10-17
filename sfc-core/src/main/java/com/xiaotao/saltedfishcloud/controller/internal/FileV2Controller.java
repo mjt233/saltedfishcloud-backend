@@ -5,16 +5,16 @@ import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.cloud.data.validation.SfcUIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
 import com.sfc.cloud.data.validation.SfcUID;
@@ -147,6 +147,27 @@ public class FileV2Controller {
                                      @RequestParam("oldName") @FileName String oldName,
                                      @RequestParam("newName") @FileName String newName) throws IOException {
         diskFileSystemManager.getMainFileSystem().rename(uid, path, oldName, newName);
+        return SfcJsonResult.emptySuccess();
+    }
+
+    /**
+     * 创建目录。
+     *
+     * <p>目录按「父路径 + 名称」定位，父级目录不存在时连同父级一并创建（等价于 {@code mkdir -p}），
+     * 因此调用方无需先确认父目录存在；若目标已存在同名的文件（非目录）则由文件系统抛错。</p>
+     *
+     * @param uid  资源所属用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
+     * @param path 新目录所在的父路径，根目录为 "/"
+     * @param name 新目录名称
+     * @return 空成功响应
+     * @throws IOException 文件系统访问异常
+     */
+    @PostMapping("mkdirs")
+    @AllowAnonymous
+    public SfcJsonResult<Object> mkdirs(@RequestParam("uid") @SfcUID(true) long uid,
+                                     @RequestParam("path") @ValidPath String path,
+                                     @RequestParam("name") @FileName String name) throws IOException {
+        diskFileSystemManager.getMainFileSystem().mkdirs(uid, SfcStringUtils.appendPath(path, name));
         return SfcJsonResult.emptySuccess();
     }
 

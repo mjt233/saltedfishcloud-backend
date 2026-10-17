@@ -1,7 +1,6 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
-import com.sfc.cloud.constant.SfcUserConstants;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 

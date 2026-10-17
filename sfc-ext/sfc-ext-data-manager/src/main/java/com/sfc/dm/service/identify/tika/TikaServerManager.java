@@ -1,7 +1,7 @@
 package com.sfc.dm.service.identify.tika;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;

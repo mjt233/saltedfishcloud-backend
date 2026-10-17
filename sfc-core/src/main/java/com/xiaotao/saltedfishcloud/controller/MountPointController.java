@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.controller;
 
-import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.common.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;

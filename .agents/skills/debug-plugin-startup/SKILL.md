@@ -43,7 +43,7 @@ NoClassDefFoundError 的含义：类在**编译期**存在，但**运行时**在
 
 | 症状 | 可能原因 |
 |------|---------|
-| 插件引用了 `sfc-core` 内部的类 | `sfc-ext-*` 不应 Maven 依赖 `sfc-core`（只有 `sfc-ext-ai` 例外且声明 `scope=provided`），运行时需通过 sfc-api 接口交互 |
+| 插件引用了 `sfc-core` 内部的类 | `sfc-ext-*` 不应 Maven 依赖 `sfc-core`，运行时需通过 sfc-api 接口交互。<br>⚠️ 历史上唯一的例外 `sfc-ext-ai` 已于 Phase 2 迁出为独立微服务（`microservices/sfc-ai-service`，不继承根 pom、零宿主依赖），因此**当前没有任何 `sfc-ext-*` 应当依赖 `sfc-core`** |
 | 第三方的类被 `loadExtraDependencies` 拒绝加载 | `ClassUtils.validUrl()` 检测到类冲突（同路径类已存在于加载器中）→ 日志会打印冲突类列表 |
 | 第三方的类版本冲突 | `checkLibDependence()` 检测到同名不同版本的依赖 → 日志会打印冲突信息 |
 | `PluginClassLoaderFactory.createPurePluginClassLoader` 读取不到插件信息 | 父加载器为 `null`，仅能找到 `API_ANNOTATIONS_MAP` 中的注解类 |
@@ -70,7 +70,7 @@ sfc-ext-*
   └── 自定义唯一依赖    (scope=compile, 插件特有)
 ```
 
-**禁止的依赖：** `sfc-core`（除非极其特殊且声明 `scope=provided`，如 `sfc-ext-ai`）。
+**禁止的依赖：** `sfc-core`
 
 **常见问题：**
 - 插件声明了对 `sfc-core` 的 `compile` 依赖 → 构建后 `plugin-lib/` 目录中会出现 `sfc-core` 的 jar，运行时导致 `loadExtraDependencies` 阶段 `ClassUtils.validUrl()` 检测到冲突

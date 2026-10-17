@@ -1,13 +1,13 @@
 package com.xiaotao.saltedfishcloud.service.share;
 
-import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.common.constant.SfcCommonError;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.constant.error.ShareError;
 import com.xiaotao.saltedfishcloud.dao.jpa.ShareRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.FileTransferInfo;
 import com.xiaotao.saltedfishcloud.model.po.ShareInfo;
 import com.xiaotao.saltedfishcloud.model.po.User;
@@ -36,7 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.util.List;
 
-import static com.sfc.cloud.utils.SfcStringUtils.appendPath;
+import static com.sfc.common.utils.SfcStringUtils.appendPath;
 
 @Service
 @RequiredArgsConstructor

@@ -4,7 +4,7 @@ import com.sfc.archive.ArchiveEngineCompressor;
 import com.sfc.archive.model.ArchiveEngineProperty;
 import com.sfc.archive.model.ArchiveResource;
 import lombok.Getter;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 
 import java.io.IOException;
 import java.io.InputStream;

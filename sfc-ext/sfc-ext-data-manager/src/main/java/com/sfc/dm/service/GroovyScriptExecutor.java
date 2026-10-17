@@ -1,7 +1,7 @@
 package com.sfc.dm.service;
 
 import com.sfc.dm.constant.InvalidDataError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import groovy.lang.Script;

@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.sfc.cloud.exception.SfcJsonException;
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.CommentListParam;
 import com.xiaotao.saltedfishcloud.model.param.CommentSendParam;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.Comment;
 import com.xiaotao.saltedfishcloud.model.vo.CommentVo;
 import com.xiaotao.saltedfishcloud.service.comment.CommentService;

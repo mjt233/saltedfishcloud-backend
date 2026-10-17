@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ftp;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

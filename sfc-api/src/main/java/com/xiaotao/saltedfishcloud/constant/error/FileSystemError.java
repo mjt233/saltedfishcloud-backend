@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.constant.error;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import com.sfc.cloud.exception.SfcErrorInfo;
+import com.sfc.common.exception.SfcErrorInfo;
 
 @Getter
 @RequiredArgsConstructor

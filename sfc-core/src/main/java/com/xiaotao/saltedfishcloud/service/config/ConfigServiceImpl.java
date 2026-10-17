@@ -1,9 +1,10 @@
 package com.xiaotao.saltedfishcloud.service.config;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.config.SysRuntimeConfig;
-import com.xiaotao.saltedfishcloud.constant.ConfigInputType;
+import com.sfc.common.constant.ConfigInputType;
 import com.xiaotao.saltedfishcloud.constant.MQTopicConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.ConfigRepo;
 import com.xiaotao.saltedfishcloud.model.po.Config;
@@ -12,7 +13,7 @@ import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
-import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
+import com.sfc.common.model.PluginConfigNodeInfo;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.*;
 import jakarta.annotation.Resource;
@@ -31,10 +32,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import com.sfc.cloud.data.utils.SfcClassUtils;
-import com.sfc.cloud.data.utils.SfcFunc;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcFunc;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcTypeUtils;
 
 /**
  * 配置服务实现类

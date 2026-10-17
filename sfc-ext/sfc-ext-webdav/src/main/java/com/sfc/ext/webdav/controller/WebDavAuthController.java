@@ -1,7 +1,7 @@
 package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.service.WebDavAuthService;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.sfc.cloud.data.validation.SfcUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;

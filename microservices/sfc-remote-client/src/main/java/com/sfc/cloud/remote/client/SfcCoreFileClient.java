@@ -1,8 +1,8 @@
 package com.sfc.cloud.remote.client;
 
-import com.sfc.cloud.remote.model.SfcFileInfo;
-import com.sfc.cloud.model.json.SfcJsonResult;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.cloud.model.SfcFileInfo;
+import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.common.model.SfcPageInfo;
 import feign.Response;
 import org.springframework.core.io.Resource;
 
@@ -14,7 +14,7 @@ import java.util.Objects;
  */
 public class SfcCoreFileClient {
 
-    /** Feign 链路实现：列表 / 搜索 / 下载 / 重命名 / 复制 / 移动 / 删除 */
+    /** Feign 链路实现：列表 / 搜索 / 下载 / 创建目录 / 重命名 / 复制 / 移动 / 删除 */
     private final SfcCoreFileFeignClient feignClient;
 
     /** 流式链路实现：上传 */
@@ -86,6 +86,24 @@ public class SfcCoreFileClient {
      */
     public SfcJsonResult<Void> rename(long uid, String path, String oldName, String newName) {
         return feignClient.rename(uid, path, oldName, newName);
+    }
+
+    /**
+     * 创建目录。
+     *
+     * <p>目标按「父路径 + 名称」定位，父级目录不存在时由 core 连同父级一并创建
+     * （等价于 {@code mkdir -p}），因此无需先确认父目录存在。</p>
+     *
+     * <p>权限沿用 core 的 UID 校验规则：{@code uid=0}（公共网盘）要求调用链路上带有管理员
+     * 权限的凭证，写入其它用户网盘则要求该用户本人（或管理员）的凭证，否则 core 返回 403。</p>
+     *
+     * @param uid  资源所属用户ID，0 表示公共网盘，写入公共网盘需要管理员权限
+     * @param path 新目录所在的父路径，根目录为 "/"
+     * @param name 新目录名称，只含名称本身，不含目录
+     * @return core 的响应信封（含执行结果状态码）
+     */
+    public SfcJsonResult<Void> mkdirs(long uid, String path, String name) {
+        return feignClient.mkdirs(uid, path, name);
     }
 
     /**

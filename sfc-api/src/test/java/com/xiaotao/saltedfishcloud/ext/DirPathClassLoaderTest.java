@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.ext;
 
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.ExtUtils;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

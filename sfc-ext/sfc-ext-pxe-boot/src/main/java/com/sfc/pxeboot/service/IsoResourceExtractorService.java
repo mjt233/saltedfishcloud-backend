@@ -4,7 +4,7 @@ import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.server.iso.IsoFileEntry;
 import com.sfc.pxeboot.server.iso.IsoHandler;
 import com.xiaotao.saltedfishcloud.cache.LockFactory;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.attach.AttachStorageInject;

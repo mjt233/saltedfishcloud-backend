@@ -4,6 +4,10 @@ import com.sfc.cloud.data.id.SfcIdUtil;
 import com.sfc.cloud.data.identity.CurrentUserHolder;
 import com.sfc.cloud.data.model.SfcAuditModel;
 import com.sfc.cloud.data.tx.SfcTransactionManagerHolder;
+import com.sfc.common.utils.SfcClassUtils;
+import jakarta.persistence.Column;
+import jakarta.persistence.Table;
+import jakarta.persistence.Transient;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -11,17 +15,14 @@ import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import javax.sql.DataSource;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
@@ -72,8 +73,8 @@ public class SfcDBUtils {
         List<T> entityBatchList = new ArrayList<>();
         T sample = iterator.next();
         entityBatchList.add(sample);
-        List<SfcClassUtils.ColumnGetter> fields = SfcClassUtils.getClassEntityFieldGetter(sample.getClass());
-        String tableName = SfcClassUtils.getEntityTableName(sample.getClass());
+        List<SfcClassUtils.ColumnGetter> fields = getClassEntityFieldGetter(sample.getClass());
+        String tableName = getEntityTableName(sample.getClass());
 
         // INSERT INTO xxxx (xx,xx,xx) VALUES (?,?,?),(?,?,?)
         StringBuilder sqlBuilder = new StringBuilder();
@@ -354,5 +355,57 @@ public class SfcDBUtils {
             }
         }
         return quote + identifier.replace(quote, quote + quote) + quote;
+    }
+
+    /**
+     * 获取实体类的物理数据表名。
+     *
+     * <p>迁移自宿主 {@code ClassUtils.getEntityTableName}：优先取 {@link Table} 注解的 name，
+     * 否则由类名转下划线命名。对编译器生成的 {@code Outer$Inner} 形式类名，
+     * 只取 {@code $} 之前的部分。</p>
+     *
+     * @param clazz 实体类
+     * @return 物理数据表名
+     */
+    public static String getEntityTableName(Class<?> clazz) {
+        Table tableAnnotation = clazz.getAnnotation(Table.class);
+        // 等价于宿主 StringUtils.hasText(tableAnnotation.name())（注解属性不会为 null）
+        if (tableAnnotation != null && !tableAnnotation.name().isBlank()) {
+            return tableAnnotation.name();
+        }
+        String simpleName = clazz.getSimpleName();
+        int i = simpleName.indexOf("$");
+        if (i >= 0) {
+            simpleName = simpleName.substring(0, i);
+        }
+        return SfcClassUtils.camelToUnder(simpleName);
+    }
+
+    /**
+     * 获取类的数据表实体字段及其 getter 方法。
+     *
+     * <p>迁移自宿主 {@code ClassUtils.getClassEntityFieldGetter}，唯一改动是把返回元素类型由
+     * Reactor 的 {@code Tuple2<String, Method>} 换成本类的 {@link SfcClassUtils.ColumnGetter}。</p>
+     *
+     * <p>过滤规则（与宿主一致）：跳过 {@link Transient} 注解、{@code transient} 与 {@code static}
+     * 字段，以及 {@link Column#insertable()} 为 {@code false} 的字段。</p>
+     *
+     * @param clazz 实体类
+     * @return 字段的「列名 + getter方法」列表，顺序与 {@link #getAllFields(Class)} 一致
+     * @throws IllegalArgumentException 当字段缺少对应的 getter 方法时抛出
+     */
+    public static List<SfcClassUtils.ColumnGetter> getClassEntityFieldGetter(Class<?> clazz) {
+        List<Field> fieldList = SfcClassUtils.getAllFields(clazz);
+        return fieldList.stream()
+                .filter(f -> f.getAnnotation(Transient.class) == null && !Modifier.isTransient(f.getModifiers()) && !Modifier.isStatic(f.getModifiers()))
+                .filter(f -> Optional.ofNullable(f.getAnnotation(Column.class)).map(Column::insertable).orElse(true))
+                .map(f -> {
+                    try {
+                        return new SfcClassUtils.ColumnGetter(SfcClassUtils.camelToUnder(f.getName()), clazz.getMethod("get" + SfcClassUtils.camelToUpperCamel(f.getName())));
+                    } catch (NoSuchMethodException e) {
+                        throw new IllegalArgumentException(e);
+                    }
+                })
+                .collect(Collectors.toList());
     }
 }

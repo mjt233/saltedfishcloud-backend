@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.saltedfishcloud.ext.ftpserver.utils.FtpDiskType;
 import com.saltedfishcloud.ext.ftpserver.utils.FtpPathInfo;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.helper.PathBuilder;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;

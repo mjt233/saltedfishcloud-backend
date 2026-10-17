@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.controller;
 
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.model.DesktopComponent;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.po.DesktopComponentConfig;
 import com.xiaotao.saltedfishcloud.service.desktop.DesktopComponentConfigService;
 import com.xiaotao.saltedfishcloud.service.desktop.DesktopComponentService;

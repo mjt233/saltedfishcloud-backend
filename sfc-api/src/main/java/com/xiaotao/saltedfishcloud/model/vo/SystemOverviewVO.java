@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.vo;
 
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.FileSystemStatus;
 import lombok.Data;
 

@@ -7,7 +7,7 @@ import com.sfc.cloud.data.id.SfcSnowFlakeIdGenerator;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.model.dto.CollectionDTO;
 import com.xiaotao.saltedfishcloud.service.collection.CollectionParser;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.NoArgsConstructor;

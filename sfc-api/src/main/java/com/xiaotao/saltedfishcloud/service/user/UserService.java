@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.user;
 
 import com.xiaotao.saltedfishcloud.exception.UserNoExistException;
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.validator.annotations.Username;
 import org.springframework.validation.annotation.Validated;

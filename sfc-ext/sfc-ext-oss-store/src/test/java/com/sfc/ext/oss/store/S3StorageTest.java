@@ -2,7 +2,7 @@ package com.sfc.ext.oss.store;
 
 import com.sfc.ext.oss.OSSProperty;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import org.junit.jupiter.api.Test;
 

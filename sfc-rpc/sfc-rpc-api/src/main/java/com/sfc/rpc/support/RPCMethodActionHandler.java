@@ -4,7 +4,7 @@ import com.sfc.rpc.RPCHandler;
 import com.sfc.rpc.RPCRequest;
 import com.sfc.rpc.RPCResponse;
 import com.sfc.rpc.annotation.RPCAction;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

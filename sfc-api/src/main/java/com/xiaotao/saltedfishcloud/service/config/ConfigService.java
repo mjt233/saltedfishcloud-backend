@@ -2,12 +2,12 @@ package com.xiaotao.saltedfishcloud.service.config;
 
 
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigPropertyEntity;
 import com.xiaotao.saltedfishcloud.model.NameValueType;
 import com.xiaotao.saltedfishcloud.model.Pair;
-import com.xiaotao.saltedfishcloud.model.PluginConfigNodeInfo;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.data.utils.SfcFunc;
+import com.sfc.common.model.PluginConfigNodeInfo;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcFunc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;

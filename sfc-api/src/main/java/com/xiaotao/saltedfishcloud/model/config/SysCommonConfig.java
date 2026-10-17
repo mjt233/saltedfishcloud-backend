@@ -1,6 +1,10 @@
 package com.xiaotao.saltedfishcloud.model.config;
 
-import com.xiaotao.saltedfishcloud.annotations.*;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigSelectOption;
+import com.sfc.common.enums.ConfigKeyNameStrategy;
 import com.xiaotao.saltedfishcloud.enums.StoreMode;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.service.mail.MailProperties;

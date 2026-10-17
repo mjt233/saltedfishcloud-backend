@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.helper;
 
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 
 import java.util.ArrayList;
 import java.util.HashMap;

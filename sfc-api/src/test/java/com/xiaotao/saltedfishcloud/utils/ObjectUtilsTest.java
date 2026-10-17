@@ -1,6 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcClassUtils;
+import com.sfc.cloud.data.utils.SfcDBUtils;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.junit.jupiter.api.Test;
@@ -13,15 +14,15 @@ class ObjectUtilsTest {
 
     @Test
     void getEntityTableName() {
-        assertEquals("file_table", SfcClassUtils.getEntityTableName(FileInfo.class));
+        assertEquals("file_table", SfcDBUtils.getEntityTableName(FileInfo.class));
     }
 
     @Test
     void getClassEntityFieldGetter() {
-        List<SfcClassUtils.ColumnGetter> list = SfcClassUtils.getClassEntityFieldGetter(ProxyInfo.class);
+        List<SfcClassUtils.ColumnGetter> list = SfcDBUtils.getClassEntityFieldGetter(ProxyInfo.class);
         assertEquals(9, list.size());
 
-        list = SfcClassUtils.getClassEntityFieldGetter(FileInfo.class);
+        list = SfcDBUtils.getClassEntityFieldGetter(FileInfo.class);
         assertEquals(11, list.size());
     }
 }

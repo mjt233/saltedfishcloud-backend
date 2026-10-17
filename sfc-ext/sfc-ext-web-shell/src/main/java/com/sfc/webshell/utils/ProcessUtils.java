@@ -1,7 +1,7 @@
 package com.sfc.webshell.utils;
 
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import lombok.experimental.UtilityClass;
 
 import java.nio.file.Files;

@@ -3,7 +3,7 @@ package com.sfc.cloud.remote.client.support;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;

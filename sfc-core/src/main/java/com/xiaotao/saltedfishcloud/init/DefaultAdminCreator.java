@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import jakarta.annotation.Resource;

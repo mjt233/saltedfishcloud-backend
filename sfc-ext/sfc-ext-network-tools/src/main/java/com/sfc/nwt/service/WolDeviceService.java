@@ -5,7 +5,7 @@ import com.sfc.nwt.model.po.WolDevice;
 import com.sfc.nwt.repo.WolDeviceRepo;
 import com.sfc.nwt.utils.NetworkUtils;
 import com.sfc.cloud.data.model.SfcAuditModel;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.cloud.data.validation.SfcUIDValidator;
 
 import java.io.IOException;

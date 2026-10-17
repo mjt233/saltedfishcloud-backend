@@ -2,7 +2,7 @@ package com.sfc.task;
 
 import com.sfc.task.model.AsyncTaskQueryParam;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.model.SfcPageInfo;
 
 /**
  * 异步任务数据库操作服务类

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.vo;
 
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import lombok.Data;
 import org.springframework.beans.BeanUtils;
@@ -16,8 +16,8 @@ public class UserVO {
     private String token;
 
     /**
-     * @see com.sfc.cloud.constant.SfcUserConstants#TYPE_ADMIN
-     * @see com.sfc.cloud.constant.SfcUserConstants#TYPE_COMMON
+     * @see SfcUserConstants#TYPE_ADMIN
+     * @see SfcUserConstants#TYPE_COMMON
      */
     private Integer type;
 

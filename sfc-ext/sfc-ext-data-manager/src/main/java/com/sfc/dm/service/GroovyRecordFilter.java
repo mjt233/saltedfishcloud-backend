@@ -2,7 +2,7 @@ package com.sfc.dm.service;
 
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;

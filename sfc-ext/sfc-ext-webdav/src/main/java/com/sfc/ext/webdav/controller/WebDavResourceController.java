@@ -2,9 +2,9 @@ package com.sfc.ext.webdav.controller;
 
 import com.sfc.ext.webdav.enums.ResourceArea;
 import com.sfc.ext.webdav.model.resource.*;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -33,8 +33,8 @@ import java.util.stream.Stream;
 
 import static com.sfc.ext.webdav.enums.ResourceArea.PRIVATE;
 import static com.sfc.ext.webdav.enums.ResourceArea.PUBLIC;
-import com.sfc.cloud.utils.SfcStringUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 
 @Slf4j
 @ResourceController

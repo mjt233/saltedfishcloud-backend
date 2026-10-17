@@ -1,6 +1,6 @@
 package emergency.controller;
 
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
 import emergency.EmergencyApplication;
 import org.springframework.http.HttpStatus;

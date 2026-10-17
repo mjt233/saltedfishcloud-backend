@@ -5,7 +5,7 @@ import com.xiaotao.saltedfishcloud.model.NameValueType;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import com.sfc.cloud.data.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcClassUtils;
 
 class ClassUtilsTest {
 

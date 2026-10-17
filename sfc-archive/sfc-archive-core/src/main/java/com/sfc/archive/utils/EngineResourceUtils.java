@@ -5,7 +5,7 @@ import com.sfc.archive.model.ArchiveResource;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import org.springframework.core.io.PathResource;
 import org.springframework.core.io.Resource;
 

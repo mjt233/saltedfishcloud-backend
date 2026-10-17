@@ -1,10 +1,10 @@
 package com.xiaotao.saltedfishcloud.controller.admin;
 
 
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.constant.SfcUserConstants;
-import com.sfc.cloud.model.json.SfcJsonResult;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.constant.SfcUserConstants;
+import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.common.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.service.ProxyInfoService;
 import com.sfc.cloud.data.validation.SfcUIDValidator;

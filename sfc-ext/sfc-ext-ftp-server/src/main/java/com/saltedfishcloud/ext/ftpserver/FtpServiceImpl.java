@@ -6,7 +6,7 @@ import com.saltedfishcloud.ext.ftpserver.core.DiskFtpFileSystemFactory;
 import com.saltedfishcloud.ext.ftpserver.core.DiskFtpUserManager;
 import com.saltedfishcloud.ext.ftpserver.ftplet.FtpUploadAndLogHandler;
 import com.xiaotao.saltedfishcloud.service.config.ConfigService;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ftpserver.*;
 import org.apache.ftpserver.ftplet.FtpException;

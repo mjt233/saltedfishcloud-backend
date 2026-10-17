@@ -1,13 +1,13 @@
 package com.sfc.staticpublish.service.impl;
 
 import com.sfc.cloud.data.service.SfcCrudServiceImpl;
-import com.sfc.cloud.constant.SfcCommonError;
+import com.sfc.common.constant.SfcCommonError;
 import com.sfc.staticpublish.constants.CacheNames;
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
 import com.sfc.staticpublish.model.property.StaticPublishProperty;
 import com.sfc.staticpublish.repo.StaticPublishRecordRepo;
 import com.sfc.staticpublish.service.StaticPublishRecordService;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.sfc.cloud.data.model.SfcAuditModel;
 import com.xiaotao.saltedfishcloud.service.user.UserService;

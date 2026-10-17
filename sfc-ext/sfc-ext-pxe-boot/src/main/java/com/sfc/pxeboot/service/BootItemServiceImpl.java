@@ -3,7 +3,7 @@ package com.sfc.pxeboot.service;
 import com.sfc.pxeboot.model.dto.BootItemDTO;
 import com.sfc.pxeboot.model.po.BootItem;
 import com.sfc.pxeboot.repo.BootItemRepo;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;

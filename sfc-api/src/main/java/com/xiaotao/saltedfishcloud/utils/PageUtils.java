@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.utils;
 
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.model.json.SfcJsonResult;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.json.SfcJsonResult;
 import org.springframework.data.domain.Page;
 
 public class PageUtils {

@@ -1,9 +1,9 @@
 package com.xiaotao.saltedfishcloud.service.log;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.LogRecordRepo;
-import com.sfc.cloud.model.SfcPageInfo;
+import com.sfc.common.model.SfcPageInfo;
 import com.xiaotao.saltedfishcloud.model.param.LogRecordQueryParam;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.param.SfcPageableRequest;
 import com.xiaotao.saltedfishcloud.model.param.RangeRequest;
 import com.xiaotao.saltedfishcloud.model.po.LogRecord;
 import com.xiaotao.saltedfishcloud.model.vo.LogRecordStatisticVO;

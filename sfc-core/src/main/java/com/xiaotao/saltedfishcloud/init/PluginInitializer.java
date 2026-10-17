@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.init;
 
 import com.xiaotao.saltedfishcloud.enums.PluginLoadType;
 import com.xiaotao.saltedfishcloud.ext.*;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.utils.*;
 import lombok.extern.slf4j.Slf4j;
@@ -42,7 +42,7 @@ import java.util.jar.JarFile;
 import java.net.URLClassLoader;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
-import com.sfc.cloud.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 
 @Slf4j
 public class PluginInitializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {

@@ -1,7 +1,7 @@
 package com.sfc.ext.webdav.model.resource;
 
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 

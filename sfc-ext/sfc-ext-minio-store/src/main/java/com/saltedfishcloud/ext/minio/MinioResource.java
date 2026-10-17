@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.minio;
 
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import io.minio.GetObjectResponse;
 import io.minio.StatObjectResponse;
 import lombok.Builder;

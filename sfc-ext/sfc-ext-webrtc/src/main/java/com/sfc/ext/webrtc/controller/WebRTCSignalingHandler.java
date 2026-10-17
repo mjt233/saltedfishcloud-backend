@@ -2,9 +2,9 @@ package com.sfc.ext.webrtc.controller;
 
 import com.sfc.ext.webrtc.enums.MessageDataType;
 import com.sfc.ext.webrtc.model.RTCSignalingMessage;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcTypeUtils;
 import jakarta.websocket.OnClose;
 import jakarta.websocket.OnMessage;
 import jakarta.websocket.OnOpen;

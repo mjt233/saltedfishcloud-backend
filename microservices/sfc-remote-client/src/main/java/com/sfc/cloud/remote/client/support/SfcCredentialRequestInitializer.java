@@ -1,6 +1,6 @@
 package com.sfc.cloud.remote.client.support;
 
-import com.sfc.cloud.remote.constants.SfcRemoteConstants;
+import com.sfc.cloud.constants.SfcRemoteConstants;
 import com.sfc.cloud.trust.SfcTrustHeaders;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;

@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.config.security.oidc;
 
-import com.sfc.cloud.constant.SfcSysRole;
+import com.sfc.common.constant.SfcSysRole;
 import com.xiaotao.saltedfishcloud.model.po.User;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.service.user.UserService;

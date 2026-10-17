@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.validator;
 
 
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 
 import jakarta.validation.ConstraintValidator;

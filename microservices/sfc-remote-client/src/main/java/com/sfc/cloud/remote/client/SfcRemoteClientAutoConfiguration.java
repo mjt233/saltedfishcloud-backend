@@ -4,7 +4,7 @@ import com.sfc.cloud.auth.SfcInternalTokenIssuer;
 import com.sfc.cloud.auth.client.SfcInternalTokenFeignInterceptor;
 import com.sfc.cloud.auth.client.SfcInternalTokenRequestInitializer;
 import com.sfc.cloud.remote.client.support.*;
-import com.sfc.cloud.remote.constants.SfcServiceName;
+import com.sfc.cloud.constants.SfcServiceName;
 import feign.Client;
 import feign.RequestInterceptor;
 import feign.codec.Encoder;
@@ -40,7 +40,7 @@ import java.net.http.HttpClient;
  */
 @AutoConfiguration
 @ConditionalOnClass(Client.class)
-@EnableFeignClients(clients = SfcCoreFileFeignClient.class)
+@EnableFeignClients(clients = {SfcCoreFileFeignClient.class, SfcCoreUserFeignClient.class})
 @EnableConfigurationProperties(SfcRemoteClientProperties.class)
 public class SfcRemoteClientAutoConfiguration {
 
@@ -85,7 +85,7 @@ public class SfcRemoteClientAutoConfiguration {
     /**
      * sfc-core 网盘文件操作统一客户端（对外唯一调用入口）。
      *
-     * @param feignClient        Feign 链路实现：列表 / 下载 / 重命名 / 复制 / 移动 / 删除
+     * @param feignClient        Feign 链路实现：列表 / 搜索 / 下载 / 创建目录 / 重命名 / 复制 / 移动 / 删除
      * @param properties         客户端配置项
      * @param loadBalancerClient 服务发现选路客户端
      * @param issuer             内部调用凭证签发器
@@ -99,6 +99,18 @@ public class SfcRemoteClientAutoConfiguration {
                                                @Autowired(required = false) SfcInternalTokenIssuer issuer
     ) {
         return new SfcCoreFileClient(feignClient, buildStreamFileClient(properties, loadBalancerClient, issuer));
+    }
+
+    /**
+     * sfc-core 用户身份查询统一客户端（获取当前用户与管理员判定）。
+     *
+     * @param feignClient Feign 链路实现：获取当前登录用户
+     * @return 用户身份查询客户端
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public SfcCoreUserClient sfcCoreUserClient(SfcCoreUserFeignClient feignClient) {
+        return new SfcCoreUserClient(feignClient);
     }
 
     /**

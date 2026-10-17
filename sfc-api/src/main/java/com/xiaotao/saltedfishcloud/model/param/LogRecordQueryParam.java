@@ -6,7 +6,7 @@ import lombok.Data;
 
 import java.util.Date;
 import java.util.List;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.param.SfcPageableRequest;
 
 /**
  * 日志记录查询参数

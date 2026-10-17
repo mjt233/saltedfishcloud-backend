@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.utils.db;
 
-import com.sfc.cloud.data.utils.SfcClassUtils;
-import com.sfc.cloud.data.utils.SfcFunc;
-import com.sfc.cloud.utils.SfcTypeUtils;
+import com.sfc.common.utils.SfcClassUtils;
+import com.sfc.common.utils.SfcFunc;
+import com.sfc.common.utils.SfcTypeUtils;
 import jakarta.persistence.criteria.*;
 import org.springframework.data.jpa.domain.Specification;
 

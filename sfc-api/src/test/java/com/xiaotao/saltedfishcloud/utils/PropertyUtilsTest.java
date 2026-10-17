@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.sfc.common.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.model.config.SysLogConfig;
 import org.junit.jupiter.api.Test;
 

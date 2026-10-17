@@ -1,6 +1,6 @@
 package com.sfc.ext.oss.util;
 
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 
 public class OSSPathUtils {
 

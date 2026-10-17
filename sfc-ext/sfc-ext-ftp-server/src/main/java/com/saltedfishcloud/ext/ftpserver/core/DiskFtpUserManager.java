@@ -1,7 +1,7 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
 import com.saltedfishcloud.ext.ftpserver.FTPServerProperty;
-import com.sfc.cloud.constant.SfcUserConstants;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.dao.jpa.UserRepo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import org.apache.ftpserver.ftplet.*;

@@ -8,7 +8,7 @@ import com.xiaotao.saltedfishcloud.common.update.VersionUpdateHandler;
 import com.xiaotao.saltedfishcloud.common.update.VersionUpdateManager;
 import com.xiaotao.saltedfishcloud.model.UpdateContext;
 import com.xiaotao.saltedfishcloud.service.config.version.Version;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;

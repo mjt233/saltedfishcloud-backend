@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.minio.utils;
 
 import com.saltedfishcloud.ext.minio.MinioResource;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import io.minio.*;
 import io.minio.errors.*;
 import io.minio.messages.Item;

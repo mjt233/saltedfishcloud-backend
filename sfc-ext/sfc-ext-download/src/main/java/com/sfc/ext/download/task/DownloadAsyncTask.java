@@ -6,7 +6,7 @@ import com.sfc.ext.download.repo.DownloadTaskRepo;
 import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.sfc.cloud.exception.SfcJsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.helper.CustomLogger;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
@@ -28,8 +28,8 @@ import java.io.OutputStream;
 import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import com.sfc.cloud.utils.SfcMapperHolder;
-import com.sfc.cloud.utils.SfcStringUtils;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 public class DownloadAsyncTask implements AsyncTask {
     private final String originParams;

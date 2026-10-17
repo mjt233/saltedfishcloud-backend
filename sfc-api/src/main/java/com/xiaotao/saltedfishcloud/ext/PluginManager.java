@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.ext;
 
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import org.springframework.core.io.Resource;
 

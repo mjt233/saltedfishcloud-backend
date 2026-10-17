@@ -3,7 +3,7 @@ package com.saltedfishcloud.ext.minio.filesystem;
 import com.saltedfishcloud.ext.minio.MinioStorage;
 import com.saltedfishcloud.ext.minio.MinioProperties;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.*;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;

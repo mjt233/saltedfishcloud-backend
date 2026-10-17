@@ -1,7 +1,7 @@
 package com.sfc.cloud.data.service;
 
-import com.sfc.cloud.model.SfcPageInfo;
-import com.sfc.cloud.model.param.SfcPageableRequest;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.param.SfcPageableRequest;
 
 import java.util.Collection;
 import java.util.List;
