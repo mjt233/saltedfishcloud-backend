@@ -1,23 +1,22 @@
 package com.xiaotao.saltedfishcloud.controller.internal;
 
+import com.sfc.cloud.data.validation.SfcUIDValidator;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.SfcPageInfo;
+import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.common.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.annotations.NotBlock;
 import com.xiaotao.saltedfishcloud.annotations.ProtectBlock;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
 import com.xiaotao.saltedfishcloud.enums.ProtectLevel;
-import com.sfc.common.exception.SfcJsonException;
-import com.sfc.common.model.SfcPageInfo;
-import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.model.param.SimpleFileTransferParam;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystem;
 import com.xiaotao.saltedfishcloud.service.file.DiskFileSystemManager;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.sfc.common.utils.SfcStringUtils;
-import com.sfc.cloud.data.validation.SfcUIDValidator;
 import com.xiaotao.saltedfishcloud.validator.annotations.FileName;
-import com.sfc.cloud.data.validation.SfcUID;
 import com.xiaotao.saltedfishcloud.validator.annotations.ValidPath;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +59,7 @@ public class FileV2Controller {
     @GetMapping("list")
     @AllowAnonymous
     @NotBlock
-    public SfcJsonResult<List<FileInfo>> list(@RequestParam("uid") @SfcUID long uid,
+    public SfcJsonResult<List<FileInfo>> list(@RequestParam("uid") long uid,
                                            @RequestParam(value = "path", defaultValue = "/") @ValidPath String path) throws IOException {
         List<FileInfo>[] fileList = diskFileSystemManager.getMainFileSystem().getUserFileList(uid, path);
         List<FileInfo> merged = new ArrayList<>();
@@ -89,7 +88,7 @@ public class FileV2Controller {
     @GetMapping("search")
     @AllowAnonymous
     @NotBlock
-    public SfcJsonResult<SfcPageInfo<FileInfo>> search(@RequestParam("uid") @SfcUID long uid,
+    public SfcJsonResult<SfcPageInfo<FileInfo>> search(@RequestParam("uid") long uid,
                                                       @RequestParam("keyword") String keyword,
                                                       @RequestParam(value = "page", defaultValue = "0") Integer page,
                                                       @RequestParam(value = "size", defaultValue = "10") Integer size) {
@@ -106,7 +105,7 @@ public class FileV2Controller {
     @GetMapping("download")
     @AllowAnonymous
     @NotBlock(level = ProtectLevel.DATA_CHECKING)
-    public ResponseEntity<Resource> download(@RequestParam("uid") @SfcUID long uid,
+    public ResponseEntity<Resource> download(@RequestParam("uid") long uid,
                                              @RequestParam("path") @ValidPath String path) throws IOException {
         String parentPath = PathUtils.getParentPath(path);
         String fileName = PathUtils.getLastNode(path);
@@ -120,7 +119,7 @@ public class FileV2Controller {
     /** 上传文件 */
     @PostMapping("upload")
     @AllowAnonymous
-    public SfcJsonResult<Long> upload(@RequestParam("uid") @SfcUID(true) long uid,
+    public SfcJsonResult<Long> upload(@RequestParam("uid") long uid,
                                    @RequestParam("path") @ValidPath String path,
                                    @RequestParam(value = "name", required = false) @FileName String name,
                                    @RequestParam(value = "mtime", required = false) Long mtime,
@@ -142,7 +141,7 @@ public class FileV2Controller {
     /** 重命名文件 */
     @PostMapping("rename")
     @AllowAnonymous
-    public SfcJsonResult<Object> rename(@RequestParam("uid") @SfcUID(true) long uid,
+    public SfcJsonResult<Object> rename(@RequestParam("uid") long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestParam("oldName") @FileName String oldName,
                                      @RequestParam("newName") @FileName String newName) throws IOException {
@@ -164,7 +163,7 @@ public class FileV2Controller {
      */
     @PostMapping("mkdirs")
     @AllowAnonymous
-    public SfcJsonResult<Object> mkdirs(@RequestParam("uid") @SfcUID(true) long uid,
+    public SfcJsonResult<Object> mkdirs(@RequestParam("uid") long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestParam("name") @FileName String name) throws IOException {
         diskFileSystemManager.getMainFileSystem().mkdirs(uid, SfcStringUtils.appendPath(path, name));
@@ -174,7 +173,7 @@ public class FileV2Controller {
     /** 复制文件 */
     @PostMapping("copy")
     @AllowAnonymous
-    public SfcJsonResult<Object> copy(@RequestParam("uid") @SfcUID long uid,
+    public SfcJsonResult<Object> copy(@RequestParam("uid") long uid,
                                    @RequestParam(value = "sourceUid", required = false) Long sourceUid,
                                    @RequestParam(value = "targetUid", required = false) Long targetUid,
                                    @RequestParam("sourcePath") @ValidPath String sourcePath,
@@ -201,7 +200,7 @@ public class FileV2Controller {
     /** 移动文件 */
     @PostMapping("move")
     @AllowAnonymous
-    public SfcJsonResult<Object> move(@RequestParam("uid") @SfcUID long uid,
+    public SfcJsonResult<Object> move(@RequestParam("uid") long uid,
                                     @RequestParam(value = "sourceUid", required = false) Long sourceUid,
                                     @RequestParam(value = "targetUid", required = false) Long targetUid,
                                     @RequestParam("sourcePath") @ValidPath String sourcePath,
@@ -223,7 +222,7 @@ public class FileV2Controller {
     /** 删除文件 */
     @PostMapping("delete")
     @AllowAnonymous
-    public SfcJsonResult<Object> delete(@RequestParam("uid") @SfcUID(true) long uid,
+    public SfcJsonResult<Object> delete(@RequestParam("uid")  long uid,
                                      @RequestParam("path") @ValidPath String path,
                                      @RequestBody List<String> names) throws IOException {
         requireNames(names);
