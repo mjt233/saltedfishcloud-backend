@@ -10,6 +10,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
+import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -33,9 +34,24 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class AuthFilter implements GlobalFilter, InitializingBean {
+public class AuthFilter implements GlobalFilter, Ordered, InitializingBean {
+
+    /**
+     * 本过滤器的执行顺序：必须早于 {@code WebsocketRoutingFilter}，防止被直接接管连接并终止过滤器链
+     */
+    public static final int ORDER = Ordered.LOWEST_PRECEDENCE - 2;
 
     private final SfcGatewayProperties gatewayProperties;
+
+    /**
+     * 返回本过滤器的执行顺序（见 {@link #ORDER}）。
+     *
+     * @return 过滤器顺序
+     */
+    @Override
+    public int getOrder() {
+        return ORDER;
+    }
 
     @Override
     public void afterPropertiesSet() throws Exception {
