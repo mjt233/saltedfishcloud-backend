@@ -40,7 +40,7 @@ import java.net.http.HttpClient;
  */
 @AutoConfiguration
 @ConditionalOnClass(Client.class)
-@EnableFeignClients(clients = {SfcCoreFileFeignClient.class, SfcCoreUserFeignClient.class})
+@EnableFeignClients(clients = {SfcCoreFileFeignClient.class, SfcCoreUserFeignClient.class, SfcCoreConfigFeignClient.class})
 @EnableConfigurationProperties(SfcRemoteClientProperties.class)
 public class SfcRemoteClientAutoConfiguration {
 

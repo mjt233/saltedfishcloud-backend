@@ -9,5 +9,10 @@ public enum PluginType {
     /**
      * JAR包方式
      */
-    JAR
+    JAR,
+
+    /**
+     * 微服务
+     */
+    SERVICE
 }

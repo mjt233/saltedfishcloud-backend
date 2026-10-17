@@ -17,8 +17,9 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.function.Function;
+import java.util.function.Consumer;import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class PropertyUtils {
@@ -67,6 +68,32 @@ public class PropertyUtils {
      */
     public static void dereferenceNodes(Collection<ConfigNode> nodes) {
         dereferenceNodes(nodes, Thread.currentThread().getContextClassLoader());
+    }
+
+    /**
+     * 将多层嵌套的配置节点以扁平化的方式遍历每个节点。注意：如果存在循环嵌套会导致栈溢出
+     * @param nodes 待遍历节点
+     * @param configNodeConsumer    节点遍历消费函数
+     */
+    public static void walkFlattenNodes(Collection<ConfigNode> nodes, Consumer<ConfigNode> configNodeConsumer) {
+        if (nodes == null || nodes.isEmpty()) {
+            return;
+        }
+        nodes.forEach(node -> {
+            configNodeConsumer.accept(node);
+            walkFlattenNodes(node.getNodes(), configNodeConsumer);
+        });
+    }
+
+    /**
+     * 将多层的嵌套配置节点转为扁平化的单层列表视图。注意：如果存在循环嵌套会导致栈溢出
+     * @param nodes 待遍历节点
+     * @return  扁平化后的单层节点引用列表
+     */
+    public static List<ConfigNode> flattenNodes(Collection<ConfigNode> nodes) {
+        List<ConfigNode> flattenedNodes = new ArrayList<>();
+        walkFlattenNodes(nodes, flattenedNodes::add);
+        return flattenedNodes;
     }
 
     public static String getConfigName(ConfigPropertyEntity entity, ConfigPropertiesGroup group, ConfigProperty property, String fieldName) {
