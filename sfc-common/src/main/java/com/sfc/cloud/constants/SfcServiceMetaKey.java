@@ -7,4 +7,9 @@ public interface SfcServiceMetaKey {
      * 注册服务时若声明了 sfc.plugin.info，则会注册作为 sfc-core 的插件一同向前端暴露
      */
     String PLUGIN_INFO = "sfc.plugin.info";
+
+    /**
+     * 声明作为插件时需要自动加载的资源端点（endpoint），多个值使用英文半角逗号","隔开<br>
+     */
+    String PLUGIN_AUTOLOAD = "sfc.plugin.autoload";
 }

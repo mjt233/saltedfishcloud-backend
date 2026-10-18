@@ -1,48 +1,68 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
-import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
+import com.sfc.cloud.auth.SfcInternalTokenIssuer;
+import com.sfc.cloud.auth.client.SfcInternalTokenRequestInitializer;
+import com.sfc.cloud.constants.SfcServiceMetaKey;
+import com.sfc.cloud.data.id.SfcIdUtil;
+import com.sfc.cloud.registry.ServiceDiscovery;
 import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.ConfigNode;
+import com.sfc.common.model.PluginInfo;
+import com.sfc.common.utils.SfcStringUtils;
+import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginProperty;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
-import com.sfc.common.model.ConfigNode;
-import com.sfc.common.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.sfc.common.utils.SfcStringUtils;
-import com.sfc.cloud.data.id.SfcIdUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.PathResource;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PluginServiceImpl implements PluginService, SystemOverviewItemProvider {
     private final static String LOG_PREFIX = "[插件服务]";
     private final PluginManager pluginManager;
+    private final ServiceDiscovery serviceDiscovery;
+    private final PluginProperty pluginProperty;
+    private final RestClient restClient;
 
-    @Autowired
-    private PluginProperty pluginProperty;
+    public PluginServiceImpl(PluginManager pluginManager,
+                             ServiceDiscovery serviceDiscovery,
+                             ObjectProvider<SfcInternalTokenIssuer> issuerProvider,
+                             PluginProperty pluginProperty) {
+        this.pluginManager = pluginManager;
+        this.serviceDiscovery = serviceDiscovery;
+        this.pluginProperty = pluginProperty;
+        this.restClient = RestClient.builder()
+                .requestInitializers(initializers -> {
+                    SfcInternalTokenIssuer issuer = issuerProvider.getIfAvailable();
+                    if (issuer != null) {
+                        initializers.add(new SfcInternalTokenRequestInitializer(issuer));
+                    }
+                })
+                .build();
+    }
 
     @Override
     public Resource getPluginFile(String name) throws IOException {
@@ -102,7 +122,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
         // todo 缓存
         StringBuilder mergeResult = new StringBuilder();
 
-        // 获取所有插件，筛选出配置了自动加载的插件
+        // 获取所有随sfc-core主进程加载的插件中，筛选出配置了自动加载的插件
         this.listPlugins()
                 .stream()
                 .filter(e -> e.getAutoLoad() != null && !e.getAutoLoad().isEmpty())
@@ -124,6 +144,40 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                                 }
                             });
 
+                });
+
+
+        // 获取在微服务网络中注册的所有插件服务
+        serviceDiscovery.listServiceNames()
+                .stream()
+                .map(serviceName -> serviceDiscovery.listInstances(serviceName).stream().findAny())
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(serviceInstance -> {
+                    // 未在服务发现的元数据中声明自动加载端点的跳过处理
+                    String autoload = Optional
+                            .ofNullable(serviceInstance.getMetadata())
+                            .orElseGet(Collections::emptyMap)
+                            .get(SfcServiceMetaKey.PLUGIN_AUTOLOAD);
+                    if (!StringUtils.hasText(autoload)) {
+                        return;
+                    }
+                    Arrays.stream(autoload.split(","))
+                            .filter(e -> e.endsWith(suffix))
+                            .forEach(endpoint -> {
+                                try {
+                                    String uri = new URI("http", null, serviceInstance.getHost(), serviceInstance.getPort(), endpoint, null, null).toString();
+                                    String body = restClient.get()
+                                            .uri(uri)
+                                            .retrieve()
+                                            .toEntity(String.class)
+                                            .getBody();
+                                    mergeResult.append("/* ").append(serviceInstance.getServiceName()).append(" */\n");
+                                    mergeResult.append(body).append("\n");
+                                } catch (Exception e) {
+                                    log.error("{}从微服务插件{}拉取资源{}失败", LOG_PREFIX, serviceInstance.getServiceName(), endpoint, e);
+                                }
+                            });
                 });
         return ResourceUtils.stringToResource(mergeResult.toString())
                 .setResponseFilename(fileName);
@@ -150,7 +204,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
         if (!Files.exists(tempPath)) {
             throw new IllegalArgumentException("无效的临时id");
         }
-        PathResource pathResource = new PathResource(tempPath){
+        Resource pathResource = new FileSystemResource(tempPath){
             @Override
             public String getFilename() {
                 return fileName;
