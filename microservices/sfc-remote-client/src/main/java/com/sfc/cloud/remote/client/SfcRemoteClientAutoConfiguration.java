@@ -7,9 +7,7 @@ import com.sfc.cloud.remote.client.support.*;
 import com.sfc.cloud.constants.SfcServiceName;
 import feign.Client;
 import feign.RequestInterceptor;
-import feign.codec.Encoder;
 import feign.codec.ErrorDecoder;
-import feign.form.spring.SpringFormEncoder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfiguration;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
@@ -74,12 +72,6 @@ public class SfcRemoteClientAutoConfiguration {
     @ConditionalOnMissingBean
     public ErrorDecoder sfcRemoteErrorDecoder() {
         return new SfcRemoteErrorDecoder();
-    }
-
-    /** Feign 表单编码器 */
-    @Bean
-    public Encoder feignFormEncoder() {
-        return new SpringFormEncoder();
     }
 
     /**
