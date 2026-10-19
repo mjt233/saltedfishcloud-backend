@@ -86,6 +86,16 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!--
+            MQRPCInvokerTest（原 sfc-rpc-core 的测试）使用 sfc-ext-local-mq 的 LocalMQService
+            做真实 MQ 版 RPC 验证，故需要该插件的测试作用域依赖。
+        -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-ext-local-mq</artifactId>
+            <version>${revision}</version>
+            <scope>test</scope>
+        </dependency>
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
@@ -107,25 +117,29 @@
             <artifactId>sfc-auth</artifactId>
             <version>${auth.version}</version>
         </dependency>
+        <!--
+            归档引擎实现（原 sfc-archive / sfc-archive-core 的依赖）。
+            归档契约已随 sfc-api 引入本模块，这里补齐实现侧所需的第三方库。
+        -->
         <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-task-api</artifactId>
-            <version>${task.version}</version>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.28.0</version>
         </dependency>
         <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-task-core</artifactId>
-            <version>${task.version}</version>
+            <groupId>org.tukaani</groupId>
+            <artifactId>xz</artifactId>
+            <version>1.11</version>
         </dependency>
         <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-rpc-core</artifactId>
-            <version>${rpc.version}</version>
+            <groupId>net.lingala.zip4j</groupId>
+            <artifactId>zip4j</artifactId>
+            <version>2.11.5</version>
         </dependency>
         <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-archive-core</artifactId>
-            <version>${project.version}</version>
+            <groupId>com.github.junrar</groupId>
+            <artifactId>junrar</artifactId>
+            <version>7.5.10</version>
         </dependency>
 
         <!--

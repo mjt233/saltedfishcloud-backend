@@ -20,10 +20,7 @@
         -->
         <module>sfc-common</module>
         <module>sfc-common-data</module>
-        <module>sfc-archive</module>
         <module>sfc-api</module>
-        <module>sfc-task</module>
-        <module>sfc-rpc</module>
         <module>sfc-ext</module>
         <module>microservices</module>
         <module>sfc-core</module>
@@ -45,13 +42,11 @@
     </licenses>
 
     <properties>
-        <revision>3.1.2</revision>
+        <revision>3.2.0</revision>
         <!--  前端项目路径通过环境变量 SFC_FRONT_END_PATH 提供，配置后在 package 时自动打包到 webapp -->
         <java.version>25</java.version>
         <!--   系统核心api模块版本     -->
         <api.version>${revision}</api.version>
-        <task.version>1.0.0</task.version>
-        <rpc.version>1.0.0</rpc.version>
         <!--   微服务契约模块版本。sfc-cloud-api 未继承本 pom，其 <version> 需与此处保持一致     -->
         <cloud.version>1.0.0</cloud.version>
         <!--   内部接口鉴权 SDK 版本。sfc-auth 未继承本 pom，其 <version> 需与 microservices/pom.xml 中的 auth.version 保持一致     -->

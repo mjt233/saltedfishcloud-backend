@@ -4,7 +4,7 @@
 
 这是一个基于 SpringBoot 的网盘项目。
 
-注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-common`、`sfc-common-data`、`sfc-ext`、`sfc-task`、`sfc-rpc`、`sfc-archive`、`sfc-auth`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
+注意：这是一个多模块 Maven 项目（见根 `pom.xml` 的 <modules>），主要模块包括 `sfc-core`、`sfc-api`、`sfc-common`、`sfc-common-data`、`sfc-ext`、`sfc-auth`。扩展插件位于 `sfc-ext` 目录（例如 `sfc-ext-webdav`、`sfc-ext-minio-store` 等）。
 
 ## 模块架构
 
@@ -20,8 +20,6 @@
 - **sfc-core**: 主应用入口 `SaltedfishcloudApplication`，聚合 security/config/controller/service
 - **sfc-auth**: 内部接口（服务间调用）鉴权 SDK：共享密钥（`sfc.internal.key`）、HS256 JWT 自签与校验、Servlet 过滤器与 Feign/RestClient 适配器（不做防重放）。**不继承根 pom**（避免消费方被拖入宿主整套技术栈），同时被 `sfc-core` 与 `microservices/` 侧依赖；单独构建 `microservices/` 前需先 `mvn -pl sfc-auth install`
 - **sfc-ext/**: 每个子目录是一个独立 Maven 模块插件，依赖 `sfc-api` 和可选 `sfc-core` API。⚠️ `sfc-ext/pom.xml` 以 `provided` 引用 `sfc-api`，而 provided 的传递依赖不会向下传递，因此**新增共享库依赖时必须在 `sfc-ext/pom.xml` 显式声明**（`sfc-common` / `sfc-common-data` 已声明）
-- **sfc-task**: 内部分 `sfc-task-api` + `sfc-task-core`
-- **sfc-archive**: 内部分 `sfc-archive-api` + `sfc-archive-core`
 - **sfc-rpc**: 内部分 `sfc-rpc-api` + `sfc-rpc-core`
 
 此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
@@ -48,7 +46,7 @@
 
 示例参考：
 
-- 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-task/sfc-task-core/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
+- 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-core/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
 - UID 注解示例（Controller 参数）：`sfc-core/src/main/java/com/xiaotao/saltedfishcloud/controller/ResourceController.java` 的多处方法使用 `@SfcUID` 注解来保证 uid 校验。
 - sfc-core模块中涉及SpringBoot应用参数配置的修改，如果是在`sys.`节点下，需要同步修改`application-develop.yml`、`application-product.yml`和`pre-release/config.yml`中的对应项，不需要修改`application.yml`，`application.yml`下不需要有`sys.`节点。
 

@@ -11,10 +11,8 @@
 
     <properties>
         <java.version>25</java.version>
-        <revision>3.1.2</revision>
+        <revision>3.2.0</revision>
         <api.version>${revision}</api.version>
-        <rpc.version>1.0.0</rpc.version>
-        <task.version>1.0.0</task.version>
         <!-- 微服务契约模块 sfc-cloud-api 的版本。本 pom 不继承 root，故必须自带该属性 -->
         <cloud.version>1.0.0</cloud.version>
         <!-- 共享基座 sfc-common / sfc-common-data 的版本。本 pom 不继承 root，故必须自带该属性 -->
@@ -85,6 +83,12 @@
             <groupId>com.sfc.cloud</groupId>
             <artifactId>sfc-common-data</artifactId>
             <version>${sfc.common.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-compress</artifactId>
+            <version>1.28.0</version>
             <scope>provided</scope>
         </dependency>
         <dependency>

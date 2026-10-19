@@ -1,2 +1,5 @@
 org.springframework.boot.autoconfigure.AutoConfigurationImportFilter=\
 com.xiaotao.saltedfishcloud.config.LockProviderAutoConfigurationImportFilter
+org.springframework.context.ApplicationContextInitializer=\
+com.sfc.rpc.RPCInitializer
+

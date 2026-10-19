@@ -55,6 +55,12 @@ sys:
     registry-group: SFC
     # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
     advertise-address: ""
+    # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
+    client:
+      # 连接超时；留空使用默认值 5s，0 或负值表示不限制
+      connect-timeout: 5s
+      # 读取超时；留空使用默认值 60s，0 或负值表示不限制（大文件传输可放宽）
+      read-timeout: 60s
     # Nacos provider 专属配置，仅在 registry-provider 为 nacos 时生效（由 sfc-ext-nacos 插件绑定）
     nacos:
       # 服务端地址，多节点用逗号分隔
@@ -119,6 +125,12 @@ sys:
     registry-group: ${REGISTRY_GROUP:SFC}
     # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
     advertise-address: ${ADVERTISE_ADDRESS:}
+    # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
+    client:
+      # 连接超时；留空使用默认值 5s，0 或负值表示不限制
+      connect-timeout: ${SFC_CLIENT_CONNECT_TIMEOUT:5s}
+      # 读取超时；留空使用默认值 60s，0 或负值表示不限制（大文件传输可放宽）
+      read-timeout: ${SFC_CLIENT_READ_TIMEOUT:60s}
     # Nacos provider 专属配置，仅在 registry-provider 为 nacos 时生效（由 sfc-ext-nacos 插件绑定）
     nacos:
       # 服务端地址，多节点用逗号分隔
