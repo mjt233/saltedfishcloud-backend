@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.registry.local;
 
+import com.xiaotao.saltedfishcloud.config.SysProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.cloud.client.serviceregistry.AutoServiceRegistrationProperties;
 import org.springframework.cloud.commons.util.InetUtils;
@@ -22,11 +23,23 @@ public class LocalRegistryConfiguration {
     /**
      * 进程内注册表。关闭动作由 {@link LocalAutoServiceRegistration} 的生命周期统一触发。
      *
+     * @param sysProperties 系统配置
      * @return 进程内注册表
      */
     @Bean(destroyMethod = "")
-    public LocalServiceRegistry localServiceRegistry() {
-        return new LocalServiceRegistry();
+    public LocalServiceRegistry localServiceRegistry(SysProperties sysProperties) {
+        return new LocalServiceRegistry(sysProperties);
+    }
+
+    /**
+     * 外部注册接口的密码校验服务。
+     *
+     * @param sysProperties 系统配置
+     * @return 密码校验服务
+     */
+    @Bean
+    public LocalRegistryAuthService localRegistryAuthService(SysProperties sysProperties) {
+        return new LocalRegistryAuthService(sysProperties);
     }
 
     /**

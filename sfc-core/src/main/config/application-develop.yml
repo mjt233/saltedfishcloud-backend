@@ -78,7 +78,7 @@ plugin:
     - sfc-ext/sfc-ext-download
 
   # 开发模式下可设置为false 关闭插件前端资源的自动加载
-  use-auto-load-resource: false
+  use-auto-load-resource: true
 
 
 sys:
@@ -97,7 +97,15 @@ sys:
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: mq
     # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（使用 spring.cloud.nacos.discovery 配置）
-    registry-provider: nacos
+    registry-provider: local
+    # 本地注册中心外部注册配置（registry-provider=local 时生效）
+    local-registry:
+      # 外部服务注册密码。留空表示禁用外部注册接口
+      password: ${SFC_LOCAL_REGISTRY_PASSWORD:114514}
+      # 心跳超时时间，超过该时间未续约的实例会被移除
+      heartbeat-timeout: 30s
+      # 过期实例清理任务执行间隔
+      cleanup-interval: 10s
     # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
     # ⚠️ core 不参与代理链路：凭证验签、路径校验、服务名白名单、api 前缀解析与转发全部在网关进程内
     #    （网关配置见 microservices/sfc-gateway/src/main/resources/application.yml）。

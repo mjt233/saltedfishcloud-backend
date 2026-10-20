@@ -48,15 +48,15 @@
 >
 > 🔒 **内部接口的一层兜底（2026-10-15，同日改为 SDK + 自签 JWT）**：core 的 `/api/internal/**`（当前即 `sfc-remote-client` 访问的网盘文件 V2 接口）**只允许微服务间调用**——各服务用同一份共享密钥 **`SFC_INTERNAL_KEY`**（配置项 `sfc.internal.key`）**为每次调用自签 HS256 JWT**，放在请求头 **`X-Sfc-Internal-Token`** 里（密钥本身不上线传输）；core 侧校验「签名 + 有效期（含时钟偏移）+ 必需声明」，未配置密钥时 fail-closed 全部拒绝；网关（`sfc-gateway`）对该前缀**直接拒绝**，服务间调用走 `lb://sfc-core` 直连、不经网关。签发/校验与两端适配全部由独立 SDK **[`sfc-auth`](../sfc-auth/README.md)**（仓库根目录）实现。注意：仍是**共享密钥**模型——不区分服务身份、**不做防重放**（调小 `token-ttl` 是唯一缓解手段）、轮换需全部重启，属于框架期兜底，**不能替代**阶段 5 的服务间鉴权。
 >
-> ⚠️ **构建前置**：`sfc-auth` 位于**仓库根 reactor**、不继承根 pom，因此单独构建本目录前需先 `mvn -pl sfc-auth install`（或改从仓库根用 `-pl microservices/...` 构建）；否则本目录的 reactor 找不到 `com.xiaotao:sfc-auth`。
+> ⚠️ **构建前置**：`sfc-auth` 与 `sfc-local-registry-client` 位于**仓库根 reactor**、不继承根 pom，因此单独构建本目录前需先 `mvn -pl sfc-auth,sfc-local-registry-client install`（或改从仓库根用 `-pl microservices/...` 构建）；否则本目录的 reactor 找不到这两个 SDK。
 
 ---
 
 ## 三、构建与运行
 
 ```powershell
-# 前置：内部接口鉴权 SDK 在【仓库根 reactor】且不继承根 pom，先装进本地仓库
-mvn -pl sfc-auth install -DskipTests
+# 前置：内部接口鉴权 SDK 与 local 注册中心 SDK 在【仓库根 reactor】且不继承根 pom，先装进本地仓库
+mvn -pl sfc-auth,sfc-local-registry-client install -DskipTests
 
 # ✅ 推荐（也是当前唯一可靠的方式）：从【仓库根 reactor】构建。
 #    共享库 sfc-common / sfc-common-data 现在是根目录下的独立模块，只有根 reactor 才包含它们；

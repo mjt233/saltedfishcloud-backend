@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,6 +12,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.nio.charset.Charset;
+import java.time.Duration;
 
 @Slf4j
 @Configuration
@@ -87,10 +89,37 @@ public class SysProperties implements InitializingBean {
 
         /**
          * 服务注册 provider。<br>
-         * local：进程内注册表（默认值，未启用微服务模式，服务注册关系只在当前进程内维护）；<br>
+         * local：进程内注册表（默认值，支持外部服务通过 {@code /api/local-registry/**} 注册）；<br>
          * nacos：Nacos 注册中心，连接与分组参数见 {@code spring.cloud.nacos.discovery.*}。
          */
         private String registryProvider = "local";
+
+        /**
+         * 本地注册中心配置，仅在 {@code registry-provider=local} 时生效。
+         */
+        private LocalRegistry localRegistry = new LocalRegistry();
+
+        /**
+         * 本地注册中心的外部服务注册配置。
+         */
+        @Data
+        public static class LocalRegistry {
+            /**
+             * 外部服务注册密码。留空表示禁用外部注册接口。
+             */
+            @ToString.Exclude
+            private String password;
+
+            /**
+             * 实例心跳超时时间，超过该时间未收到心跳的实例会被移除。
+             */
+            private Duration heartbeatTimeout = Duration.ofSeconds(30);
+
+            /**
+             * 过期实例清理任务执行间隔。
+             */
+            private Duration cleanupInterval = Duration.ofSeconds(10);
+        }
     }
 
 

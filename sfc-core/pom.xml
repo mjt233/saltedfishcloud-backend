@@ -143,6 +143,15 @@
             <version>${auth.version}</version>
         </dependency>
         <!--
+            local 注册中心客户端 SDK：宿主复用其接口 DTO/常量（本地注册表的服务端实现仍在 sfc-core）。
+            该 SDK 的自动配置仅在配置 spring.cloud.sfc-local.server-addr 时生效，宿主不会创建客户端 Bean。
+        -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-local-registry-client</artifactId>
+            <version>${local.registry.version}</version>
+        </dependency>
+        <!--
             归档引擎实现（原 sfc-archive / sfc-archive-core 的依赖）。
             归档契约已随 sfc-api 引入本模块，这里补齐实现侧所需的第三方库。
         -->
