@@ -12,6 +12,8 @@
     <artifactId>sfc-core</artifactId>
     <properties>
         <maven.build.timestamp.format>yyyyMMddHHmmss</maven.build.timestamp.format>
+        <spring-cloud.version>2025.1.3</spring-cloud.version>
+        <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
     </properties>
 
     <profiles>
@@ -75,6 +77,26 @@
             </properties>
         </profile>
     </profiles>
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud 官方接口与生命周期（DiscoveryClient / ServiceRegistry / AbstractAutoServiceRegistration） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Nacos 服务注册与发现实现 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
     <dependencies>
         <dependency>
             <groupId>com.h2database</groupId>
@@ -101,11 +123,14 @@
             <artifactId>sfc-api</artifactId>
             <version>${api.version}</version>
         </dependency>
-        <!--  微服务契约模块（服务注册与发现 SPI）。瘦契约：自身只依赖 provided 的 lombok，不引入额外技术栈  -->
+        <!--
+            Nacos 服务注册与发现：提供 Spring Cloud 官方的 DiscoveryClient /
+            ServiceRegistry / AbstractAutoServiceRegistration 实现。
+            仅宿主需要，故只声明在 sfc-core，避免把 Spring Cloud 技术栈带进 sfc-api 与插件编译面。
+        -->
         <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-cloud-api</artifactId>
-            <version>${cloud.version}</version>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
         <!--
             内部接口（服务间调用）鉴权 SDK：/api/internal/** 的服务端校验过滤器由它自动装配。
@@ -145,21 +170,10 @@
         <!--
             指标实现（版本由 spring-boot-dependencies BOM 管理）。
 
-            为什么宿主需要它：nacos-client 的 naming 主路径依赖 io.micrometer.core.instrument.MeterRegistry
-            （com.alibaba.nacos.client.naming.cache.ServiceInfoHolder 构造时即触达）。
-            而宿主原本只有 micrometer-observation / micrometer-commons，于是 spring-boot-tomcat、spring-boot-webmvc、
-            spring-boot-jdbc、spring-boot-hibernate、spring-boot-data-commons 里那些
-            @ConditionalOnClass(MeterRegistry.class) 的自动配置长期处于"有条件但类不可加载"的临界状态：
-            它们本应被跳过，只是一直没有东西把 MeterRegistry 摆到合并类加载器上。
-
-            sfc-ext-nacos 插件一旦把 micrometer-core 带进插件依赖，条件判定（走能看到插件 jar 的加载器）就会通过，
-            而这些自动配置类自身由 AppClassLoader 定义、解析方法签名时又找不到 MeterRegistry，启动直接失败：
-                NoClassDefFoundError: io/micrometer/core/instrument/MeterRegistry
-                ... TomcatMetricsAutoConfiguration (Lookup method resolution failed)
-
-            因此由宿主显式提供一份，插件侧则排除同名 jar（见 sfc-ext-nacos/pom.xml），保证全局只有一份且可被宿主加载器解析。
-            注：宿主没有 spring-boot-starter-actuator，不会创建 MeterRegistry Bean，
-            上述自动配置的方法级 @ConditionalOnBean(MeterRegistry.class) 仍会失败并跳过，故不引入额外的指标行为。
+            nacos-client 的 naming 主路径依赖 io.micrometer.core.instrument.MeterRegistry
+            （com.alibaba.nacos.client.naming.cache.ServiceInfoHolder 构造时即触达），
+            因此由宿主显式提供一份，保证命名空间与版本统一。
+            注：宿主没有引入 actuator，不会创建 MeterRegistry Bean，相关指标自动配置仍会按条件跳过。
         -->
         <dependency>
             <groupId>io.micrometer</groupId>

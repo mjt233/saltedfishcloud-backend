@@ -26,14 +26,13 @@ spring:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
-        # ⚠️ 收敛约定：必须与咸鱼云侧 sys.service.registry-group 一致（同为 SFC）。
-        # 咸鱼云的发现侧只按它自己的配置查询（NacosServiceDiscovery.configuredGroup()），
-        # 两侧不一致的现象是"注册成功但互相看不见"。
+        # ⚠️ 收敛约定：必须与咸鱼云侧 spring.cloud.nacos.discovery.group 一致（同为 SFC）。
+        # 两侧都只按各自配置的 group 查询，不一致的现象是"注册成功但互相看不见"。
         group: SFC
         # 命名空间 public 的 ID 是【空串】，不要写 public
         namespace: ""
         # 临时实例：由客户端内置心跳续约，也是"停服后实例自动消失"（4.5）的前提。
-        # 与咸鱼云侧 NacosServiceRegistry 的 ephemeral=true 对齐
+        # 与咸鱼云侧的临时实例配置对齐
         ephemeral: true
         # 实例 metadata：微服务的「自描述」——网关不硬编码任何微服务的路径。
         #   sfc.api.prefix —— 网关判定时拼接的 API 前缀（缺省 /api，见网关的 sfc.gateway.default-api-prefix）

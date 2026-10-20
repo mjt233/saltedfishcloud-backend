@@ -13,8 +13,6 @@
         <java.version>25</java.version>
         <revision>3.2.0</revision>
         <api.version>${revision}</api.version>
-        <!-- 微服务契约模块 sfc-cloud-api 的版本。本 pom 不继承 root，故必须自带该属性 -->
-        <cloud.version>1.0.0</cloud.version>
         <!-- 共享基座 sfc-common / sfc-common-data 的版本。本 pom 不继承 root，故必须自带该属性 -->
         <sfc.common.version>1.0.0</sfc.common.version>
         <skipTests>true</skipTests>
@@ -49,7 +47,6 @@
         <module>sfc-ext-pxe-boot</module>
         <module>sfc-ext-data-manager</module>
         <module>sfc-ext-download</module>
-        <module>sfc-ext-nacos</module>
     </modules>
 
 
@@ -58,13 +55,6 @@
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-api</artifactId>
             <version>${revision}</version>
-            <scope>provided</scope>
-        </dependency>
-        <!-- 微服务契约（ServiceRegistry / ServiceDiscovery SPI），由宿主 sfc-core 提供 -->
-        <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-cloud-api</artifactId>
-            <version>${cloud.version}</version>
             <scope>provided</scope>
         </dependency>
         <!--

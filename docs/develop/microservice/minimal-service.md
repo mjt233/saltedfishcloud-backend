@@ -108,7 +108,7 @@ spring:
     nacos:
       discovery:
         server-addr: 127.0.0.1:8848
-        # 必须与咸鱼云侧 sys.service.registry-group 一致，否则"注册成功但互相看不见"
+        # 必须与咸鱼云侧 spring.cloud.nacos.discovery.group 一致，否则"注册成功但互相看不见"
         group: SFC
         # 命名空间 public 的 ID 是空串，不要写 public
         namespace: ""

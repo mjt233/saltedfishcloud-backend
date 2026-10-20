@@ -5,8 +5,8 @@
     刻意【不继承】仓库根 pom：根 pom 在 <dependencies>（而非 <dependencyManagement>）中声明了
     JPA / Security / Redis / Netty 等整套技术栈，会被所有子模块无条件继承（实测 208 个 jar）。
     本模块同时被宿主（sfc-api → sfc-core 等）与微服务侧（自带数据库的服务）使用，一旦继承根 pom，
-    微服务侧会被拖入同一套技术栈。因此本模块自带全部构建配置（同类写法见 sfc-common / sfc-auth /
-    sfc-cloud-api，它们同样未声明 parent）。
+    微服务侧会被拖入同一套技术栈。因此本模块自带全部构建配置（同类写法见 sfc-common / sfc-auth，
+    它们同样未声明 parent）。
 
     ⚠️ 与 sfc-common 的分工：
       - sfc-common      —— 零 JPA 的轻量共享库（常量 / 信封 / 异常 / 工具 / 分页 / 远程契约）；

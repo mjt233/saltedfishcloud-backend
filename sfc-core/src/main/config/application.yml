@@ -7,6 +7,8 @@ server:
 springdoc:
   enable-kotlin: false
 spring:
+  application:
+    name: sfc-core
   jpa:
     database: mysql
     open-in-view: false

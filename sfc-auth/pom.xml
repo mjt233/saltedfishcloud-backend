@@ -6,7 +6,7 @@
     JPA / Security / Redis / Netty 等整套技术栈，会被所有子模块无条件继承（实测 208 个 jar）。
     本 SDK 同时被 sfc-core 与 microservices 侧（网关、远程客户端、demo）使用，一旦继承根 pom，
     微服务侧会被拖入同一套技术栈。因此本模块自带全部构建配置，依赖全部显式声明并以 provided 为主
-    （同类写法见 sfc-cloud-api、sfc-ext）。
+    （同类写法见 sfc-ext）。
 
     编译基线取 microservices 侧的 spring-boot-dependencies 4.0.8（低于 core 的 4.1.0）：
     只用两端都存在的稳定 API，编译基线不高于运行侧即为兼容方向。

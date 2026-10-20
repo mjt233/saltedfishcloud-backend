@@ -17,7 +17,7 @@
 | 约束 | 原因 |
 |---|---|
 | **不继承 root pom** | 咸鱼云 root pom 在 `<dependencies>`（而非 `<dependencyManagement>`）里声明了 JPA / Security / Redis / Redisson 等整套技术栈，任何继承它的模块都会被无条件拖入约 208 个 jar——"独立开发"当场就不成立了 |
-| **零宿主依赖** | 不依赖任何**咸鱼云宿主侧**模块（`com.xiaotao.saltedfishcloud:*` 及宿主契约模块 `sfc-cloud-api`）。允许的仓库内依赖只有两个**共享库**：`com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页，**已于 Phase 1 上提到仓库根目录**）与 `com.sfc.cloud:sfc-common-data`（JPA 基座，根目录）。<br>⚠️ **核验方式必须改**：不能再对 `microservices/pom.xml` 单独跑 `dependency:tree` —— `sfc-common` 已不在该 reactor 内，那样会从本地仓库解析到**旧快照**（见 §三 的警告）。请在**仓库根**执行 `mvn dependency:tree -pl :sfc-remote-client` 等，或直接全量构建 |
+| **零宿主依赖** | 不依赖任何**咸鱼云宿主侧**模块（`com.xiaotao.saltedfishcloud:*`）。允许的仓库内依赖只有两个**共享库**：`com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页，**已于 Phase 1 上提到仓库根目录**）与 `com.sfc.cloud:sfc-common-data`（JPA 基座，根目录）。<br>⚠️ **核验方式必须改**：不能再对 `microservices/pom.xml` 单独跑 `dependency:tree` —— `sfc-common` 已不在该 reactor 内，那样会从本地仓库解析到**旧快照**（见 §三 的警告）。请在**仓库根**执行 `mvn dependency:tree -pl :sfc-remote-client` 等，或直接全量构建 |
 | ~~不进 root `<modules>`~~ → **现状：已进**（2026-10-11 校正） | 早先的约定是"避免微服务被卷进 reactor 构建"。当前本目录**整个聚合工程**（`microservices` 及其三个模块）都在 root `<modules>` 中，好处是根目录一次 `mvn package` 就能产出全部产物；代价是"改微服务要重建宿主"这一耦合回来了。**若在意后者，从 root `<modules>` 移除 `microservices` 一项即可**——本目录的独立构建命令（§三）与之无关 |
 
 > 本目录内的工程应作为**独立的 Maven 工程**打开（IDEA 中单独打开 `microservices/` 目录）。
@@ -117,8 +117,8 @@ curl "http://127.0.0.1:8848/nacos/v3/client/ns/instance/list?serviceName=sfc-dem
 ## 五、两条容易踩的约定
 
 1. **`group` 与 `namespace` 必须与咸鱼云侧收敛为同一值**
-   - 咸鱼云侧：`sys.service.registry-group`（发现侧**只能用它自己的配置查询**）
-   - 微服务侧：`spring.cloud.nacos.discovery.group` / `.namespace`（注册侧）
+   - 咸鱼云侧：`spring.cloud.nacos.discovery.group` / `.namespace`
+   - 微服务侧：`spring.cloud.nacos.discovery.group` / `.namespace`
    - 本档位取值：`group: SFC`、命名空间 **public（其 ID 是空串，不要写 `public`）**
    - 不一致的现象：**注册成功但互相看不见**
 

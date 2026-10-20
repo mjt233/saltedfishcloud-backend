@@ -47,31 +47,15 @@ sys:
     mq-provider: local
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: mq
-    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（需 sfc-ext-nacos 插件）
+    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。
+    # 启用 Nacos 时设为 nacos，并配置 spring.application.name 与 spring.cloud.nacos.discovery.*
     registry-provider: local
-    # 注册到注册中心的自身服务名
-    service-name: sfc-core
-    # 注册中心分组，对应 Nacos 的 group。跨服务的互相可见依赖"所有服务注册到同一分组"这一部署约定
-    registry-group: SFC
-    # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
-    advertise-address: ""
     # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
     client:
       # 连接超时；留空使用默认值 5s，0 或负值表示不限制
       connect-timeout: 5s
       # 读取超时；留空使用默认值 60s，0 或负值表示不限制（大文件传输可放宽）
       read-timeout: 60s
-    # Nacos provider 专属配置，仅在 registry-provider 为 nacos 时生效（由 sfc-ext-nacos 插件绑定）
-    nacos:
-      # 服务端地址，多节点用逗号分隔
-      server-addr: 127.0.0.1:8848
-      # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
-      namespace: ""
-      # 鉴权用户名与密码，服务端未开启鉴权时留空
-      username: ""
-      password: ""
-      # 集群名，用于同一服务内实例的再分组
-      cluster-name: DEFAULT
     # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
     # ⚠️ core 不参与代理链路：凭证验签（密钥经环境变量 SFC_JWT_SECRET 注入）、路径校验、服务名白名单、
     #    api 前缀解析与转发全部在网关进程内（网关默认监听 8081，是整站唯一入口）。
@@ -88,6 +72,8 @@ sys:
 server:
   port: 8087
 spring:
+  application:
+    name: ${SERVICE_NAME:sfc-core}
   jpa:
     database: mysql
   datasource:
@@ -101,6 +87,24 @@ spring:
       port: ${REDIS_PORT:6379}
       database: ${REDIS_DB:0}
 #    password:
+  cloud:
+    nacos:
+      discovery:
+        # 服务端地址，多节点用逗号分隔
+        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
+        # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
+        namespace: ${NACOS_NAMESPACE:}
+        # 鉴权用户名与密码，服务端未开启鉴权时留空
+        username: ${NACOS_USERNAME:}
+        password: ${NACOS_PASSWORD:}
+        # 分组，必须与各微服务的 spring.cloud.nacos.discovery.group 一致
+        group: ${REGISTRY_GROUP:SFC}
+        # 集群名，用于同一服务内实例的再分组
+        cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
+        # 本机对外可达地址（host 或 IP，不含端口）；留空自动探测
+        ip: ${ADVERTISE_ADDRESS:}
+        # 注销后不额外等待，实例立即从注册中心移除
+        graceful-shutdown-wait-time: 0
 
 sys:
   redis:
@@ -117,31 +121,15 @@ sys:
     mq-provider: ${MQ_PROVIDER:redis}
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: ${RPC_PROVIDER:redis}
-    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（需 sfc-ext-nacos 插件）
+    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。
+    # 启用 Nacos 时设为 nacos，并配置 spring.application.name 与 spring.cloud.nacos.discovery.*
     registry-provider: ${REGISTRY_PROVIDER:local}
-    # 注册到注册中心的自身服务名
-    service-name: ${SERVICE_NAME:sfc-core}
-    # 注册中心分组，对应 Nacos 的 group。跨服务的互相可见依赖"所有服务注册到同一分组"这一部署约定
-    registry-group: ${REGISTRY_GROUP:SFC}
-    # 本机对外可达地址（host 或 IP，不含端口）。多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时显式指定；留空表示自动解析
-    advertise-address: ${ADVERTISE_ADDRESS:}
     # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
     client:
       # 连接超时；留空使用默认值 5s，0 或负值表示不限制
       connect-timeout: ${SFC_CLIENT_CONNECT_TIMEOUT:5s}
       # 读取超时；留空使用默认值 60s，0 或负值表示不限制（大文件传输可放宽）
       read-timeout: ${SFC_CLIENT_READ_TIMEOUT:60s}
-    # Nacos provider 专属配置，仅在 registry-provider 为 nacos 时生效（由 sfc-ext-nacos 插件绑定）
-    nacos:
-      # 服务端地址，多节点用逗号分隔
-      server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-      # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
-      namespace: ${NACOS_NAMESPACE:}
-      # 鉴权用户名与密码，服务端未开启鉴权时留空
-      username: ${NACOS_USERNAME:}
-      password: ${NACOS_PASSWORD:}
-      # 集群名，用于同一服务内实例的再分组
-      cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
     # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
     # ⚠️ core 不参与代理链路：凭证验签、路径校验、服务名白名单、api 前缀解析与转发全部在网关进程内；
     #    代理侧配置（core 服务名、监听端口、缺省 api 前缀、密钥环境变量名）在

@@ -88,26 +88,9 @@ public class SysProperties implements InitializingBean {
         /**
          * 服务注册 provider。<br>
          * local：进程内注册表（默认值，未启用微服务模式，服务注册关系只在当前进程内维护）；<br>
-         * nacos：注册到注册中心，需安装 sfc-ext-nacos 插件。
+         * nacos：Nacos 注册中心，连接与分组参数见 {@code spring.cloud.nacos.discovery.*}。
          */
         private String registryProvider = "local";
-
-        /**
-         * 注册到注册中心的自身服务名。
-         */
-        private String serviceName = "sfc-core";
-
-        /**
-         * 注册中心分组，对应 Nacos 的 group。<br>
-         * 跨服务的互相可见性依赖"所有服务注册到同一分组"这一部署约定。
-         */
-        private String registryGroup = "SFC";
-
-        /**
-         * 本机对外可达地址（host 或 IP，不含端口）。<br>
-         * 多网卡 / 容器 / NAS 环境下自动解析出的地址可能不可达，此时需显式指定；留空表示由 provider 自动解析。
-         */
-        private String advertiseAddress = "";
     }
 
 

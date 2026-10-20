@@ -11,7 +11,7 @@
         JPA / Security / Redis / Netty 等整套技术栈，会被无条件继承（实测 208 个 jar），
         "轻量共享" 当场不成立；
       - 继承 microservices/pom.xml：会让这个同时服务宿主的模块带上微服务的构建约定与版本矩阵。
-    因此本模块自带全部构建配置（同类写法见 sfc-auth、sfc-cloud-api、sfc-common-data，它们同样无 parent）。
+    因此本模块自带全部构建配置（同类写法见 sfc-auth、sfc-common-data，它们同样无 parent）。
 
     编译基线取 microservices 侧的 spring-boot-dependencies 4.0.8（低于 core 的 4.1.0）：
     只用两端都存在的稳定 API，编译基线不高于运行侧即为兼容方向（与 sfc-auth 的既有约定一致）。

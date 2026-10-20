@@ -46,7 +46,7 @@ JWT 声明：`iss`=调用方服务名、`sub`=`sfc-internal`（与用户会话�
 
 ## 五、构建注意（跨 reactor）
 
-本模块在**仓库根 reactor** 中，且**不继承**根 pom（避免消费方被拖入 200+ jar 的宿主技术栈，与 `sfc-cloud-api` 同一约定）。
+本模块在**仓库根 reactor** 中，且**不继承**根 pom（避免消费方被拖入 200+ jar 的宿主技术栈，与 `sfc-common` 同一约定）。
 
 - 根目录构建：`mvn package` 会一并构建，`sfc-core` 正常引用；
 - **microservices 单独构建**（`mvn -f microservices/pom.xml package`）会把它当作外部依赖，需先 `mvn -pl sfc-auth install`

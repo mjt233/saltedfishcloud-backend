@@ -4,7 +4,6 @@ import com.sfc.cloud.auth.SfcInternalTokenIssuer;
 import com.sfc.cloud.auth.client.SfcInternalTokenRequestInitializer;
 import com.sfc.cloud.constants.SfcServiceMetaKey;
 import com.sfc.cloud.data.id.SfcIdUtil;
-import com.sfc.cloud.registry.ServiceDiscovery;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.ConfigNode;
 import com.sfc.common.model.PluginInfo;
@@ -20,6 +19,7 @@ import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -43,16 +43,16 @@ import java.util.stream.Collectors;
 public class PluginServiceImpl implements PluginService, SystemOverviewItemProvider {
     private final static String LOG_PREFIX = "[插件服务]";
     private final PluginManager pluginManager;
-    private final ServiceDiscovery serviceDiscovery;
+    private final DiscoveryClient discoveryClient;
     private final PluginProperty pluginProperty;
     private final RestClient restClient;
 
     public PluginServiceImpl(PluginManager pluginManager,
-                             ServiceDiscovery serviceDiscovery,
+                             DiscoveryClient discoveryClient,
                              ObjectProvider<SfcInternalTokenIssuer> issuerProvider,
                              PluginProperty pluginProperty) {
         this.pluginManager = pluginManager;
-        this.serviceDiscovery = serviceDiscovery;
+        this.discoveryClient = discoveryClient;
         this.pluginProperty = pluginProperty;
         this.restClient = RestClient.builder()
                 .requestInitializers(initializers -> {
@@ -148,9 +148,9 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
 
         // 获取在微服务网络中注册的所有插件服务
-        serviceDiscovery.listServiceNames()
+        discoveryClient.getServices()
                 .stream()
-                .map(serviceName -> serviceDiscovery.listInstances(serviceName).stream().findAny())
+                .map(serviceName -> discoveryClient.getInstances(serviceName).stream().findAny())
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .forEach(serviceInstance -> {
@@ -172,10 +172,10 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                                             .retrieve()
                                             .toEntity(String.class)
                                             .getBody();
-                                    mergeResult.append("/* ").append(serviceInstance.getServiceName()).append(" */\n");
+                                    mergeResult.append("/* ").append(serviceInstance.getServiceId()).append(" */\n");
                                     mergeResult.append(body).append("\n");
                                 } catch (Exception e) {
-                                    log.error("{}从微服务插件{}拉取资源{}失败", LOG_PREFIX, serviceInstance.getServiceName(), endpoint, e);
+                                    log.error("{}从微服务插件{}拉取资源{}失败", LOG_PREFIX, serviceInstance.getServiceId(), endpoint, e);
                                 }
                             });
                 });

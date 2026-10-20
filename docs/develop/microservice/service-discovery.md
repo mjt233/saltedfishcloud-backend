@@ -34,34 +34,39 @@ spring:
 |---|---|
 | `spring.application.name` | 注册到 Nacos 的服务名，也是网关路由中的 `{服务名}` |
 | `server-addr` | Nacos 服务端地址，多节点用逗号分隔 |
-| `group` | 分组，必须与 core 的 `sys.service.registry-group` 一致（默认 `SFC`） |
+| `group` | 分组，必须与 core 的 `spring.cloud.nacos.discovery.group` 一致（默认 `SFC`） |
 | `namespace` | 命名空间 ID。**public 的 ID 是空串，不要写 `public`** |
 | `ephemeral` | 临时实例：停服即从注册中心消失，避免流量继续打到已死进程 |
 | `metadata.sfc.api.prefix` | 服务自描述的 API 前缀，供网关拼接路径；缺省 `/api` |
 
 ## 3. core 侧配置
 
-core 启用 Nacos 注册发现需要两个条件：
-
-1. 启用 `sfc-ext-nacos` 插件；
-2. 在配置中指定注册 provider：
+core 通过 `sys.service.registry-provider` 选择注册 provider：`local`（默认，进程内注册表）或 `nacos`。
+Nacos 能力已内置，服务名与连接参数使用标准 Spring 配置：
 
 ```yaml
+spring:
+  # 注册到 Nacos 的服务名
+  application:
+    name: sfc-core
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 127.0.0.1:8848
+        # 必须与各微服务的 group 一致
+        group: SFC
+        namespace: ""
+        # Nacos 服务端未开启鉴权时留空
+        username: ""
+        password: ""
+
 sys:
   service:
-    # 默认 local（进程内注册表，未启用微服务模式）；nacos 需 sfc-ext-nacos 插件
     registry-provider: nacos
-    # 注册到注册中心的自身服务名
-    service-name: sfc-core
-    # 注册中心分组，必须与各微服务的 group 一致
-    registry-group: SFC
-    nacos:
-      server-addr: 127.0.0.1:8848
-      namespace: ""
-      # Nacos 服务端未开启鉴权时留空
-      username: ""
-      password: ""
 ```
+
+`registry-provider: local` 时 Nacos 自动配置整体关闭，不会创建客户端或尝试连接注册中心。
+配置为 `nacos` 时若注册中心不可达，启动会快速失败。
 
 部署侧的完整默认值见 [配置参数](../../quick-start/config.md)。
 

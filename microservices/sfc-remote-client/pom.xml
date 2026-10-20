@@ -6,7 +6,7 @@
     全部继承 microservices/pom.xml，本 POM 只声明"用哪些依赖"。
 
     零宿主依赖：除本目录自建的 com.sfc.cloud:sfc-common 外，不依赖任何仓库内坐标
-    （不引 com.xiaotao.saltedfishcloud:*，也不引宿主契约模块 sfc-cloud-api）。
+    （不引 com.xiaotao.saltedfishcloud:*）。
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
