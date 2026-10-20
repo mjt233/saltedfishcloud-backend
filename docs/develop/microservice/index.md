@@ -5,7 +5,7 @@
 这些工程与仓库内其它模块有两个关键区别：
 
 - **不继承 root `pom.xml`**：父 POM 是 `microservices/pom.xml`，而它的父 POM 才是 `spring-boot-starter-parent`，因此不会被拖入咸鱼云宿主约 200+ 个 jar 的技术栈；
-- **零宿主依赖**：不依赖任何 `com.xiaotao.saltedfishcloud:*` 坐标。允许的仓库内依赖是两个**共享库**：`com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页/远程契约）与 `com.sfc.cloud:sfc-common-data`（JPA 基座）。⚠️ 二者已于 Phase 1 **上提到仓库根目录**（`sfc-common/`、`sfc-common-data/`），宿主的 `sfc-api` 也依赖它们——因此它们**不继承任何 parent**，自带 BOM，`sfc-common` 还必须保持零 JPA 依赖（网关无 JPA）。
+- **零宿主依赖**：不依赖任何 `com.xiaotao.saltedfishcloud:*` 坐标。允许的仓库内依赖是两个**共享库**：`com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页/远程契约）与 `com.sfc.cloud:sfc-common-data`（JPA 基座），以及 **local 注册中心客户端 SDK** `com.sfc.cloud:sfc-local-registry-client`。⚠️ 三者均**位于仓库根目录**且**不继承任何 parent**，自带 BOM；`sfc-common` 还必须保持零 JPA 依赖（网关无 JPA）。
 
 ## 工程清单
 
@@ -13,6 +13,7 @@
 |---|---|
 | [`sfc-common`](../../../sfc-common/) | 共享库（非可运行进程，**位于仓库根目录**）：信任头常量、用户凭证解析、远程调用契约模型，以及 Phase 1 迁出的响应信封 `SfcJsonResult`、异常族、常量、字符串/JSON 工具、分页模型 `SfcPageInfo`/`SfcPageableRequest` |
 | [`sfc-common-data`](../../../sfc-common-data/) | 共享库（非可运行进程，**位于仓库根目录**）：JPA 数据访问基座（实体基类、`SfcBaseRepo`、`SfcCrudService(Impl)`、雪花主键、`SfcDBUtils`、`@SfcUID`），身份与事务经 SPI 注入 |
+| [`sfc-local-registry-client`](../../../sfc-local-registry-client/) | 共享 SDK（非可运行进程，**位于仓库根目录**）：`spring.cloud.sfc-local.*` 配置下的 local 注册中心注册与发现实现 |
 | `sfc-remote-client` | 远程客户端 SDK（库）：调用 sfc-core 网盘文件操作的 OpenFeign 声明式接口 |
 | `sfc-gateway` | 独立网关（Spring Cloud Gateway Server WebFlux）：整站唯一入口与微服务代理 |
 | `sfc-demo-service` | 微服务示例：演示最简工程结构、注册发现、远程调用与接口鉴权 |
@@ -22,7 +23,7 @@
 
 ## 构建前置
 
-共享库 `sfc-common` / `sfc-common-data` 与内部接口鉴权 SDK `sfc-auth` **都不继承根 pom**，但都已由根 `<modules>` 聚合。因此**推荐从仓库根做单次 reactor 构建**（reactor 内部会互相解析 `target` 产物，无需 `install`）：
+共享库 `sfc-common` / `sfc-common-data`、内部接口鉴权 SDK `sfc-auth` 与 local 注册中心 SDK `sfc-local-registry-client` **都不继承根 pom**，但都已由根 `<modules>` 聚合。因此**推荐从仓库根做单次 reactor 构建**（reactor 内部会互相解析 `target` 产物，无需 `install`）：
 
 ```shell
 mvn clean package -DskipTests

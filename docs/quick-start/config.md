@@ -50,6 +50,14 @@ sys:
     # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。
     # 启用 Nacos 时设为 nacos，并配置 spring.application.name 与 spring.cloud.nacos.discovery.*
     registry-provider: local
+    # 本地注册中心外部注册配置（registry-provider=local 时生效）
+    local-registry:
+      # 外部服务注册密码。留空表示禁用外部注册接口
+      password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
+      # 心跳超时时间，超过该时间未续约的实例会被移除
+      heartbeat-timeout: 30s
+      # 过期实例清理任务执行间隔
+      cleanup-interval: 10s
     # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
     client:
       # 连接超时；留空使用默认值 5s，0 或负值表示不限制
@@ -124,6 +132,14 @@ sys:
     # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。
     # 启用 Nacos 时设为 nacos，并配置 spring.application.name 与 spring.cloud.nacos.discovery.*
     registry-provider: ${REGISTRY_PROVIDER:local}
+    # 本地注册中心外部注册配置（registry-provider=local 时生效）
+    local-registry:
+      # 外部服务注册密码。留空表示禁用外部注册接口
+      password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
+      # 心跳超时时间，超过该时间未续约的实例会被移除
+      heartbeat-timeout: ${LOCAL_REGISTRY_HEARTBEAT_TIMEOUT:30s}
+      # 过期实例清理任务执行间隔
+      cleanup-interval: ${LOCAL_REGISTRY_CLEANUP_INTERVAL:10s}
     # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
     client:
       # 连接超时；留空使用默认值 5s，0 或负值表示不限制

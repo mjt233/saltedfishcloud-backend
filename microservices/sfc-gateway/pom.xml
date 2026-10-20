@@ -27,6 +27,11 @@
             <artifactId>spring-boot-devtools</artifactId>
             <optional>true</optional>
         </dependency>
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-local-registry-client</artifactId>
+            <version>1.0.0</version>
+        </dependency>
 
         <dependency>
             <groupId>com.sfc.cloud</groupId>

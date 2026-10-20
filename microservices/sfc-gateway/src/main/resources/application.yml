@@ -7,10 +7,15 @@ sfc:
 
 spring:
   application:
-    name: sfc-gateway2
+    name: sfc-gateway
   cloud:
+    sfc-local:
+      server-addr: localhost:8087
+      password: 114514
+      enabled: true
     nacos:
       discovery:
+        enabled: false
         server-addr: 127.0.0.1:8848
         # 与 sfc-core / sfc-demo-service 收敛为同一 group 与 namespace（public 的 ID 是空串，不要写 public）
         group: SFC

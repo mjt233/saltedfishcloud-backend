@@ -14,7 +14,8 @@ import org.springframework.context.annotation.Import;
  * 仅在配置了 {@code spring.cloud.sfc-local.server-addr} 且未禁用时生效，因此宿主自身
  * （使用进程内注册表）不会创建客户端 Bean。
  * <p>
- * 本类只负责声明启用条件，具体 Bean 装配委托给同包的 {@link SfcLocalRegistryConfiguration}。
+ * 本类只负责声明启用条件，具体 Bean 装配委托给同包的 {@link SfcLocalRegistryConfiguration}
+ * 与 {@link SfcLocalReactiveDiscoveryConfiguration}。
  */
 @AutoConfiguration
 @ConditionalOnClass({DiscoveryClient.class, ServiceRegistry.class})
@@ -22,6 +23,6 @@ import org.springframework.context.annotation.Import;
         havingValue = "true", matchIfMissing = true)
 @ConditionalOnProperty(prefix = "spring.cloud.sfc-local", name = "server-addr")
 @EnableConfigurationProperties(SfcLocalRegistryProperties.class)
-@Import(SfcLocalRegistryConfiguration.class)
+@Import({SfcLocalRegistryConfiguration.class, SfcLocalReactiveDiscoveryConfiguration.class})
 public class SfcLocalRegistryAutoConfiguration {
 }

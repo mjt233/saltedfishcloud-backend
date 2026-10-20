@@ -15,6 +15,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * local 注册中心 HTTP 客户端。
@@ -127,6 +128,35 @@ public class SfcLocalRegistryHttpClient {
     }
 
     /**
+     * 异步查询服务实例。
+     * <p>
+     * 供反应式发现实现使用：不阻塞调用线程，请求由 JDK {@link HttpClient#sendAsync} 执行，
+     * 异常以失败 future 的形式返回（解析后的业务异常为 {@link SfcLocalRegistryException}）。
+     *
+     * @param serviceId 服务名
+     * @return 异步结果，实例列表非 null
+     */
+    public CompletableFuture<List<SfcLocalServiceInstance>> getInstancesAsync(String serviceId) {
+        String path = SfcLocalRegistryConstants.PATH_INSTANCES
+                + "?serviceId=" + URLEncoder.encode(serviceId, StandardCharsets.UTF_8);
+        return requestAsync(path, new TypeReference<SfcLocalRegistryEnvelope<List<SfcLocalServiceInstance>>>() {})
+                .thenApply(instances -> instances == null ? List.of() : instances);
+    }
+
+    /**
+     * 异步查询所有服务名。
+     * <p>
+     * 供反应式发现实现使用：不阻塞调用线程，异常以失败 future 的形式返回。
+     *
+     * @return 异步结果，服务名列表非 null
+     */
+    public CompletableFuture<List<String>> getServicesAsync() {
+        return requestAsync(SfcLocalRegistryConstants.PATH_SERVICES,
+                new TypeReference<SfcLocalRegistryEnvelope<List<String>>>() {})
+                .thenApply(services -> services == null ? List.of() : services);
+    }
+
+    /**
      * 执行一次 API 请求并解析响应信封。
      *
      * @param method   HTTP 方法
@@ -138,43 +168,88 @@ public class SfcLocalRegistryHttpClient {
      */
     private <T> T request(String method, String path, Object body,
                           TypeReference<SfcLocalRegistryEnvelope<T>> typeRef) {
-        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + path))
-                .timeout(properties.getReadTimeout() == null ? Duration.ofSeconds(5) : properties.getReadTimeout())
-                .header("Accept", "application/json");
-        if (hasText(properties.getPassword())) {
-            builder.header(SfcLocalRegistryConstants.PASSWORD_HEADER, properties.getPassword());
-        }
-
         try {
-            if (body == null) {
-                builder.method(method, HttpRequest.BodyPublishers.noBody());
-            } else {
-                builder.header("Content-Type", "application/json");
-                builder.method(method, HttpRequest.BodyPublishers.ofString(
-                        objectMapper.writeValueAsString(body), StandardCharsets.UTF_8));
-            }
-
-            HttpResponse<String> response = httpClient.send(builder.build(),
+            HttpResponse<String> response = httpClient.send(buildRequest(method, path, body),
                     HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            SfcLocalRegistryEnvelope<T> envelope = parseEnvelope(response.body(), typeRef);
-            if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                int code = envelope == null ? response.statusCode() : envelope.getCode();
-                String message = envelope == null ? "HTTP " + response.statusCode() : envelope.getMsg();
-                throw new SfcLocalRegistryException(code, response.statusCode(), message);
-            }
-            if (envelope == null) {
-                throw new SfcLocalRegistryException(500, response.statusCode(), "注册中心返回了空响应");
-            }
-            if (envelope.getCode() != 200) {
-                throw new SfcLocalRegistryException(envelope.getCode(), response.statusCode(), envelope.getMsg());
-            }
-            return envelope.getData();
+            return handleResponse(response, typeRef);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new SfcLocalRegistryException(500, "调用注册中心被中断");
         } catch (IOException e) {
             throw new SfcLocalRegistryException(500, "调用注册中心失败：" + e.getMessage());
         }
+    }
+
+    /**
+     * 异步执行一次 GET 查询并解析响应信封。
+     *
+     * @param path    相对路径
+     * @param typeRef 响应信封类型
+     * @param <T>     业务数据类型
+     * @return 异步业务数据
+     */
+    private <T> CompletableFuture<T> requestAsync(String path,
+                                                  TypeReference<SfcLocalRegistryEnvelope<T>> typeRef) {
+        HttpRequest httpRequest;
+        try {
+            httpRequest = buildRequest("GET", path, null);
+        } catch (IOException e) {
+            return CompletableFuture.failedFuture(
+                    new SfcLocalRegistryException(500, "调用注册中心失败：" + e.getMessage()));
+        }
+        return httpClient.sendAsync(httpRequest, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8))
+                .thenApply(response -> handleResponse(response, typeRef));
+    }
+
+    /**
+     * 构造 API 请求，拼接注册中心地址、超时、密码头与 JSON 请求体。
+     *
+     * @param method HTTP 方法
+     * @param path   相对路径
+     * @param body   请求体，GET 时为 null
+     * @return HTTP 请求
+     * @throws IOException 请求体序列化失败
+     */
+    private HttpRequest buildRequest(String method, String path, Object body) throws IOException {
+        HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(baseUrl + path))
+                .timeout(properties.getReadTimeout() == null ? Duration.ofSeconds(5) : properties.getReadTimeout())
+                .header("Accept", "application/json");
+        if (hasText(properties.getPassword())) {
+            builder.header(SfcLocalRegistryConstants.PASSWORD_HEADER, properties.getPassword());
+        }
+        if (body == null) {
+            builder.method(method, HttpRequest.BodyPublishers.noBody());
+        } else {
+            builder.header("Content-Type", "application/json");
+            builder.method(method, HttpRequest.BodyPublishers.ofString(
+                    objectMapper.writeValueAsString(body), StandardCharsets.UTF_8));
+        }
+        return builder.build();
+    }
+
+    /**
+     * 解析响应信封并映射为业务数据；非 2xx 或信封业务码非 200 时抛出业务异常。
+     *
+     * @param response HTTP 响应
+     * @param typeRef  响应信封类型
+     * @param <T>      业务数据类型
+     * @return 业务数据
+     */
+    private <T> T handleResponse(HttpResponse<String> response,
+                                 TypeReference<SfcLocalRegistryEnvelope<T>> typeRef) {
+        SfcLocalRegistryEnvelope<T> envelope = parseEnvelope(response.body(), typeRef);
+        if (response.statusCode() < 200 || response.statusCode() >= 300) {
+            int code = envelope == null ? response.statusCode() : envelope.getCode();
+            String message = envelope == null ? "HTTP " + response.statusCode() : envelope.getMsg();
+            throw new SfcLocalRegistryException(code, response.statusCode(), message);
+        }
+        if (envelope == null) {
+            throw new SfcLocalRegistryException(500, response.statusCode(), "注册中心返回了空响应");
+        }
+        if (envelope.getCode() != 200) {
+            throw new SfcLocalRegistryException(envelope.getCode(), response.statusCode(), envelope.getMsg());
+        }
+        return envelope.getData();
     }
 
     /**
