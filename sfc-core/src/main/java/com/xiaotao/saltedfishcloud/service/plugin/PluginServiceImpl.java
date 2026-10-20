@@ -116,7 +116,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
         // 若关闭了自动加载资源，则返回空字符串
         if(Boolean.FALSE.equals(pluginProperty.getUseAutoLoadResource())) {
-            return ResourceUtils.stringToResource("").setResponseFilename(fileName);
+            return ResourceUtils.stringToResource("/* 已关闭自动加载资源 */").setResponseFilename(fileName);
         }
 
         // todo 缓存

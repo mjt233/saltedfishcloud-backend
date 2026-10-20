@@ -16,7 +16,7 @@ public class PluginProperty {
 
     /**
      * 是否使用插件的自动加载资源。<br>
-     * 若开发前端
+     * 若开发前端期间可设置为false防止资源重复加载
      */
     private Boolean useAutoLoadResource = true;
 
