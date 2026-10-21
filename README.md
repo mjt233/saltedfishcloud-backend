@@ -1,6 +1,6 @@
 # 咸鱼云网盘 - 后端
 
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.8-green.svg)
 ![Java](https://img.shields.io/badge/Java-25-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 

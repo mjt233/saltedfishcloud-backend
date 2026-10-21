@@ -6,7 +6,7 @@
     中声明了宿主整套技术栈，会被子模块无条件继承。本 SDK 供微服务在未启用 Nacos 时接入
     sfc-core 的 local 注册中心，必须保持轻量。
 
-    编译基线取 microservices 侧的 spring-boot-dependencies 4.0.8 与 Spring Cloud 2025.1.0，
+    编译基线取统一的 spring-boot-dependencies 4.0.8 与 Spring Cloud 2025.1.0，
     不高于消费方运行版本。
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"

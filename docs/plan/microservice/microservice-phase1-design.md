@@ -61,7 +61,7 @@
                    │ 发现              │ 发现
       ┌────────────▼───────────┐  ┌───▼──────────────────┐
       │  sfc-core              │  │  sfc-demo-service    │
-      │  Spring Boot 4.1.0 单体 │  │  独立 Spring Boot 工程 │
+      │  Spring Boot 4.0.8 单体 │  │  独立 Spring Boot 工程 │
       │                        │  │  （仓库内 microservices）│
       │  ServiceRegistry SPI   │  │                      │
       │   ├ LocalXxx (进程内)   │  │  SCA 声明式注册        │
@@ -509,7 +509,7 @@ docker run -d --name sfc-nacos -p 8080:8080 -p 8848:8848 -p 9848:9848 -e MODE=st
 
 依赖 **Spring Cloud Alibaba `spring-cloud-starter-alibaba-nacos-discovery`（声明式注册）** + `spring-boot-starter-webmvc`，**不依赖咸鱼云任何模块**。
 
-- **版本**：SCA `2025.1.0.0` / Spring Cloud `2025.1.0` / Spring Boot `4.0.8`。SCA 的官方矩阵是 **Boot 4.0.x**，与宿主的 4.1.0 **刻意不对齐**——微服务独立演进，本就不必跟随宿主版本。
+- **版本**：SCA `2025.1.0.0` / Spring Cloud `2025.1.0` / Spring Boot `4.0.8`。SCA 的官方矩阵是 **Boot 4.0.x**；宿主根 pom 已于 2026-10 对齐到 Boot 4.0.8 / Spring Cloud 2025.1.0，两端版本矩阵现已统一（此前"刻意不对齐"的表述作废）。
 - **收敛约定**：`group: SFC`、命名空间 public（空串），与 `sys.service.registry-group` 一致；否则现象是"注册成功但互相看不见"。
 - **形态**：**极简探针**——注册完全由 starter 自动完成，工程内没有任何业务端点，也没有一行手写注册代码。
 

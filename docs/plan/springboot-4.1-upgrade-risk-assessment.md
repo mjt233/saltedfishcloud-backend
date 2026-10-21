@@ -1,6 +1,7 @@
 # SpringBoot 4.1.0 升级风险评估报告
 
 > **升级路径**：SpringBoot 3.5.8 → 4.1.0（一步到位）  
+> **版本现状（2026-10-21）**：根 pom 已对齐到 **Spring Boot 4.0.8**，本文为 4.1.0 升级的历史评估记录，见 [4.0.8 对齐记录](./springboot-4.0.8-alignment.md)。  
 > **评估日期**：2026-07-08  
 > **项目基线**：Java 25、多模块 Maven（sfc-core / sfc-api / sfc-ext / sfc-task / sfc-rpc / sfc-archive）  
 > **信息来源**：[Spring Boot 4.0 Release Notes](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Release-Notes)、[Spring Boot 4.0 Migration Guide](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.0-Migration-Guide)、[Spring Boot 4.1 Release Notes](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1-Release-Notes)、[Spring Boot 4.1.0 Configuration Changelog](https://github.com/spring-projects/spring-boot/wiki/Spring-Boot-4.1.0-Configuration-Changelog) 及项目源码静态分析

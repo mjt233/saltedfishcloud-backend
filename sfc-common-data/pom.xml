@@ -46,7 +46,7 @@
             <!--
                 仅导入 BOM 用于管理 spring / jakarta / slf4j / lombok 的版本，不引入任何实际依赖。
                 dependencyManagement 不具备传递性，因此不影响本模块的消费者。
-                编译基线取 microservices 侧的 4.0.8（低于 core 的 4.1.0）：只用两端都存在的稳定 API，
+                编译基线取统一的 4.0.8（与 core / microservices 两端一致）：只用两端都存在的稳定 API，
                 编译基线不高于运行侧即为兼容方向（同 sfc-auth 的既有约定）。
             -->
             <dependency>
@@ -116,7 +116,7 @@
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
             <!--
-                ⚠️ 必须显式写版本：spring-boot-dependencies 4.0.8 与 4.1.0 的 BOM
+                ⚠️ 必须显式写版本：spring-boot-dependencies 4.0.x 的 BOM
                 都**没有**管理 org.jetbrains:annotations（它们只管理 org.jetbrains.kotlin*）。
                 provided 作用域 → 不传递，对消费方零污染。
             -->

@@ -6,7 +6,7 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.0</version>
+        <version>4.0.8</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <modules>
@@ -62,12 +62,6 @@
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
-        <!-- 升级期间临时使用，迁移完成后移除 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-properties-migrator</artifactId>
-            <scope>runtime</scope>
-        </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
@@ -85,7 +79,7 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
-            <version>4.6.1</version>
+            <version>4.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

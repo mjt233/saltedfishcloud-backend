@@ -3,7 +3,8 @@
 > 生成日期：2026-07-08  
 > 分支：upgrade-springboot-4.1  
 > 编译状态：✅ 通过（仅弃用警告）  
-> 启动验证：✅ 通过（主模块 + local-mq + data-manager，SQLite 本地模式）
+> 启动验证：✅ 通过（主模块 + local-mq + data-manager，SQLite 本地模式）  
+> 版本现状（2026-10-21）：根 pom 已对齐到 **Spring Boot 4.0.8**，见 [4.0.8 对齐记录](./springboot-4.0.8-alignment.md)。
 
 ## 已完成的自动化验证
 

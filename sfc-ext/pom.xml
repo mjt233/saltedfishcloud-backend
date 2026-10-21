@@ -116,11 +116,11 @@
 
     <dependencyManagement>
         <dependencies>
-            <!-- 导入 SpringBoot 4.1.0 BOM，使插件模块的依赖版本与宿主一致 -->
+            <!-- 导入 SpringBoot 4.0.8 BOM，使插件模块的依赖版本与宿主一致 -->
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-dependencies</artifactId>
-                <version>4.1.0</version>
+                <version>4.0.8</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>

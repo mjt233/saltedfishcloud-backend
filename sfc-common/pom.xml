@@ -13,7 +13,7 @@
       - 继承 microservices/pom.xml：会让这个同时服务宿主的模块带上微服务的构建约定与版本矩阵。
     因此本模块自带全部构建配置（同类写法见 sfc-auth、sfc-common-data，它们同样无 parent）。
 
-    编译基线取 microservices 侧的 spring-boot-dependencies 4.0.8（低于 core 的 4.1.0）：
+    编译基线取统一的 spring-boot-dependencies 4.0.8（与 core / microservices 两端一致）：
     只用两端都存在的稳定 API，编译基线不高于运行侧即为兼容方向（与 sfc-auth 的既有约定一致）。
 
     ⚠️ 本模块必须保持「零 JPA」：网关（WebFlux，无 JPA）也依赖本模块，

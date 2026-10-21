@@ -240,7 +240,7 @@ $pluginJars | Where-Object { -not $hostMap.ContainsKey($_.Name) } |
 
 **经验起点**（**必须用 §4.3 实测确认，不要照抄**）：JSON / 日志 / YAML 类通常与宿主重叠，值得优先排查。
 
-> **实测补充（2026-10-05，`nacos-client:3.2.4` + SpringBoot 4.1.0 BOM）**：插件模块的父 pom 通常导入了
+> **实测补充（2026-10-05，`nacos-client:3.2.4` + SpringBoot 4.1.0 BOM；2026-10 后宿主 BOM 已对齐为 4.0.8，结论不变，仅被 BOM 对齐的具体版本号可能不同）**：插件模块的父 pom 通常导入了
 > `spring-boot-dependencies` BOM，而 BOM 会把传递依赖的版本**统一到与宿主相同的版本**
 > （实测：nacos 声明 jackson 2.21.2 / snakeyaml 2.0 / micrometer 1.15.11，被 BOM 对齐为
 > 2.21.4 / 2.6 / 1.17.0，与宿主**完全一致**）。此时这些条目在第一级会被判为

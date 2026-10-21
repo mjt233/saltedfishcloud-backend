@@ -572,7 +572,7 @@ core 自己的 `/api/**` 上，`@UID` / `@ValidPath` / `@RolesAllowed` / `Protec
 
 | 项 | 内容 |
 |---|---|
-| 版本矩阵 | Boot **4.0.8** ＋ Spring Cloud **2025.1.0** ＋ SCG **5.0.0（Server WebFlux）** ＋ SCA **2025.1.0.0**（与 demo 同源；**刻意不对齐宿主 4.1.0**）＋ Lombok（provided，需 `<proc>full</proc>`） |
+| 版本矩阵 | Boot **4.0.8** ＋ Spring Cloud **2025.1.0** ＋ SCG **5.0.0（Server WebFlux）** ＋ SCA **2025.1.0.0**（与 demo 同源；宿主已于 2026-10 对齐到同一 Boot 4.0.8 基线）＋ Lombok（provided，需 `<proc>full</proc>`） |
 | 依赖 | 零咸鱼云依赖（验证方式同 demo：`dependency:list` 中 `com.xiaotao` / `sfc-*` 命中 0 条） |
 | 路由（`order` 即优先级） | `core-manifest(1)` `/api/ext/manifest` → core；`micro-proxy(2)` `/api/ext/**` → **本地验签 ＋ 本地判定** ＋ `lb://`；`core-api(10)` `/api/**`（含 WebSocket）→ core；`core-static(11)` 首页与静态资源 → core；`core-oidc(12)` `/oauth2/**`、`/connect/**`、`/.well-known/**` → core |
 | 自定义 filter | `TrustHeaderSanitizeFilter`（入站 `X-Sfc-*` 剥离，**所有路由**）、`XForwardedOverrideFilter`（`X-Forwarded-*` 与 `X-Real-IP` 覆盖式）、`ProxyRequestFilter`（**本地验签 ＋ 本地判定 ＋ 注入 `X-Sfc-Uid` ＋ 凭证原值透传 ＋ 改道**）、`GatewayErrorWebExceptionHandler`（503/7004；413/7003 仅作框架层 413 的归一化）。判定类：`GatewayTokenVerifier` / `TokenExtractor` / `ProxyPolicyService` / `ProxyRejectException`。**无请求体大小 filter**（曾有的 `ProxyRequestBodyLimitFilter` 已按决策删除） |

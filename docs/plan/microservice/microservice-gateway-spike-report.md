@@ -32,7 +32,7 @@
 |---|---|
 | JDK | 25.0.2（Oracle） |
 | 网关 | Boot **4.0.8** · Spring Cloud **2025.1.0** · SCG **5.0.0**（Server WebFlux）· SCA **2025.1.0.0** · 启动参数 `-Xmx512m` |
-| 宿主 `sfc-core` | Boot **4.1.0**，8087，`develop` profile（SQLite、Redis 关闭、`registry-provider: nacos`） |
+| 宿主 `sfc-core` | Boot **4.1.0**（预研时的宿主版本；2026-10 已对齐到 **4.0.8**），8087，`develop` profile（SQLite、Redis 关闭、`registry-provider: nacos`） |
 | 微服务 | `sfc-demo-service` 8080… 实为 **8090** 与 **8091** 两个实例，同一服务名注册到 Nacos（group `SFC`） |
 | 注册中心 | Nacos 3.x（docker 容器 `nacos-standalone`，8848/9848；控制台 8080） |
 | 客户端 | `curl` 8.13 · Node 24 内建 `WebSocket`（无需安装依赖） |
