@@ -1,7 +1,5 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
-import com.sfc.cloud.auth.SfcInternalTokenIssuer;
-import com.sfc.cloud.auth.client.SfcInternalTokenRequestInitializer;
 import com.sfc.cloud.constants.SfcServiceMetaKey;
 import com.sfc.cloud.data.id.SfcIdUtil;
 import com.sfc.common.exception.SfcJsonException;
@@ -18,7 +16,6 @@ import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
@@ -27,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -47,21 +45,22 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     private final PluginProperty pluginProperty;
     private final RestClient restClient;
 
+    /**
+     * 创建插件服务。
+     *
+     * @param pluginManager    插件管理器
+     * @param discoveryClient  服务发现客户端，用于枚举微服务与读取实例元数据
+     * @param pluginProperty   插件配置
+     * @param restClient       微服务调用客户端（已挂载 Spring Cloud LoadBalancer，按服务名选实例）
+     */
     public PluginServiceImpl(PluginManager pluginManager,
                              DiscoveryClient discoveryClient,
-                             ObjectProvider<SfcInternalTokenIssuer> issuerProvider,
-                             PluginProperty pluginProperty) {
+                             PluginProperty pluginProperty,
+                             RestClient restClient) {
         this.pluginManager = pluginManager;
         this.discoveryClient = discoveryClient;
         this.pluginProperty = pluginProperty;
-        this.restClient = RestClient.builder()
-                .requestInitializers(initializers -> {
-                    SfcInternalTokenIssuer issuer = issuerProvider.getIfAvailable();
-                    if (issuer != null) {
-                        initializers.add(new SfcInternalTokenRequestInitializer(issuer));
-                    }
-                })
-                .build();
+        this.restClient = restClient;
     }
 
     @Override
@@ -166,7 +165,15 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                             .filter(e -> e.endsWith(suffix))
                             .forEach(endpoint -> {
                                 try {
-                                    String uri = new URI("http", null, serviceInstance.getHost(), serviceInstance.getPort(), endpoint, null, null).toString();
+                                    // 以「服务名」作为 host 书写目标地址，由 Spring Cloud LoadBalancer
+                                    // 在请求发出前选出真实实例并重写 scheme/host/port，不再手工解析实例地址
+                                    String path = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+                                    URI uri = UriComponentsBuilder.newInstance()
+                                            .scheme("http")
+                                            .host(serviceInstance.getServiceId())
+                                            .path(path)
+                                            .build()
+                                            .toUri();
                                     String body = restClient.get()
                                             .uri(uri)
                                             .retrieve()

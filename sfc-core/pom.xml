@@ -132,6 +132,10 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
         <!--
             内部接口（服务间调用）鉴权 SDK：/api/internal/** 的服务端校验过滤器由它自动装配。
             这是本仓库"宿主 → 微服务侧共享库"的方向：sfc-auth 同时被 microservices 侧使用，
