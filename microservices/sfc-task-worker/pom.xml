@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    咸鱼云微服务任务执行者 SDK（Spring Boot Starter）：让任意微服务实现 SfcTaskHandler 即可接入
+    sfc-core 的异步任务系统（注册能力、长轮询认领、执行、进度/日志上报、中断、优雅停机）。
+
+    版本与构建配置【零重复】：Boot / Lombok / proc=full / java 版本全部继承 microservices/pom.xml，
+    本 POM 只声明"用哪些依赖"。
+
+    零宿主依赖：除仓库内共享库 com.sfc.cloud:sfc-common 与内部接口鉴权 SDK com.xiaotao:sfc-auth 外，
+    不依赖任何仓库内坐标（不引 com.xiaotao.saltedfishcloud:*、不引 sfc-api、不引 JPA）。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfc.cloud</groupId>
+        <artifactId>microservices</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>sfc-task-worker</artifactId>
+    <name>sfc-task-worker</name>
+    <description>微服务任务执行者 SDK：接入 sfc-core 异步任务系统的 Spring Boot Starter（零宿主依赖）</description>
+
+    <dependencies>
+        <!-- 契约层：统一响应信封 SfcJsonResult、业务异常 SfcJsonException、JSON 工具 -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common</artifactId>
+            <version>${common.version}</version>
+        </dependency>
+
+        <!--
+            内部接口鉴权 SDK：
+              - 出站：SfcInternalTokenRequestInitializer 为每一次发往 sfc-core 的内部接口调用签发凭证；
+              - 入站：由消费方 @EnableSfcInternalAuth 开启 /api/internal/** 校验（本 SDK 只提供中断端点）。
+        -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-auth</artifactId>
+            <version>${auth.version}</version>
+        </dependency>
+
+        <!-- Spring MVC（Boot 4 的 webmvc starter）：提供 RestClient、@RestController 与内嵌容器 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+
+        <!-- 自动配置、条件注解与 @ConfigurationProperties（运行期同样由消费方提供） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-autoconfigure</artifactId>
+        </dependency>
+        <!--
+            Lombok 与 spring-boot-configuration-processor 由 microservices/pom.xml 统一声明（provided / optional），
+            此处不重复声明，避免与父级重复；proc=full 编译器配置同样继承自父级。
+        -->
+    </dependencies>
+</project>

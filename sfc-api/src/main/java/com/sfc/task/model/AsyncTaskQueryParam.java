@@ -19,4 +19,9 @@ public class AsyncTaskQueryParam extends SfcPageableRequest {
      * @see com.sfc.task.AsyncTaskConstants.Status
      */
     private List<Integer> status;
+
+    /**
+     * 要查询的任务类型，为空时查询全部类型
+     */
+    private String taskType;
 }

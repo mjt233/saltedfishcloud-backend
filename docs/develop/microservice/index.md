@@ -15,11 +15,12 @@
 | [`sfc-common-data`](../../../sfc-common-data/) | 共享库（非可运行进程，**位于仓库根目录**）：JPA 数据访问基座（实体基类、`SfcBaseRepo`、`SfcCrudService(Impl)`、雪花主键、`SfcDBUtils`、`@SfcUID`），身份与事务经 SPI 注入 |
 | [`sfc-local-registry-client`](../../../sfc-local-registry-client/) | 共享 SDK（非可运行进程，**位于仓库根目录**）：`spring.cloud.sfc-local.*` 配置下的 local 注册中心注册与发现实现 |
 | `sfc-remote-client` | 远程客户端 SDK（库）：调用 sfc-core 网盘文件操作的 OpenFeign 声明式接口 |
+| `sfc-task-worker` | 异步任务执行者 SDK（库）：微服务实现 `SfcTaskHandler` 即可接入 sfc-core 统一的异步任务调度（见[接入文档](async-task-worker.md)） |
 | `sfc-gateway` | 独立网关（Spring Cloud Gateway Server WebFlux）：整站唯一入口与微服务代理 |
-| `sfc-demo-service` | 微服务示例：演示最简工程结构、注册发现、远程调用与接口鉴权 |
+| `sfc-demo-service` | 微服务示例：演示最简工程结构、注册发现、远程调用、接口鉴权与异步任务接入 |
 | [`sfc-ai-service`](../../../microservices/sfc-ai-service/) | **AI 助手服务**（端口 `8091`）：原宿主插件 `sfc-ext-ai`，Phase 2 迁为独立微服务——WebSocket 流式 AI 对话 + LLM 提供商/模型 CRUD，**独立 SQLite `ai.db`**，身份取自 `X-Sfc-Uid`，网盘操作经 `sfc-remote-client` 回调 core。前端影响见其[适配清单](../../../microservices/sfc-ai-service/docs/frontend-adaptation-checklist.md) |
 
-依赖方向：`sfc-common` → `sfc-common-data` / `sfc-remote-client` / `sfc-gateway` / `sfc-demo-service`。
+依赖方向：`sfc-common` → `sfc-common-data` / `sfc-remote-client` / `sfc-task-worker` / `sfc-gateway` / `sfc-demo-service`。
 
 ## 构建前置
 
@@ -37,4 +38,5 @@ mvn clean package -DskipTests
 2. [网关路由](gateway-routing.md) —— 网关如何把请求转发到服务接口；
 3. [服务发现与注册](service-discovery.md) —— Nacos 的基本配置；
 4. [远程调用](remote-call.md) —— 用 OpenFeign 调用 sfc-core；
-5. [接口鉴权机制](authentication.md) —— 用户凭证透传与服务间内部接口鉴权。
+5. [接口鉴权机制](authentication.md) —— 用户凭证透传与服务间内部接口鉴权；
+6. [异步任务 Worker 接入](async-task-worker.md) —— 把微服务的耗时任务纳入 sfc-core 统一异步任务调度。

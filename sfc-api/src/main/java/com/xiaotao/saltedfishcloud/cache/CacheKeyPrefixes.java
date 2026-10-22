@@ -19,8 +19,10 @@ public final class CacheKeyPrefixes {
     public static final String BREAKPOINT_FINISH = "sfc:breakpoint:finish:";
     /** 异步任务进度缓存前缀 */
     public static final String TASK_PROGRESS = "sfc:task:progress:";
-    /** 异步任务执行权缓存前缀 */
-    public static final String TASK_HOLD = "sfc:task:hold:";
+    /** 异步任务执行者（worker）注册信息缓存前缀 */
+    public static final String TASK_WORKER = "sfc:task:worker:";
+    /** 异步任务运行中日志缓冲缓存前缀 */
+    public static final String TASK_LOG = "sfc:task:log:";
     /** 集群节点信息缓存前缀 */
     public static final String CLUSTER = "sfc:cluster:";
     /** OAuth 授权码缓存前缀 */

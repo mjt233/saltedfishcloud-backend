@@ -40,6 +40,12 @@
             <artifactId>sfc-remote-client</artifactId>
             <version>1.0.0</version>
         </dependency>
+        <!-- 异步任务执行者 SDK：实现 SfcTaskHandler 即可让本服务接入 sfc-core 统一任务调度 -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-task-worker</artifactId>
+            <version>1.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>

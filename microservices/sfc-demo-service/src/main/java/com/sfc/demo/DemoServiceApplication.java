@@ -2,6 +2,7 @@ package com.sfc.demo;
 
 import com.sfc.cloud.auth.SfcInternalAuthAutoConfiguration;
 import com.sfc.cloud.auth.annotation.EnableSfcInternalAuth;
+import com.sfc.cloud.task.worker.annotation.EnableSfcTaskWorker;
 import com.sfc.demo.feign.DemoFeign;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -15,6 +16,7 @@ import org.springframework.context.annotation.Import;
 @SpringBootApplication
 @EnableDiscoveryClient
 @EnableSfcInternalAuth
+@EnableSfcTaskWorker
 @EnableFeignClients(clients = DemoFeign.class)
 public class DemoServiceApplication {
 

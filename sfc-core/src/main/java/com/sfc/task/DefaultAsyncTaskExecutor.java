@@ -1,6 +1,6 @@
 package com.sfc.task;
 
-
+import com.sfc.cloud.data.id.SfcIdUtil;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressDetector;
@@ -11,40 +11,55 @@ import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
-import org.springframework.core.io.PathResource;
 import org.springframework.util.StreamUtils;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.IOException;
+import java.io.PipedInputStream;
+import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_LOG;
 
 /**
- * 异步任务执行器
+ * 默认的异步任务执行器。
+ * <p>本执行器只负责「执行被认领到的任务」以及任务执行过程（日志、进度、负载）管理。
+ * 从队列中按任务类型认领任务的工作由 {@link com.sfc.task.worker.LocalTaskWorker} 完成，
+ * 这样 core 本地任务与微服务任务共享同一套调度与生命周期语义。</p>
  */
 @Slf4j
 public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     /**
      * 系统最大负载
      */
-    @Getter
-    @Setter
     private int maxLoad = Runtime.getRuntime().availableProcessors() * 100 - 10;
 
     @Autowired
@@ -64,26 +79,31 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     private final List<Consumer<AsyncTaskRecord>> finishListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> failedListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> startListener = new ArrayList<>();
-    private final List<Consumer<AsyncTaskRecord>> unsupportedListener = new ArrayList<>();
     private final List<Consumer<AsyncTaskRecord>> taskExitListener = new ArrayList<>();
 
     private final AtomicInteger currentLoad = new AtomicInteger(0);
-
-    @Getter
-    private final AsyncTaskReceiver taskReceiver;
 
     private final Map<String, AsyncTaskFactory> taskFactories = new ConcurrentHashMap<>();
 
     private final Map<Long, AsyncTask> runningTask = new ConcurrentHashMap<>();
 
+    /**
+     * 因故障转移被放弃执行的任务id
+     */
     private final Set<Long> giveUpRecord = new HashSet<>();
+
+    /**
+     * 收到了中断请求的任务id
+     */
+    private final Set<Long> cancelledRecord = new HashSet<>();
 
     // 负载清算队列，当异步任务完成时
     private final BlockingQueue<Integer> loadCleanQueue = new LinkedBlockingQueue<>();
 
-    private boolean running = false;
+    private volatile boolean running = false;
 
     private int threadCount = 0;
+
     private final Executor threadPool = new ThreadPoolExecutor(
             1,
             1024,
@@ -91,24 +111,12 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
             TimeUnit.SECONDS,
             new SynchronousQueue<>(),
             r -> {
-                String name;
-                if (threadCount == 0) {
-                    name = "AsyncTaskReceiver-" + this.hashCode() % 10000;
-                } else {
-                    name = "AsyncTaskExecutor-" + this.hashCode() % 10000 + "-" + threadCount++;
-                }
+                String name = "AsyncTaskExecutor-" + this.hashCode() % 10000 + "-" + threadCount++;
                 Thread thread = new Thread(r);
                 thread.setName(name);
                 return thread;
             }
     );
-
-    /**
-     * @param taskReceiver      任务接收函数（接收下发到的任务）
-     */
-    public DefaultAsyncTaskExecutor(AsyncTaskReceiver taskReceiver) {
-        this.taskReceiver = taskReceiver;
-    }
 
     @Override
     public void registerFactory(AsyncTaskFactory factory) {
@@ -116,114 +124,90 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
             throw new IllegalArgumentException("任务类型 " + factory.getTaskType() + " 的任务工厂已被注册");
         }
         taskFactories.put(factory.getTaskType(), factory);
+        log.info("注册异步任务工厂: {}", factory.getTaskType());
     }
 
     @Override
-    public boolean interrupt(Long executeId) {
-        AsyncTask asyncTask = runningTask.get(executeId);
-        if (asyncTask != null) {
-            asyncTask.interrupt();
-            return true;
-        } else {
-            return false;
-        }
+    public Collection<String> getRegisteredTaskTypes() {
+        return new HashSet<>(taskFactories.keySet());
     }
 
-    @Override
-    public int getCurrentLoad() {
-        updateCurrentLoad();
-        return currentLoad.get();
-    }
-
-    /**
-     * 开始接受任务
-     */
     @Override
     @EventListener(ApplicationReadyEvent.class)
-    public synchronized void start() {
+    public void start() {
         if (running) {
             throw new IllegalArgumentException("已经启动了");
         }
         running = true;
-        threadPool.execute(() -> {
-            taskReceiver.start();
-            while (true) {
-                try {
-                    try {
-                        // 等待负载值降低到最大限度以下
-                        waitLoad();
-                    } catch (InterruptedException e) {
-                        log.error("负载判断等待被中断", e);
-                        continue;
-                    }
-
-                    // 接受一个任务
-                    if (!isRunning()) {
-                        break;
-                    }
-                    TaskContext taskContext = receiveTask();
-                    if (taskContext == null) {
-                        break;
-                    }
-                    if (!isRunning()) {
-                        break;
-                    }
-
-                    // 提交执行
-                    submitExecute(taskContext);
-                } catch (Throwable e) {
-                    log.error("任务接受与提交出错", e);
-                    try {
-                        Thread.sleep(1000);
-                    } catch (InterruptedException ignore) {}
-                }
-            }
-            log.info("任务接收线程退出");
-            try {
-                taskReceiver.interrupt();
-            } finally {
-                running = false;
-            }
-        });
+        log.info("本地异步任务执行器启动，最大负载: {}，支持任务类型: {}", maxLoad, taskFactories.keySet());
     }
 
-    private Path getLogPath(Long taskId) {
-        return PathUtils.getLogDirectory().resolve("async_task_" + taskId + ".log").toAbsolutePath();
+    @Override
+    public void execute(AsyncTaskRecord record) {
+        AsyncTaskContext context = buildTaskContext(record);
+        if (context == null) {
+            return;
+        }
+        submitExecute(context, false);
+    }
+
+    @Override
+    public void executeClaimed(AsyncTaskRecord record) {
+        AsyncTaskContext context = buildTaskContext(record);
+        if (context == null) {
+            return;
+        }
+        submitExecute(context, true);
     }
 
     /**
-     * 提交任务执行
+     * 根据任务记录创建任务实例。
+     *
+     * @param record 任务记录
+     * @return 任务上下文；任务类型没有对应工厂时返回 null（任务会被置为失败）
      */
-    private void submitExecute(TaskContext taskContext) {
-        submitExecute(taskContext, true);
+    private AsyncTaskContext buildTaskContext(AsyncTaskRecord record) {
+        if (record.getId() == null) {
+            record.setId(SfcIdUtil.getId());
+        }
+        AsyncTaskFactory asyncTaskFactory = taskFactories.get(record.getTaskType());
+        if (asyncTaskFactory == null) {
+            log.error("任务类型 {} 没有对应的任务工厂，任务 {}-{} 将置为失败",
+                    record.getTaskType(), record.getName(), record.getId());
+            record.setStatus(AsyncTaskConstants.Status.FAILED);
+            emit(failedListener, record);
+            return null;
+        }
+        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
+        return new AsyncTaskContext(task, record);
     }
 
     /**
-     * 提交任务执行
+     * 提交任务执行。
+     *
      * @param taskContext 任务上下文
-     * @param updateLoad 是否更新负载计数，为false时不受系统负载约束
+     * @param updateLoad  是否将任务开销计入系统负载
      */
-    private void submitExecute(TaskContext taskContext, boolean updateLoad) {
+    private void submitExecute(AsyncTaskContext taskContext, boolean updateLoad) {
         AsyncTask asyncTask = taskContext.task;
         AsyncTaskRecord record = taskContext.record;
         record.setStatus(AsyncTaskConstants.Status.RUNNING);
 
         // 更新负载记录值
-        int cpuOverhead = Optional.ofNullable(record.getCpuOverhead()).orElse(0);
-        if (updateLoad && cpuOverhead > 0) {
+        int cpuOverhead = updateLoad ? Optional.ofNullable(record.getCpuOverhead()).orElse(0) : 0;
+        if (cpuOverhead > 0) {
             currentLoad.addAndGet(cpuOverhead);
         }
-        Long recordId = taskContext.record.getId();
-        final int finalCpuOverhead = updateLoad ? cpuOverhead : 0;
+        final int finalCpuOverhead = cpuOverhead;
+        Long recordId = record.getId();
         threadPool.execute(() -> {
             emit(startListener, record);
             runningTask.put(recordId, asyncTask);
 
             // 若任务记录状态被修改为已取消，则说明该任务是个之前停留在队列中排队但现在已经被取消的任务
             if (AsyncTaskConstants.Status.CANCEL.equals(record.getStatus())) {
-                log.info("忽略处理任务队列中被取消的任务: {}-{}",record.getName(), recordId);
+                log.info("忽略处理任务队列中被取消的任务: {}-{}", record.getName(), recordId);
                 runningTask.remove(recordId);
-                // 任务完成，添加负载值到待清算的队列
                 if (finalCpuOverhead > 0) {
                     loadCleanQueue.add(finalCpuOverhead);
                 }
@@ -232,7 +216,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
             }
 
             // 初始化日志输出目录
-            Path logPath = getLogPath(record.getId());
+            Path logPath = getLogPath(recordId);
             log.info("创建任务日志: {}", logPath);
             try {
                 FileUtils.createParentDirectory(logPath);
@@ -242,8 +226,8 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
 
             // 创建日志输出流
             try (OutputStream logOutput = Files.newOutputStream(logPath);
-                PipedInputStream pi = new PipedInputStream(8192);
-                PipedOutputStream po = new PipedOutputStream()
+                 PipedInputStream pi = new PipedInputStream(8192);
+                 PipedOutputStream po = new PipedOutputStream()
             ) {
                 pi.connect(po);
 
@@ -251,7 +235,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                 UserPrincipal executeUser = UserPrincipal.from(userService.getUserById(record.getUid()));
                 SecureUtils.bindUser(executeUser);
                 // 添加进度事件监听
-                progressDetector.addObserve(asyncTask::getProgress, record.getId() + "");
+                progressDetector.addObserve(asyncTask::getProgress, recordId + "");
 
                 // 将获取到的日志推送到消息队列和写到文件
                 CompletableFuture<Void> asyncLogFuture = CompletableFuture.runAsync(() -> {
@@ -278,7 +262,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                     emit(finishListener, record);
                 } finally {
                     // ============ 日志流关闭 ============
-                    // 关闭流
                     try {
                         po.close();
                         // 确保日志写入文件完成后再关闭文件流
@@ -287,15 +270,22 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                     } catch (Throwable ignore) {}
                 }
             } catch (Throwable e) {
-                log.error("异步任务{}执行出错", record.getId(), e);
                 // ============ 任务执行异常处理 ============
-                // 出错时判断是否因为中断导致的，设置对应的状态并抛出事件
-                if (giveUpRecord.contains(recordId)) {
-                    record.setStatus(AsyncTaskConstants.Status.CANCEL);
+                // 出错时判断是否因为中断/故障转移导致的，设置对应的状态并抛出事件
+                boolean abandoned = giveUpRecord.contains(recordId);
+                if (abandoned) {
+                    // 故障转移/停机放弃：任务状态由任务管理器统一回收（重置为等待中或置为失败），
+                    // 这里不能回写状态，否则会覆盖回收结果导致任务丢失
+                    log.info("任务{}-{}因故障转移被放弃执行，不更新任务状态", record.getName(), recordId);
                 } else {
-                    record.setStatus(AsyncTaskConstants.Status.FAILED);
+                    if (cancelledRecord.contains(recordId)) {
+                        record.setStatus(AsyncTaskConstants.Status.CANCEL);
+                    } else {
+                        record.setStatus(AsyncTaskConstants.Status.FAILED);
+                    }
+                    log.error("异步任务{}执行出错", recordId, e);
+                    emit(failedListener, record);
                 }
-                emit(failedListener, record);
             } finally {
                 // ============ 数据清理类任务 ============
                 SecureUtils.unbind();
@@ -319,6 +309,9 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
                     synchronized (giveUpRecord) {
                         giveUpRecord.remove(recordId);
                     }
+                    synchronized (cancelledRecord) {
+                        cancelledRecord.remove(recordId);
+                    }
                     emit(taskExitListener, record);
                 }
             }
@@ -331,7 +324,6 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
         } catch (Exception e) {
             log.error("移除进度监听出错: ", e);
         }
-
     }
 
     /**
@@ -357,74 +349,17 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
         }
     }
 
-    /**
-     * 等待负载值降低到最大值以下
-     */
-    private void waitLoad() throws InterruptedException {
-        // 检查是否过载，若已过载，则进入负载清算程序，将已完成的负载值从当前负载中移除
-        if (!testLoad()) {
-            // 第一次清算，直到没有可清算的负载导致阻塞 或 负载值降低到最大值以下
-            do {
-                Integer take = loadCleanQueue.take();
-                currentLoad.addAndGet(take * -1);
-            } while (!testLoad());
-
-            // 再把剩余可清算的负载也清算了
-            updateCurrentLoad();
-        }
-    }
-
-    /**
-     * 更新当前负载值
-     */
-    private synchronized void updateCurrentLoad() {
-        try {
-            while (!loadCleanQueue.isEmpty()) {
-                Integer take = loadCleanQueue.take();
-                currentLoad.addAndGet(take * -1);
-            }
-        } catch (InterruptedException ignore) {
-        }
+    private Path getLogPath(Long taskId) {
+        return PathUtils.getLogDirectory().resolve("async_task_" + taskId + ".log").toAbsolutePath();
     }
 
     @Override
     public String getLog(Long taskId) throws IOException {
         Path logPath = getLogPath(taskId);
         if (Files.exists(logPath)) {
-            return ResourceUtils.resourceToString(new PathResource(logPath));
+            return Files.readString(logPath, StandardCharsets.UTF_8);
         }
         return null;
-    }
-
-    /**
-     * 测试是否满载过超载
-     */
-    private boolean testLoad() {
-        return currentLoad.get() <= maxLoad;
-    }
-
-    protected TaskContext receiveTask() {
-        AsyncTaskRecord record = taskReceiver.get();
-        if (record == null) {
-            return null;
-        }
-        if (record.getId() == null) {
-            record.setId(SfcIdUtil.getId());
-        }
-        AsyncTaskFactory asyncTaskFactory = this.getTaskFactory(record);
-
-        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
-        return new TaskContext(task, record);
-    }
-
-    public AsyncTaskFactory getTaskFactory(AsyncTaskRecord record) {
-        AsyncTaskFactory asyncTaskFactory = taskFactories.get(record.getTaskType());
-
-        if (asyncTaskFactory == null) {
-            emit(unsupportedListener, record);
-            throw new IllegalArgumentException("找不到任务类型为 " + record.getTaskType() + " 的任务工厂");
-        }
-        return asyncTaskFactory;
     }
 
     /**
@@ -435,7 +370,7 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
             try {
                 consumer.accept(record);
             } catch (Throwable e) {
-                log.error("任务事件监听器执行错误",e);
+                log.error("任务事件监听器执行错误", e);
             }
         }
     }
@@ -450,39 +385,43 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
         failedListener.add(listener);
     }
 
+    @Override
+    public void addTaskFinishListener(Consumer<AsyncTaskRecord> listener) {
+        finishListener.add(listener);
+    }
+
+    @Override
+    public void addTaskExitListener(Consumer<AsyncTaskRecord> listener) {
+        taskExitListener.add(listener);
+    }
 
     @Override
     public ProgressRecord getProgress(Long taskId) throws IOException {
         return progressDetector.getRecord(taskId + "");
     }
 
-    @Override
-    public void addTaskFinishListener(Consumer<AsyncTaskRecord> listener) {
-        finishListener.add(listener);
-    }
-
+    /**
+     * 任务上下文
+     */
     @AllArgsConstructor
-    private static class TaskContext {
+    private static class AsyncTaskContext {
         public AsyncTask task;
         public AsyncTaskRecord record;
     }
 
     @Override
-    public synchronized List<Long> stop() {
+    public synchronized Collection<Long> stop() {
         List<Long> interruptIds = new ArrayList<>();
         if (running) {
             log.info("任务执行器停止");
             running = false;
-            taskReceiver.interrupt();
-            synchronized (runningTask) {
-                for (Map.Entry<Long, AsyncTask> entry : runningTask.entrySet()) {
-                    try {
-                        log.info("任务放弃: {}", entry.getKey());
-                        giveUp(entry.getKey());
-                        interruptIds.add(entry.getKey());
-                    } catch (Throwable e) {
-                        log.error("任务放弃出错", e);
-                    }
+            for (Long taskId : new ArrayList<>(runningTask.keySet())) {
+                try {
+                    log.info("任务放弃: {}", taskId);
+                    giveUp(taskId);
+                    interruptIds.add(taskId);
+                } catch (Throwable e) {
+                    log.error("任务放弃出错", e);
                 }
             }
         }
@@ -521,27 +460,49 @@ public class DefaultAsyncTaskExecutor implements AsyncTaskExecutor {
     }
 
     @Override
-    public void addUnsupportedListener(Consumer<AsyncTaskRecord> listener) {
-        this.unsupportedListener.add(listener);
-    }
-
-    @Override
-    public AsyncTaskReceiver getReceiver() {
-        return taskReceiver;
-    }
-
-    @Override
-    public void addTaskExitListener(Consumer<AsyncTaskRecord> listener) {
-        taskExitListener.add(listener);
-    }
-
-    @Override
-    public void execute(AsyncTaskRecord record) {
-        if (record.getId() == null) {
-            record.setId(SfcIdUtil.getId());
+    public boolean interrupt(Long taskId) {
+        AsyncTask asyncTask = runningTask.get(taskId);
+        if (asyncTask == null) {
+            return false;
         }
-        AsyncTaskFactory asyncTaskFactory = getTaskFactory(record);
-        AsyncTask task = asyncTaskFactory.createTask(record.getParams(), record);
-        submitExecute(new TaskContext(task, record), false);
+        synchronized (cancelledRecord) {
+            cancelledRecord.add(taskId);
+        }
+        try {
+            asyncTask.interrupt();
+            return true;
+        } catch (Throwable e) {
+            log.error("任务中断异常：", e);
+            return false;
+        }
+    }
+
+    @Override
+    public int getCurrentLoad() {
+        updateCurrentLoad();
+        return currentLoad.get();
+    }
+
+    @Override
+    public int getMaxLoad() {
+        return maxLoad;
+    }
+
+    @Override
+    public void setMaxLoad(int maxLoad) {
+        this.maxLoad = maxLoad;
+    }
+
+    /**
+     * 更新当前负载值
+     */
+    private synchronized void updateCurrentLoad() {
+        try {
+            while (!loadCleanQueue.isEmpty()) {
+                Integer take = loadCleanQueue.take();
+                currentLoad.addAndGet(take * -1);
+            }
+        } catch (InterruptedException ignore) {
+        }
     }
 }

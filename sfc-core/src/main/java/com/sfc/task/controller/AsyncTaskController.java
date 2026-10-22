@@ -8,10 +8,13 @@ import com.sfc.task.prog.ProgressDetector;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.prog.ProgressRecordVO;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.sfc.task.worker.TaskWorkerInfo;
+import com.sfc.task.worker.TaskWorkerRegistryService;
 import com.sfc.common.model.SfcPageInfo;
 import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.sfc.cloud.data.validation.SfcUIDValidator;
+import jakarta.annotation.security.RolesAllowed;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,6 +37,21 @@ public class AsyncTaskController {
 
     @Autowired
     private ProgressDetector progressDetector;
+
+    @Autowired
+    private TaskWorkerRegistryService workerRegistryService;
+
+    /**
+     * 获取当前存活的异步任务执行者列表（仅管理员）。<br>
+     * 可用于观察各 core 节点与微服务实例注册的任务能力、负载与心跳状态。
+     *
+     * @return 执行者注册信息列表
+     */
+    @RolesAllowed({"ADMIN"})
+    @GetMapping("listWorker")
+    public SfcJsonResult<List<TaskWorkerInfo>> listWorker() {
+        return SfcJsonResult.getInstance(workerRegistryService.list());
+    }
 
     /**
      * 获取任务执行进度信息

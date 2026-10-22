@@ -3,7 +3,16 @@ package com.sfc.task.constants;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.xiaotao.saltedfishcloud.service.mq.MQTopic;
 
+/**
+ * 异步任务相关的消息队列主题。
+ */
 public interface TaskMQTopic {
+
+    /**
+     * 新任务发布广播主题。消息体为任务id。<br>
+     * 用于唤醒正在长轮询等待任务的执行者（core 本地 worker 与微服务 worker）。
+     */
+    MQTopic<Long> TASK_PUBLISH = new MQTopic<>(() -> "async_task_publish") {};
 
     /**
      * 前缀类型的消息主题

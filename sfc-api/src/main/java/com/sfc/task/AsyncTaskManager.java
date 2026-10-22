@@ -55,6 +55,17 @@ public interface AsyncTaskManager {
     AsyncTaskRecord createTask(AsyncTaskCreateParam param) throws IOException;
 
     /**
+     * 以指定用户身份创建并提交一个异步任务。
+     * <p>用于服务间内部提交场景（例如微服务需要把任务交给异步任务系统统一调度），
+     * 调用方已经确定任务归属用户，不再从当前登录上下文中获取。</p>
+     *
+     * @param uid   任务归属用户id
+     * @param param 创建参数
+     * @return 任务记录对象
+     */
+    AsyncTaskRecord submitTaskForUser(Long uid, AsyncTaskCreateParam param) throws IOException;
+
+    /**
      * 获取任务的执行日志流
      * @param taskId        任务id
      * @param withHistory   是否需要包含该任务的历史日志数据。若不包含则表示只获取实时产生的日志数据。（目前暂不支持实时流）

@@ -7,6 +7,11 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.function.Consumer;
 
+/**
+ * 任务执行器。
+ * <p>执行器只负责"执行被认领到的任务"，不负责从队列中抓取任务——任务认领由任务管理器的调度体系
+ * 按任务类型路由完成。</p>
+ */
 public interface AsyncTaskExecutor {
     /**
      * 获取系统当前负载
@@ -82,6 +87,14 @@ public interface AsyncTaskExecutor {
     ProgressRecord getProgress(Long taskId) throws IOException;
 
     /**
+     * 获取本执行器已注册的任务类型集合。
+     * <p>执行器只会认领该集合中的任务类型。</p>
+     *
+     * @return 已注册的任务类型集合
+     */
+    Collection<String> getRegisteredTaskTypes();
+
+    /**
      * 添加任务开始执行的监听器
      */
     void addTaskStartListener(Consumer<AsyncTaskRecord> listener);
@@ -97,23 +110,22 @@ public interface AsyncTaskExecutor {
     void addTaskFinishListener(Consumer<AsyncTaskRecord> listener);
 
     /**
-     * 添加一个不支持的任务异常监听器。当执行器收到了一个不支持的任务时会触发。这个原因通常是因为执行器未注册对应的任务工厂导致。
-     */
-    void addUnsupportedListener(Consumer<AsyncTaskRecord> listener);
-
-    /**
      * 添加一个任务退出监听器。无论任务因何种原因退出或结束时会触发。
      */
     void addTaskExitListener(Consumer<AsyncTaskRecord> listener);
-
-    /**
-     * 获取任务接收器
-     */
-    AsyncTaskReceiver getReceiver();
 
     /**
      * 直接执行任务，不加入队列调度
      * @param record 任务记录
      */
     void execute(AsyncTaskRecord record);
+
+    /**
+     * 执行一个已被本执行者认领的任务。
+     * <p>与 {@link #execute(AsyncTaskRecord)} 的区别：认领到的任务会计入系统负载，
+     * 而直接执行的任务不受系统负载约束。</p>
+     *
+     * @param record 已被认领的任务记录
+     */
+    void executeClaimed(AsyncTaskRecord record);
 }

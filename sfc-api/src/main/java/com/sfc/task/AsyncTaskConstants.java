@@ -38,8 +38,4 @@ public interface AsyncTaskConstants {
          */
         Integer OFFLINE = 5;
     }
-
-    interface RedisKey {
-        String TASK_QUEUE = "ASYNC_TASK_QUEUE";
-    }
 }

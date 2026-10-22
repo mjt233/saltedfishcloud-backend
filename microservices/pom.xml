@@ -25,6 +25,8 @@
             它仍是不继承任何 parent 的独立模块，仅由根 pom 的 <modules> 聚合。
         -->
         <module>sfc-remote-client</module>
+        <!-- 任务执行者 SDK：让微服务接入 sfc-core 异步任务系统（被 sfc-demo-service 依赖） -->
+        <module>sfc-task-worker</module>
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>
         <module>sfc-ai-service</module>

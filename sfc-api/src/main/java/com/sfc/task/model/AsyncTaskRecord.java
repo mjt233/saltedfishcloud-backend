@@ -13,7 +13,8 @@ import java.util.Date;
  */
 @Entity
 @Table(indexes = {
-        @Index(name = "idx_async_task_record_uid", columnList = "uid")
+        @Index(name = "idx_async_task_record_uid", columnList = "uid"),
+        @Index(name = "idx_async_task_record_claim", columnList = "status,taskType,createAt")
 })
 @Getter
 @Setter
@@ -85,6 +86,28 @@ public class AsyncTaskRecord extends SfcAuditModel {
      * 临时任务无需等待排队认领任务，可立即执行，且不具备生命周期管理的自动重试功能
      */
     private Boolean isTemp;
+
+    /**
+     * 认领该任务的执行者标识。<br>
+     * 本地执行节点为 {@code node-{节点id}}，微服务执行者为该 worker 注册的实例id。<br>
+     * 为空表示任务尚未被任何执行者认领。
+     */
+    private String claimedWorker;
+
+    /**
+     * 任务被认领的时间
+     */
+    private Date claimedAt;
+
+    /**
+     * 执行者最后一次上报（开始/进度/日志/完成）的时间，用于故障转移时判断执行者是否仍然存活
+     */
+    private Date lastReportAt;
+
+    /**
+     * 故障转移重试次数。任务执行者失联被回收重发时会累加，达到上限后任务置为失败，避免无限重试
+     */
+    private Integer retryCount;
 
     @Transient
     private Boolean isFailed;
