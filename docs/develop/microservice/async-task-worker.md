@@ -164,7 +164,8 @@ asyncTaskManager.submitAsyncTask(task);
 | 心跳 | 每 `heartbeat-interval` 重新注册一次（幂等），同步最新负载与任务类型 |
 | 认领 | 单线程长轮询 `claim`，只请求自己支持的任务类型；无任务时最多等待 `claim-wait-seconds`；满载时暂停认领 |
 | 执行 | 固定大小线程池（`max-concurrent-tasks`），任务开始前上报 `report/start`（任务已被取消时跳过执行） |
-| 上报 | 约 1 秒周期上报进度与日志；结束时上报 `report/finish`（FINISH/FAILED/CANCEL）+ 尾部日志 |
+| 上报 | 约 1 秒周期上报进度与日志；**结束前补发一次最终进度快照**（保证完成态进度与 total 一致），结束时上报 `report/finish`（FINISH/FAILED/CANCEL）+ 尾部日志 |
+| 可靠上报 | 开始/结束/放弃上报失败时自动重试（最多 3 次，退避 500/1000ms），降低网络瞬断导致任务状态卡在运行中的风险；进度与日志则允许随下一次周期重发 |
 | 中断 | core 向 `callback-base-url` 发送 `POST /api/internal/task/interrupt`，SDK 触发中断标记与回调；任务尚未开始执行时会先登记，开始执行后立即生效 |
 | 优雅停机 | 停止认领 → 注销 Worker → 对运行中任务上报 `report/abandon`（任务回到队列）→ 最多等待数秒让执行线程退出 |
 

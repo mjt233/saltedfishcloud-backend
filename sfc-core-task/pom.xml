@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <artifactId>saltedfishcloud</artifactId>
+        <groupId>com.xiaotao</groupId>
+        <version>${revision}</version>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>sfc-core-task</artifactId>
+    <name>sfc-core-task</name>
+    <description>咸鱼云异步任务框架实现（调度/执行器/Worker/上报/协议/管理接口）</description>
+
+    <!--
+        异步任务框架模块：从 sfc-core 拆分而来，便于独立管理与维护。
+        - 契约与模型（AsyncTask/AsyncTaskFactory/AsyncTaskManager/AsyncTaskRecord/仓库接口等）仍在 sfc-api；
+        - 本模块只包含实现：类型路由认领调度、本地 Worker、健康检查、微服务 Worker 上报协议、前端管理接口等；
+        - 包名保持 com.sfc.task 不变，sfc-core 通过依赖本模块并 @EnableAsyncTask 引入。
+        Web（控制器/RestClient）、JPA、Validation、Lombok、测试等依赖由根 pom 的全局 <dependencies> 继承，
+        本模块只需显式声明宿主基础库 sfc-api 与内部接口鉴权 SDK sfc-auth。
+    -->
+    <dependencies>
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-api</artifactId>
+            <version>${api.version}</version>
+        </dependency>
+        <!--
+            内部接口鉴权 SDK：向微服务 Worker 下发中断指令时需要签发内部调用凭证
+            （SfcInternalTokenIssuer / SfcInternalTokenRequestInitializer）。
+        -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-auth</artifactId>
+            <version>${auth.version}</version>
+        </dependency>
+    </dependencies>
+</project>

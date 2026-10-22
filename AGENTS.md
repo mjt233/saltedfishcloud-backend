@@ -10,17 +10,18 @@
 
 模块构建顺序（也是依赖流向）：
 
-`sfc-common`（轻量共享库） → `sfc-common-data`（JPA 基座） → `sfc-api`（宿主基础库：含 `com.sfc.archive` / `com.sfc.task` / `com.sfc.rpc` 的契约与模型） → `sfc-core`（Spring Boot 主应用：含压缩引擎、异步任务框架、RPC 框架等实现） → `sfc-ext/`（扩展插件）
+`sfc-common`（轻量共享库） → `sfc-common-data`（JPA 基座） → `sfc-api`（宿主基础库：含 `com.sfc.archive` / `com.sfc.task` / `com.sfc.rpc` 的契约与模型） → `sfc-core-task`（异步任务框架实现，包名仍为 `com.sfc.task`） → `sfc-core`（Spring Boot 主应用：含压缩引擎、RPC 框架等实现） → `sfc-ext/`（扩展插件）
 
 - **sfc-common**: 宿主与微服务**共用**的轻量共享库：`SfcJsonResult` 响应信封、`SfcJsonException`/`SfcErrorInfo`/`SfcCommonError`、`SfcUserConstants`/`SfcSysRole`、`SfcStringUtils`/`SfcMapperHolder`/`SfcTypeUtils`、`SfcPageInfo`/`SfcPageableRequest`/`SfcResult`，以及网关信任头与凭证解析。**不继承根 pom**（自带 BOM，编译基线 4.0.8），**且必须保持零 JPA 依赖**——网关（WebFlux）也依赖它
   - ⚠️ **`SfcJsonResult` 是由宿主的「接口 `JsonResult` + 实现 `JsonResultImpl`」合并成的具体类**：Jackson 会把所有 `getXxx()` 当成可序列化属性，因此凡是非字段访问器的 getter（`isSuccess` / `getDataOrThrow` / `getJsonStr`）**必须标 `@JsonIgnore`**。漏标会导致响应体多出冗余字段，且失败响应序列化时 `getDataOrThrow()` 抛异常 → 客户端只拿到 `{}`
   - ⚠️ **`SfcTypeUtils.convert` 有一段宿主扩展点**：宿主原实现里「字符串 + 目标类型标注 `@ConfigPropertyEntity` → Jackson 反序列化」的分支是**配置绑定的必需路径**，现改为 SPI（`SfcTypeUtils.setStringObjectConverter`），由宿主在 `SfcSharedBaseBridgeConfiguration` 里以 **static `BeanFactoryPostProcessor`** 注册（必须早于任何常规 Bean 实例化，否则 `sysCommonConfig` 之类的配置 Bean 创建时拿不到）
 - **sfc-common-data**: 在 `sfc-common` 之上叠加 JPA/Spring Data 的共享数据访问基座：`SfcBaseModel`→`SfcAuditModel` 实体基类、`SfcBaseRepo`（`JpaRepository`+`JpaSpecificationExecutor`）、`SfcCrudService`/`SfcCrudServiceImpl`、雪花主键（`SfcSnowFlakeIdGenerator`/`SfcIdUtil`）、`SfcDBUtils`、`SfcClassUtils`、`@SfcUID` 权限校验。**同样不继承根 pom**。身份与事务通过 SPI（`CurrentUserProvider` / `SfcTransactionManagerProvider`）注入，静态持有者由各端启动时注册（宿主侧见 `SfcSharedBaseBridgeConfiguration`）
 - **sfc-api**: 宿主的共享模型、`DiskFileSystem` 抽象、校验器、注解、`SecureUtils`（Spring Security 身份）；基座类已于 Phase 1 迁至 `sfc-common` / `sfc-common-data`
+- **sfc-core-task**: 异步任务框架**实现**（包名保持 `com.sfc.task`）：类型路由认领调度、本地 Worker/执行器、健康检查、微服务 Worker 上报协议（`/api/internal/task/**`）、运行日志与进度管理、前端管理接口 `/api/asyncTask/**`。契约与模型仍在 `sfc-api`；`sfc-core` 依赖本模块并通过 `@EnableAsyncTask` 引入
 - **sfc-core**: 主应用入口 `SaltedfishcloudApplication`，聚合 security/config/controller/service
 - **sfc-auth**: 内部接口（服务间调用）鉴权 SDK：共享密钥（`sfc.internal.key`）、HS256 JWT 自签与校验、Servlet 过滤器与 Feign/RestClient 适配器（不做防重放）。**不继承根 pom**（避免消费方被拖入宿主整套技术栈），同时被 `sfc-core` 与 `microservices/` 侧依赖；单独构建 `microservices/` 前需先 `mvn -pl sfc-auth install`
 - **sfc-ext/**: 每个子目录是一个独立 Maven 模块插件，依赖 `sfc-api` 和可选 `sfc-core` API。⚠️ `sfc-ext/pom.xml` 以 `provided` 引用 `sfc-api`，而 provided 的传递依赖不会向下传递，因此**新增共享库依赖时必须在 `sfc-ext/pom.xml` 显式声明**（`sfc-common` / `sfc-common-data` 已声明）
-- **sfc-rpc / sfc-task / sfc-archive**: **不是独立 Maven 模块**：契约与模型位于 `sfc-api`（`com.sfc.rpc` / `com.sfc.task` / `com.sfc.archive` 包），实现位于 `sfc-core` 的同名包。异步任务框架已支持微服务统一接入（Worker SDK 见 `microservices/sfc-task-worker`），文档见 [异步任务](docs/develop/framework/async-task.md)
+- **sfc-rpc / sfc-archive / 异步任务**: `com.sfc.rpc` / `com.sfc.archive` 的契约与模型位于 `sfc-api`、实现位于 `sfc-core`（不单独成模块）；**异步任务**则是契约与模型在 `sfc-api`（`com.sfc.task`）、实现在独立模块 `sfc-core-task`（同包名 `com.sfc.task`）。异步任务框架已支持微服务统一接入（Worker SDK 见 `microservices/sfc-task-worker`），文档见 [异步任务](docs/develop/framework/async-task.md)
 
 此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
 
@@ -46,7 +47,7 @@
 
 示例参考：
 
-- 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-core/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
+- 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-core-task/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
 - UID 注解示例（Controller 参数）：`sfc-core/src/main/java/com/xiaotao/saltedfishcloud/controller/ResourceController.java` 的多处方法使用 `@SfcUID` 注解来保证 uid 校验。
 - sfc-core模块中涉及SpringBoot应用参数配置的修改，如果是在`sys.`节点下，需要同步修改`application-develop.yml`、`application-product.yml`和`pre-release/config.yml`中的对应项，不需要修改`application.yml`，`application.yml`下不需要有`sys.`节点。
 

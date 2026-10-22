@@ -21,6 +21,8 @@
         <module>sfc-common</module>
         <module>sfc-common-data</module>
         <module>sfc-api</module>
+        <!-- 异步任务框架实现：契约在 sfc-api，实现独立成模块，被 sfc-core 依赖 -->
+        <module>sfc-core-task</module>
         <module>sfc-ext</module>
         <module>microservices</module>
         <module>sfc-core</module>

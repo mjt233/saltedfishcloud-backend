@@ -124,6 +124,15 @@
             <version>${api.version}</version>
         </dependency>
         <!--
+            异步任务框架实现模块：包含类型路由认领调度、本地 Worker、健康检查、
+            微服务 Worker 上报协议与前端管理接口，通过 @EnableAsyncTask 引入。
+        -->
+        <dependency>
+            <groupId>com.xiaotao</groupId>
+            <artifactId>sfc-core-task</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        <!--
             Nacos 服务注册与发现：提供 Spring Cloud 官方的 DiscoveryClient /
             ServiceRegistry / AbstractAutoServiceRegistration 实现。
             仅宿主需要，故只声明在 sfc-core，避免把 Spring Cloud 技术栈带进 sfc-api 与插件编译面。

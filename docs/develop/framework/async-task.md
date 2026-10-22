@@ -9,6 +9,10 @@
 
 > 微服务接入指引见 [微服务异步任务 Worker 接入](../microservice/async-task-worker.md)。
 
+> **代码组织**：契约与模型位于 `sfc-api`（`com.sfc.task`：`AsyncTask`、`AsyncTaskFactory`、`AsyncTaskManager`、`AsyncTaskRecord`、仓库接口等），
+> 框架实现位于独立模块 `sfc-core-task`（同包名 `com.sfc.task`：调度、执行器、Worker、健康检查、上报协议、管理接口）；
+> `sfc-core` 依赖该模块，并在启动类通过 `@EnableAsyncTask` 引入。
+
 ## 2. 总体架构
 
 ### 2.1 角色

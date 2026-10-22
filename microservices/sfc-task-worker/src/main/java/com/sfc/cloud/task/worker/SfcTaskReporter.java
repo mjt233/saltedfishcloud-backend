@@ -48,6 +48,17 @@ class SfcTaskReporter {
     private static final int LOG_TAIL_MAX_LINES = 5000;
 
     /**
+     * 关键上报（开始/结束/放弃）的最大尝试次数。进度与日志允许丢失，但开始/结束上报丢失会导致
+     * 任务状态卡在运行中，因此对这类上报做有限重试。
+     */
+    private static final int REPORT_MAX_ATTEMPTS = 3;
+
+    /**
+     * 关键上报重试的基础退避时间（毫秒），第 n 次重试等待 n 倍
+     */
+    private static final long REPORT_RETRY_BACKOFF_MILLIS = 500L;
+
+    /**
      * 运行中任务注册表
      */
     private final SfcTaskWorkerRegistry registry;
@@ -104,7 +115,8 @@ class SfcTaskReporter {
      */
     boolean reportStart(SfcTaskExecution execution) {
         try {
-            return client.reportStart(new TaskReportStartParam(execution.getTaskId(), identity.getWorkerId()));
+            return withRetry("开始", execution.getTaskId(),
+                    () -> client.reportStart(new TaskReportStartParam(execution.getTaskId(), identity.getWorkerId())));
         } catch (Throwable e) {
             log.warn("{}任务[{}]开始上报失败（任务仍会继续执行）: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
             return true;
@@ -116,12 +128,20 @@ class SfcTaskReporter {
      *
      * <p>若任务已在本实例被标记结束（例如停机时已上报放弃），本方法直接返回。</p>
      *
+     * <p>结束上报属于关键上报：会先补发一次最终进度快照（保证完成态进度与实际一致），
+     * 并在失败时做有限重试，避免任务状态在 core 侧永久停留在运行中。</p>
+     *
      * @param execution 执行上下文
      * @param status    结束状态：2=FINISH，3=FAILED，4=CANCEL
      * @param message   结束说明
      */
     void reportFinish(SfcTaskExecution execution, int status, String message) {
         synchronized (execution.getReportLock()) {
+            if (execution.isFinished()) {
+                return;
+            }
+            // 补发最终进度快照：周期上报约 1 秒一次，若不补发，完成态进度可能比实际少 1~2 步
+            reportFinalProgress(execution);
             if (!execution.markFinished()) {
                 return;
             }
@@ -136,14 +156,39 @@ class SfcTaskReporter {
                 tailLogLines.addAll(batch);
             }
             try {
-                boolean accepted = client.reportFinish(new TaskFinishReportParam(execution.getTaskId(),
-                        identity.getWorkerId(), status, message, tailLogLines));
+                boolean accepted = withRetry("结束", execution.getTaskId(),
+                        () -> client.reportFinish(new TaskFinishReportParam(execution.getTaskId(),
+                                identity.getWorkerId(), status, message, tailLogLines)));
                 if (!accepted) {
                     log.warn("{}任务[{}]结束上报未被接受（任务可能已被回收或取消）", LOG_PREFIX, execution.getTaskId());
                 }
             } catch (Throwable e) {
                 log.warn("{}任务[{}]结束上报失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
             }
+        }
+    }
+
+    /**
+     * 补发一次最终进度快照（结束上报前调用）。
+     *
+     * <p>失败只记录 debug 日志：进度属于可容忍丢失的数据，不影响任务结束。</p>
+     *
+     * @param execution 执行上下文
+     */
+    private void reportFinalProgress(SfcTaskExecution execution) {
+        try {
+            SfcTaskProgress progress = execution.getProgress();
+            long now = System.currentTimeMillis();
+            ProgressReportState state = progressStates.remove(execution.getTaskId());
+            long lastLoaded = state == null ? 0L : state.lastLoaded;
+            long elapsedMillis = state == null ? 0L : Math.max(0L, now - state.lastReportTime);
+            long speed = elapsedMillis > 0L
+                    ? Math.max(0L, (progress.getLoaded() - lastLoaded) * 1000L / elapsedMillis)
+                    : 0L;
+            client.reportProgress(new TaskProgressReportParam(execution.getTaskId(), identity.getWorkerId(),
+                    progress.getLoaded(), progress.getTotal(), speed, now));
+        } catch (Throwable e) {
+            log.debug("{}任务[{}]最终进度补发失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
         }
     }
 
@@ -162,8 +207,9 @@ class SfcTaskReporter {
             }
             progressStates.remove(execution.getTaskId());
             try {
-                boolean accepted = client.reportAbandon(new TaskAbandonParam(execution.getTaskId(),
-                        identity.getWorkerId(), "执行者停机，放弃任务执行权"));
+                boolean accepted = withRetry("放弃", execution.getTaskId(),
+                        () -> client.reportAbandon(new TaskAbandonParam(execution.getTaskId(),
+                                identity.getWorkerId(), "执行者停机，放弃任务执行权")));
                 if (!accepted) {
                     log.warn("{}任务[{}]放弃上报未被接受（任务可能已被取消或达到最大重试次数）",
                             LOG_PREFIX, execution.getTaskId());
@@ -172,6 +218,38 @@ class SfcTaskReporter {
                 log.warn("{}任务[{}]放弃上报失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
             }
         }
+    }
+
+    /**
+     * 对关键上报执行有限重试。
+     *
+     * @param action  动作名称（用于日志）
+     * @param taskId  任务id
+     * @param call    实际调用
+     * @param <T>     返回值类型
+     * @return 最后一次调用的返回值
+     * @throws RuntimeException 全部尝试都失败时抛出最后一次的异常
+     */
+    private <T> T withRetry(String action, Long taskId, java.util.function.Supplier<T> call) {
+        Throwable lastError = null;
+        for (int attempt = 1; attempt <= REPORT_MAX_ATTEMPTS; attempt++) {
+            try {
+                return call.get();
+            } catch (Throwable e) {
+                lastError = e;
+                if (attempt < REPORT_MAX_ATTEMPTS) {
+                    log.warn("{}任务[{}]{}上报失败（第 {}/{} 次），{}ms 后重试: {}", LOG_PREFIX, taskId, action,
+                            attempt, REPORT_MAX_ATTEMPTS, REPORT_RETRY_BACKOFF_MILLIS * attempt, describe(e));
+                    try {
+                        Thread.sleep(REPORT_RETRY_BACKOFF_MILLIS * attempt);
+                    } catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new IllegalStateException("重试等待被中断", interrupted);
+                    }
+                }
+            }
+        }
+        throw new IllegalStateException(action + "上报在 " + REPORT_MAX_ATTEMPTS + " 次尝试后仍然失败", lastError);
     }
 
     /**
