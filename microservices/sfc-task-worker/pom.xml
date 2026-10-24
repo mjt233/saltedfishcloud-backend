@@ -50,6 +50,23 @@
             <artifactId>spring-boot-starter-webmvc</artifactId>
         </dependency>
 
+        <!--
+            Spring Cloud 服务发现与负载均衡：
+              - DiscoveryClient：启动自检「本实例已在注册中心可见」；
+              - Registration：读取本实例在注册中心中的 serviceId + instanceId；
+              - LoadBalancerClient（loadbalancer starter）：按服务名选取 sfc-core 实例，多实例默认轮询。
+            版本由 microservices/pom.xml 的 spring-cloud BOM 管理，此处不写 version；
+            实例选择完全交给 Spring Cloud LoadBalancer，SDK 不再自研定位组件与直连兜底地址。
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-commons</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
         <!-- 自动配置、条件注解与 @ConfigurationProperties（运行期同样由消费方提供） -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

@@ -17,11 +17,9 @@ import java.util.List;
 
 /**
  * 任务认领服务。
- * <p>这是「按任务类型路由」调度的核心实现：执行者只能认领自己声明支持的任务类型，
- * 认领过程使用数据库乐观锁保证并发安全（同一任务不会被两个执行者同时认领）。</p>
  *
- * <p>无任务可认领时，认领会以长轮询方式等待：收到新任务发布广播后立即重新查询，
- * 避免执行者高频空转轮询数据库。</p>
+ * <p>执行者按自己支持的任务类型认领等待中的任务；同一任务并发认领时只有一个执行者能成功。
+ * 支持普通认领与「只认领紧急任务」两种模式；无任务可认领时以长轮询等待，新任务发布时立即唤醒。</p>
  */
 @Slf4j
 @Component
@@ -69,18 +67,22 @@ public class TaskClaimService implements InitializingBean {
     /**
      * 认领一个等待中的任务。
      *
-     * @param workerId    worker 标识
+     * @param serviceId   执行者所属服务名（服务发现中的 serviceId）
+     * @param workerId    执行者实例地址（{@code host:port}）
+     * @param role        执行者角色，取值见 {@link AsyncTaskConstants.WorkerRole}
      * @param types       本次允许认领的任务类型集合，为空时直接返回 null
+     * @param urgentOnly  是否只认领紧急任务（执行者满载时为 true）
      * @param waitSeconds 无任务可认领时的最长等待秒数，小于等于 0 表示不等待
      * @return 认领成功的任务记录，没有可认领任务时返回 null
      */
-    public AsyncTaskRecord claim(String workerId, Collection<String> types, int waitSeconds) {
+    public AsyncTaskRecord claim(String serviceId, String workerId, String role, Collection<String> types,
+                                 boolean urgentOnly, int waitSeconds) {
         if (workerId == null || types == null || types.isEmpty()) {
             return null;
         }
         long deadline = System.currentTimeMillis() + Math.max(waitSeconds, 0) * 1000L;
         while (true) {
-            AsyncTaskRecord record = tryClaim(workerId, types);
+            AsyncTaskRecord record = tryClaim(serviceId, workerId, role, types, urgentOnly);
             if (record != null) {
                 return record;
             }
@@ -102,14 +104,21 @@ public class TaskClaimService implements InitializingBean {
     /**
      * 尝试认领一次任务，不做等待。
      *
-     * @param workerId worker 标识
-     * @param types    允许认领的任务类型集合
+     * @param serviceId  执行者所属服务名
+     * @param workerId   执行者标识
+     * @param role       执行者角色
+     * @param types      允许认领的任务类型集合
+     * @param urgentOnly 是否只认领紧急任务
      * @return 认领成功的任务记录，没有可认领任务时返回 null
      */
-    protected AsyncTaskRecord tryClaim(String workerId, Collection<String> types) {
+    protected AsyncTaskRecord tryClaim(String serviceId, String workerId, String role,
+                                       Collection<String> types, boolean urgentOnly) {
         List<AsyncTaskRecord> candidates;
         try {
-            candidates = taskRecordRepo.findWaitingByTaskTypes(types, PageRequest.of(0, 1));
+            candidates = urgentOnly
+                    ? taskRecordRepo.findUrgentWaitingByTaskTypes(
+                            types, AsyncTaskConstants.Priority.URGENT, PageRequest.of(0, 1))
+                    : taskRecordRepo.findWaitingByTaskTypes(types, PageRequest.of(0, 1));
         } catch (Exception e) {
             log.error("{}查询等待任务失败", LOG_PREFIX, e);
             return null;
@@ -121,7 +130,7 @@ public class TaskClaimService implements InitializingBean {
         Date now = new Date();
         int updated;
         try {
-            updated = taskRecordRepo.claim(record.getId(), workerId, now);
+            updated = taskRecordRepo.claim(record.getId(), serviceId, workerId, role, now);
         } catch (Exception e) {
             log.error("{}认领任务失败: {}", LOG_PREFIX, record.getId(), e);
             return null;
@@ -131,10 +140,12 @@ public class TaskClaimService implements InitializingBean {
             return null;
         }
         record.setStatus(AsyncTaskConstants.Status.RUNNING);
+        record.setClaimedService(serviceId);
         record.setClaimedWorker(workerId);
+        record.setClaimedRole(role);
         record.setClaimedAt(now);
         record.setLastReportAt(now);
-        log.info("{}worker[{}] 认领任务 {}-{}", LOG_PREFIX, workerId, record.getName(), record.getId());
+        log.info("{}worker[{}/{}] 认领任务 {}-{}", LOG_PREFIX, serviceId, workerId, record.getName(), record.getId());
         return record;
     }
 

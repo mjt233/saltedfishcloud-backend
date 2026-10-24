@@ -57,6 +57,15 @@ public class SfcInternalTokenIssuer {
     }
 
     /**
+     * 判断共享密钥是否已配置，即当前签发器能否正常签发内部调用凭证。
+     *
+     * @return 共享密钥已配置返回 true
+     */
+    public boolean isConfigured() {
+        return authKey.isConfigured();
+    }
+
+    /**
      * 签发一个新的内部调用凭证。
      *
      * @return JWT 紧凑序列化文本（放入 {@link SfcInternalAuthConstants.Header#INTERNAL_TOKEN} 请求头）

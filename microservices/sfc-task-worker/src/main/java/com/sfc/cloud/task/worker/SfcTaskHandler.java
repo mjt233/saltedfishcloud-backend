@@ -1,10 +1,11 @@
 package com.sfc.cloud.task.worker;
 
 /**
- * 微服务任务处理器。
+ * 任务处理器。
  *
- * <p>实现本接口并注册为 Spring Bean，即可被 Worker SDK 自动发现并向 sfc-core 声明支持该任务类型；
- * core 调度到该类型的任务后，本服务会认领并调用 {@link #execute(SfcTaskExecution)} 执行。</p>
+ * <p>实现本接口并注册为 Spring Bean 后，Worker SDK 会按 {@link #taskType()} 认领对应类型的任务，
+ * 并调用 {@link #execute(SfcTaskExecution)} 执行。宿主（sfc-core 内嵌执行者）与微服务使用同一套
+ * 处理器契约。</p>
  *
  * <p>实现约定：</p>
  * <ul>

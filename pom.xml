@@ -49,6 +49,11 @@
         <java.version>25</java.version>
         <!--   系统核心api模块版本     -->
         <api.version>${revision}</api.version>
+        <!--
+            任务执行者 SDK 版本。sfc-task-worker（microservices/ 下）未继承本 pom，
+            其模块 pom 的 <version> 需与此处保持一致。
+        -->
+        <task.worker.version>1.0.0</task.worker.version>
         <!--   内部接口鉴权 SDK 版本。sfc-auth 未继承本 pom，其 <version> 需与 microservices/pom.xml 中的 auth.version 保持一致     -->
         <auth.version>1.0.0</auth.version>
         <!--   local 注册中心客户端 SDK 版本。该模块未继承本 pom，其 <version> 需与模块 pom 保持一致   -->

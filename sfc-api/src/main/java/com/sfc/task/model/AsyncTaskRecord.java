@@ -83,16 +83,35 @@ public class AsyncTaskRecord extends SfcAuditModel {
 
     /**
      * 是否为临时任务<br>
-     * 临时任务无需等待排队认领任务，可立即执行，且不具备生命周期管理的自动重试功能
+     * 临时任务不参与故障转移重试：执行者失联或主动放弃执行权时直接置为失败，不会被重新排队。
      */
     private Boolean isTemp;
 
     /**
-     * 认领该任务的执行者标识。<br>
-     * 本地执行节点为 {@code node-{节点id}}，微服务执行者为该 worker 注册的实例id。<br>
-     * 为空表示任务尚未被任何执行者认领。
+     * 任务优先级，数值越大越优先被认领。<br>
+     * 默认为 {@link AsyncTaskConstants.Priority#NORMAL}；提交时 {@code immediate=true} 的任务为
+     * {@link AsyncTaskConstants.Priority#URGENT}，执行者满载时也会优先认领执行。
+     */
+    private Integer priority;
+
+    /**
+     * 认领该任务的执行者所属服务名（服务发现中的 serviceId）<br>
+     * 例如 core 节点为 {@code sfc-core}，微服务为 {@code sfc-demo-service}。与
+     * {@link #claimedWorker} 一起用于在服务发现中判定执行者是否存活，以及定位中断回调地址。
+     */
+    private String claimedService;
+
+    /**
+     * 认领该任务的执行者标识（实例在服务注册中心里的地址 {@code host:port}）<br>
+     * core 节点与微服务实例都使用各自在服务注册中心注册的 host:port。为空表示任务尚未被任何执行者认领。
      */
     private String claimedWorker;
+
+    /**
+     * 认领该任务的执行者角色，取值见 {@link AsyncTaskConstants.WorkerRole}，用于展示与排障。<br>
+     * 中断指令统一按服务发现定位执行者实例地址后下发，与角色无关。
+     */
+    private String claimedRole;
 
     /**
      * 任务被认领的时间
@@ -100,7 +119,7 @@ public class AsyncTaskRecord extends SfcAuditModel {
     private Date claimedAt;
 
     /**
-     * 执行者最后一次上报（开始/进度/日志/完成）的时间，用于故障转移时判断执行者是否仍然存活
+     * 执行者最后一次上报（开始/进度/日志/完成）的时间，用于诊断
      */
     private Date lastReportAt;
 

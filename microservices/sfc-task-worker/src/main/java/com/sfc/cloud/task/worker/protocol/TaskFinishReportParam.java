@@ -3,7 +3,7 @@ package com.sfc.cloud.task.worker.protocol;
 import java.util.List;
 
 /**
- * 任务执行结束上报参数，镜像 core 的 {@code com.sfc.task.protocol.TaskFinishReportParam}。
+ * 任务执行结束上报参数（执行者 → core）。
  *
  * @param taskId       任务id
  * @param workerId     执行者标识

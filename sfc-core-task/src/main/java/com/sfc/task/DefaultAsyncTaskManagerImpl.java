@@ -6,37 +6,26 @@ import com.sfc.common.constant.SfcCommonError;
 import com.sfc.common.constant.SfcUserConstants;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.utils.SfcStringUtils;
-import com.sfc.rpc.annotation.RPCResource;
 import com.sfc.task.constants.TaskMQTopic;
 import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskLogRecord;
 import com.sfc.task.model.AsyncTaskRecord;
-import com.sfc.task.prog.ProgressDetector;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.report.TaskLogBufferService;
+import com.sfc.task.report.TaskReportService;
 import com.sfc.task.repo.AsyncTaskLogRecordRepo;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
-import com.sfc.task.schedule.TaskScheduleConstants;
-import com.sfc.task.worker.LocalTaskWorker;
 import com.sfc.task.worker.TaskInterruptRouter;
-import com.sfc.task.worker.TaskWorkerInfo;
-import com.sfc.task.worker.TaskWorkerKind;
-import com.sfc.task.worker.TaskWorkerRegistryService;
 import com.xiaotao.saltedfishcloud.service.mq.MQService;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.event.ContextClosedEvent;
-import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -56,44 +45,39 @@ import static com.sfc.task.constants.TaskMQTopic.Get.ASYNC_TASK_EXIT;
  * <ul>
  *     <li>任务提交：写入数据库队列并广播唤醒执行者；</li>
  *     <li>任务生命周期：状态流转、执行者认领信息与结果落库；</li>
- *     <li>统一查询：日志、进度、状态，不区分任务由 core 还是微服务执行；</li>
- *     <li>执行控制：中断请求按任务的认领者路由到对应执行者；</li>
- *     <li>优雅停机：把本节点正在执行的任务重置回队列，交由其他节点或重启后的本节点继续执行。</li>
+ *     <li>统一查询：日志、进度、状态，不区分任务由 core 内嵌执行者还是微服务执行；</li>
+ *     <li>执行控制：中断请求按任务的认领者路由到对应执行者。</li>
  * </ul>
+ * <p>任务的认领与执行由 sfc-task-worker SDK 提供的执行者完成，本类不持有执行器。</p>
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, InitializingBean {
+public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager {
     private static final String LOG_PREFIX = "[异步任务管理]";
 
     private final AsyncTaskRecordRepo repo;
 
     private final AsyncTaskLogRecordRepo logRepo;
 
-    private final AsyncTaskExecutor executor;
-
     private final MQService mqService;
-
-    private final TaskWorkerRegistryService workerRegistryService;
 
     private final TaskInterruptRouter interruptRouter;
 
     private final TaskLogBufferService logBufferService;
 
-    private final ProgressDetector progressDetector;
+    private final AsyncTaskFactoryRegistry factoryRegistry;
 
-    private final LocalTaskWorker localTaskWorker;
-
-    @RPCResource
-    private DefaultAsyncTaskRpcService asyncTaskRpcService;
+    private final TaskReportService reportService;
 
     /**
-     * 将spring容器中所有实现了AsyncTaskFactory的bean都注册到任务管理器中
+     * 将 Spring 容器中所有实现了 AsyncTaskFactory 的 bean 注册到任务工厂注册表。
+     *
+     * @param factories 容器中的任务工厂列表，可为 null
      */
     @Autowired(required = false)
     public void setFactories(List<AsyncTaskFactory> factories) {
-        if (factories != null && !factories.isEmpty()) {
+        if (factories != null) {
             for (AsyncTaskFactory factory : factories) {
                 registerFactory(factory);
             }
@@ -101,73 +85,23 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     }
 
     @Override
-    public void afterPropertiesSet() throws Exception {
-        initExecutor();
-    }
-
-    /**
-     * 注册任务执行过程中的状态流转监听器。
-     */
-    public void initExecutor() {
-        // 任务开始时，记录执行节点信息（队列任务在认领时已写入，直接执行的任务在这里补充）
-        executor.addTaskStartListener(record -> {
-            if (AsyncTaskConstants.Status.CANCEL.equals(record.getStatus())) {
-                return;
-            }
-            if (!SfcStringUtils.hasText(record.getClaimedWorker())) {
-                record.setClaimedWorker(workerRegistryService.getLocalWorkerId());
-            }
-            record.setExecuteDate(new Date());
-            record.setStatus(AsyncTaskConstants.Status.RUNNING);
-            record.setExecutor(record.getClaimedWorker());
-            record.setLastReportAt(new Date());
-            repo.save(record);
-        });
-
-        // 记录任务失败信息
-        executor.addTaskFailedListener(record -> {
-            try {
-                record.setStatus(Optional.ofNullable(record.getStatus()).orElse(AsyncTaskConstants.Status.CANCEL));
-                record.setFailedDate(new Date());
-                record.setIsFailed(true);
-                repo.save(record);
-            } finally {
-                mqService.sendBroadcast(ASYNC_TASK_EXIT(record.getId()), record);
-            }
-        });
-
-        // 记录任务成功信息
-        executor.addTaskFinishListener(record -> {
-            try {
-                record.setStatus(AsyncTaskConstants.Status.FINISH);
-                record.setFinishDate(new Date());
-                record.setFailedDate(null);
-                repo.save(record);
-            } finally {
-                mqService.sendBroadcast(ASYNC_TASK_EXIT(record.getId()), record);
-            }
-        });
-    }
-
-    @Override
     public void registerFactory(AsyncTaskFactory factory) {
-        executor.registerFactory(factory);
+        factoryRegistry.register(factory);
     }
 
     @Override
     public void submitAsyncTask(AsyncTaskRecord record) throws IOException {
         record.setStatus(AsyncTaskConstants.Status.WAITING);
+        record.setPriority(Optional.ofNullable(record.getPriority()).orElse(AsyncTaskConstants.Priority.NORMAL));
+        record.setClaimedService(null);
         record.setClaimedWorker(null);
+        record.setClaimedRole(null);
         record.setClaimedAt(null);
+        record.setLastReportAt(null);
         repo.save(record);
         mqService.sendBroadcast(TaskMQTopic.TASK_PUBLISH, record.getId());
-        log.info("{}提交任务 {}-{}，类型: {}", LOG_PREFIX, record.getName(), record.getId(), record.getTaskType());
-    }
-
-    @Override
-    public void executeAsyncTask(AsyncTaskRecord record) throws IOException {
-        repo.save(record);
-        executor.execute(record);
+        log.info("{}提交任务 {}-{}，类型: {}，优先级: {}", LOG_PREFIX, record.getName(), record.getId(),
+                record.getTaskType(), record.getPriority());
     }
 
     @Override
@@ -190,19 +124,18 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
                 .params(param.getParams())
                 .cpuOverhead(param.getCpuOverhead())
                 .isTemp(param.getIsTemp())
+                .priority(Boolean.TRUE.equals(param.getImmediate())
+                        ? AsyncTaskConstants.Priority.URGENT
+                        : AsyncTaskConstants.Priority.NORMAL)
                 .build();
         record.setUid(uid == null ? SfcUserConstants.PUBLIC_USER_ID : uid);
 
-        if (Boolean.TRUE.equals(param.getImmediate())) {
-            executeAsyncTask(record);
-        } else {
-            submitAsyncTask(record);
-        }
+        submitAsyncTask(record);
         return record;
     }
 
     @Override
-    public Resource getTaskLog(Long taskId, boolean withHistory) throws IOException {
+    public Resource getTaskLog(Long taskId, boolean withHistory) {
         // 任务可能会被多次重试执行，从而产生多比日志记录，这里需要拼接起来
         List<AsyncTaskLogRecord> logs = logRepo.findByTaskId(taskId);
         String allLog = Optional.ofNullable(logs)
@@ -229,35 +162,16 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
     }
 
     /**
-     * 获取运行中任务的最新日志。根据任务认领者类型选择日志来源：
-     * 本地任务读取本地日志文件，微服务任务读取日志缓冲，其他 core 节点任务通过集群 RPC 读取。
+     * 获取运行中任务的最新日志。
+     *
+     * <p>执行者按批上报的运行日志会暂存在运行日志缓冲区中，本方法直接读取该缓冲区。</p>
+     *
+     * @param task 任务记录
+     * @return 运行日志，获取不到时返回 null
      */
-    private String getRunningLog(AsyncTaskRecord task) throws IOException {
-        String workerId = task.getClaimedWorker();
-        if (!SfcStringUtils.hasText(workerId)) {
-            return null;
-        }
-        if (workerId.equals(workerRegistryService.getLocalWorkerId())) {
-            return executor.getLog(task.getId());
-        }
+    private String getRunningLog(AsyncTaskRecord task) {
         List<String> buffered = logBufferService.read(task.getId());
-        if (!buffered.isEmpty()) {
-            return String.join("\n", buffered);
-        }
-        TaskWorkerInfo worker = workerRegistryService.get(workerId);
-        if (worker != null && worker.getKind() == TaskWorkerKind.LOCAL_NODE) {
-            try {
-                return asyncTaskRpcService.getTaskLog(task.getId());
-            } catch (Throwable e) {
-                log.debug("{}通过集群RPC获取任务 {} 运行日志失败: {}", LOG_PREFIX, task.getId(), e.getMessage());
-            }
-        }
-        return null;
-    }
-
-    @Override
-    public AsyncTaskExecutor getExecutor() {
-        return executor;
+        return buffered.isEmpty() ? null : String.join("\n", buffered);
     }
 
     @Override
@@ -273,7 +187,7 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
 
     @Override
     public ProgressRecord getProgress(Long taskId) throws IOException {
-        return progressDetector.getRecord(taskId.toString());
+        return reportService.getProgress(taskId);
     }
 
     @Override
@@ -387,36 +301,5 @@ public class DefaultAsyncTaskManagerImpl implements AsyncTaskManager, Initializi
         newTask.setUid(Objects.requireNonNull(SecureUtils.getSpringSecurityUser()).getId());
         submitAsyncTask(newTask);
         return newTask;
-    }
-
-    /**
-     * 容器关闭时优雅停机：
-     * <ol>
-     *     <li>先停止本地 worker 的认领循环，避免刚回收的任务被本节点重新认领；</li>
-     *     <li>中断并放弃本节点正在执行的任务；</li>
-     *     <li>把放弃的任务重置回等待中状态，交由其他节点或重启后的本节点继续执行。</li>
-     * </ol>
-     */
-    @EventListener(ContextClosedEvent.class)
-    public void stop() {
-        try {
-            localTaskWorker.stop();
-        } catch (Exception e) {
-            log.error("{}停止本地任务worker失败", LOG_PREFIX, e);
-        }
-        Collection<Long> stopIds = executor.stop();
-        List<Long> requeued = new ArrayList<>();
-        for (Long taskId : stopIds) {
-            try {
-                if (repo.abandonAndRequeue(taskId, TaskScheduleConstants.MAX_RETRY) > 0) {
-                    requeued.add(taskId);
-                } else {
-                    repo.failIfRetryExceeded(taskId, TaskScheduleConstants.MAX_RETRY);
-                }
-            } catch (Exception e) {
-                log.error("{}停机时回收任务 {} 失败", LOG_PREFIX, taskId, e);
-            }
-        }
-        log.info("{}已停止，已放弃并重新排队的任务: {}", LOG_PREFIX, requeued);
     }
 }

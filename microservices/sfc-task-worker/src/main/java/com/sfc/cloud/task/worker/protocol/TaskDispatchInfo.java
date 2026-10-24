@@ -3,7 +3,7 @@ package com.sfc.cloud.task.worker.protocol;
 import java.util.Date;
 
 /**
- * 下发给执行者的任务信息，镜像 core 的 {@code com.sfc.task.protocol.TaskDispatchInfo}。
+ * 下发给执行者的任务信息（core → 执行者）。
  *
  * @param id          任务id
  * @param name        任务名称

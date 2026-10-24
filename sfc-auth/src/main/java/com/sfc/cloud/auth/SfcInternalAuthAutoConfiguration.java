@@ -7,6 +7,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import org.springframework.util.StringUtils;
 
@@ -109,10 +110,9 @@ public class SfcInternalAuthAutoConfiguration {
      *
      * <p>默认开启（{@code sfc.internal.server-enabled=false} 可关闭）</p>
      */
-//    @Configuration(proxyBeanMethods = false)
-//    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
-//    @ConditionalOnClass(name = "jakarta.servlet.Filter")
-//    @ConditionalOnProperty(prefix = "sfc.internal", name = "server-enabled", havingValue = "true", matchIfMissing = true)
+    @Configuration(proxyBeanMethods = false)
+    @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
+    @ConditionalOnClass(name = "jakarta.servlet.Filter")
     public static class ServerSideConfiguration {
 
         /**
@@ -122,7 +122,7 @@ public class SfcInternalAuthAutoConfiguration {
          * @return 过滤器
          */
         @Bean
-//        @ConditionalOnMissingBean
+        @ConditionalOnMissingBean
         public SfcInternalAuthFilter sfcInternalAuthFilter(SfcInternalTokenVerifier verifier) {
             return new SfcInternalAuthFilter(verifier);
         }

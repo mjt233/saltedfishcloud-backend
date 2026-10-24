@@ -5,12 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 /**
  * 任务执行器：在线程池线程中执行单个已认领任务，并负责开始/结束上报与资源清理。
  *
- * <p>任务执行上下文由认领循环在派发前创建并登记到 {@link SfcTaskWorkerRegistry}，因此
- * 「已认领但仍在队列中排队」的任务同样能被中断与停机放弃流程覆盖，不会出现停机后仍开始执行的
- * 漏网任务。</p>
- *
- * <p>结束状态与 sfc-core 的 {@code AsyncTaskConstants.Status} 保持一致：
- * {@code 2=FINISH}、{@code 3=FAILED}、{@code 4=CANCEL}（本 SDK 零宿主依赖，故在此以常量镜像）。</p>
+ * <p>结束状态与 core 的 {@code AsyncTaskConstants.Status} 保持一致：
+ * {@code 2=FINISH}、{@code 3=FAILED}、{@code 4=CANCEL}。</p>
  */
 @Slf4j
 class SfcTaskExecutionRunner {
@@ -21,17 +17,17 @@ class SfcTaskExecutionRunner {
     private static final String LOG_PREFIX = "[任务Worker]";
 
     /**
-     * 任务完成状态（镜像 core 的 FINISH）
+     * 任务完成状态，与 core 的 FINISH 一致
      */
     private static final int STATUS_FINISH = 2;
 
     /**
-     * 任务失败状态（镜像 core 的 FAILED）
+     * 任务失败状态，与 core 的 FAILED 一致
      */
     private static final int STATUS_FAILED = 3;
 
     /**
-     * 任务取消状态（镜像 core 的 CANCEL）
+     * 任务取消状态，与 core 的 CANCEL 一致
      */
     private static final int STATUS_CANCEL = 4;
 

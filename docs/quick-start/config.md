@@ -73,6 +73,24 @@ sys:
 
 完整配置见 [附录1: config.yml](#1configyml)
 
+### 内部接口密钥（单机部署也必须配置）
+
+`/api/internal/**` 是服务间内部接口，调用凭证由 `sfc.internal.key`（环境变量 `SFC_INTERNAL_KEY`）签发与校验，
+配置项不在 `sys.` 节点下。**即使是单机部署、未启用任何微服务，也必须配置该密钥**：core 节点内嵌的任务 Worker
+通过内部 HTTP 调用本机的调度接口完成认领与上报，未配置时：
+
+- 服务端拒绝全部 `/api/internal/**` 请求（fail-closed，启动日志打印 ERROR）；
+- 内嵌 Worker 自检失败，启动日志打印 ERROR 并自动禁用认领（应用继续运行，但任务不会被 core 执行）。
+
+要求：不少于 32 个字符（例如 `openssl rand -hex 16`）；多服务部署时 core 与所有微服务必须使用**完全相同**的密钥。
+
+```yaml
+sfc:
+  internal:
+    # 服务间共享密钥，环境变量 SFC_INTERNAL_KEY 注入
+    key: ${SFC_INTERNAL_KEY:}
+```
+
 ## 附录1：config.yml默认内容
 ```yaml
 # 用户自定义程序配置文件
@@ -201,6 +219,29 @@ sys:
       root: ${HDFS_ROOT:/xyy2}
       user: ${HDFS_USER:xiaotao}
 
+# 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
+# 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致；本节点不在 sys. 下，但同样需要在各部署配置中同步。
+sfc:
+  internal:
+    # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。留空 = 未配置：服务端拒绝全部 /api/internal/** 请求
+    # （fail-closed，启动打印 ERROR），客户端也无法签发调用凭证；不得少于 32 个字符，例如 `openssl rand -hex 16`。
+    # ⚠️ core 单机部署（未启用微服务）也必须配置该密钥：内嵌 Worker 通过内部 HTTP 与调度面交互，
+    #    未配置时无法签发调用凭证，启动日志打印 ERROR 并自动禁用认领。
+    key: ${SFC_INTERNAL_KEY:}
+    # 本服务名（写入调用凭证的 iss，便于接收方审计/白名单）
+    service-name: sfc-core
+    # 是否在本进程启用服务端校验过滤器，默认 true（Servlet 应用自动装配）
+    server-enabled: true
+  # 任务 Worker（内嵌执行者）配置：core 节点以 CORE 角色通过服务发现 + 内部 HTTP 与异步任务调度面交互。
+  task:
+    worker:
+      # 本实例的执行者角色：CORE = core 节点，SERVICE = 微服务实例
+      role: CORE
+      # 单实例最大并发执行任务数；普通任务受该上限限制，紧急任务（immediate=true）不受限制
+      max-concurrent-tasks: ${SFC_TASK_MAX_CONCURRENT_TASKS:64}
+      # 没有可认领任务时的长轮询等待秒数，越小则空闲期的请求越频繁
+      claim-wait-seconds: 10
+
 ```
 
 ## 附录2：application.yml默认内容
@@ -275,6 +316,7 @@ app:
 # 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
 # 该节点不在 sys. 下（配置项前缀由 SDK 固定为 sfc.internal），但同样需要在各部署配置中同步。
 # 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致。
+# ⚠️ core 单机部署也必须配置：内嵌的任务 Worker 通过内部 HTTP 与调度面交互，未配置时会自动禁用认领。
 sfc:
   internal:
     # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。各项含义与默认值见 sfc-auth/README.md：

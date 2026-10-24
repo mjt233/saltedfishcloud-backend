@@ -9,20 +9,20 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * 任务执行上报器：负责进度节流上报、日志批量上报与结束/放弃上报。
  *
- * <p>进度与日志由 {@link SfcTaskWorkerRuntime} 以约 1 秒的固定周期调用 {@link #tick()} 驱动：
- * 每次 tick 对全部运行中任务刷新一次进度（速度由 SDK 根据相邻两次采样的差值计算）并批量上报
- * 已缓冲的日志行；任务结束时会冲刷残余日志，随结束上报一并提交。</p>
+ * <p>同一任务的上报、结束与放弃流程通过执行上下文串行化，结束上报后不会再有进度或日志上报。</p>
  *
- * <p>每个任务的「上报 / 结束 / 放弃」通过执行上下文对象锁串行化，避免结束上报后仍有进度或日志
- * 上报到达 core 而被判为过期数据。</p>
+ * <p>进度上报优先使用执行上下文设置的完整进度快照提供者（内嵌执行者使用），从中读取
+ * {@code loaded}/{@code total} 并把其余字段作为扩展信息上报；未设置提供者时使用进度对象。</p>
  */
 @Slf4j
 class SfcTaskReporter {
@@ -33,12 +33,32 @@ class SfcTaskReporter {
     private static final String LOG_PREFIX = "[任务Worker]";
 
     /**
+     * 进度快照中的已完成量键名
+     */
+    private static final String KEY_LOADED = "loaded";
+
+    /**
+     * 进度快照中的总量键名
+     */
+    private static final String KEY_TOTAL = "total";
+
+    /**
+     * 进度快照中的速度键名（速度由 SDK 计算，不作为扩展信息上报）
+     */
+    private static final String KEY_SPEED = "speed";
+
+    /**
+     * 进度快照中的最后更新时间键名（由 SDK 填充，不作为扩展信息上报）
+     */
+    private static final String KEY_LAST_UPDATE_TIME = "lastUpdateTime";
+
+    /**
      * 单次日志上报的最大行数
      */
     private static final int LOG_BATCH_SIZE = 500;
 
     /**
-     * 单次 tick 内最多上报的日志批次数（避免日志产出速度超过 HTTP 上报速度时长时间占用线程）
+     * 单次 tick 内最多上报的日志批次数
      */
     private static final int MAX_LOG_BATCHES_PER_TICK = 10;
 
@@ -48,8 +68,7 @@ class SfcTaskReporter {
     private static final int LOG_TAIL_MAX_LINES = 5000;
 
     /**
-     * 关键上报（开始/结束/放弃）的最大尝试次数。进度与日志允许丢失，但开始/结束上报丢失会导致
-     * 任务状态卡在运行中，因此对这类上报做有限重试。
+     * 关键上报（开始/结束/放弃）的最大尝试次数
      */
     private static final int REPORT_MAX_ATTEMPTS = 3;
 
@@ -124,12 +143,7 @@ class SfcTaskReporter {
     }
 
     /**
-     * 上报任务结束（完成/失败/取消），并携带尚未上报的尾部日志。
-     *
-     * <p>若任务已在本实例被标记结束（例如停机时已上报放弃），本方法直接返回。</p>
-     *
-     * <p>结束上报属于关键上报：会先补发一次最终进度快照（保证完成态进度与实际一致），
-     * 并在失败时做有限重试，避免任务状态在 core 侧永久停留在运行中。</p>
+     * 上报任务结束（完成/失败/取消），并携带尚未上报的尾部日志；任务已标记结束则直接返回。
      *
      * @param execution 执行上下文
      * @param status    结束状态：2=FINISH，3=FAILED，4=CANCEL
@@ -169,34 +183,29 @@ class SfcTaskReporter {
     }
 
     /**
-     * 补发一次最终进度快照（结束上报前调用）。
-     *
-     * <p>失败只记录 debug 日志：进度属于可容忍丢失的数据，不影响任务结束。</p>
+     * 补发一次最终进度快照（结束上报前调用）；失败只记录 debug 日志。
      *
      * @param execution 执行上下文
      */
     private void reportFinalProgress(SfcTaskExecution execution) {
         try {
-            SfcTaskProgress progress = execution.getProgress();
+            ProgressSnapshot snapshot = resolveProgress(execution);
             long now = System.currentTimeMillis();
             ProgressReportState state = progressStates.remove(execution.getTaskId());
             long lastLoaded = state == null ? 0L : state.lastLoaded;
             long elapsedMillis = state == null ? 0L : Math.max(0L, now - state.lastReportTime);
             long speed = elapsedMillis > 0L
-                    ? Math.max(0L, (progress.getLoaded() - lastLoaded) * 1000L / elapsedMillis)
+                    ? Math.max(0L, (snapshot.loaded() - lastLoaded) * 1000L / elapsedMillis)
                     : 0L;
             client.reportProgress(new TaskProgressReportParam(execution.getTaskId(), identity.getWorkerId(),
-                    progress.getLoaded(), progress.getTotal(), speed, now));
+                    snapshot.loaded(), snapshot.total(), speed, now, snapshot.extensions()));
         } catch (Throwable e) {
             log.debug("{}任务[{}]最终进度补发失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
         }
     }
 
     /**
-     * 上报放弃任务执行权（任务会被 core 重置回等待中）。
-     *
-     * <p>若任务已在本实例被标记结束，本方法直接返回。目前仅在 Worker 优雅停机时调用，
-     * 放弃原因固定为「执行者停机」。</p>
+     * 上报放弃任务执行权（任务会被 core 重置回等待中）；任务已标记结束则直接返回。
      *
      * @param execution 执行上下文
      */
@@ -264,9 +273,9 @@ class SfcTaskReporter {
             }
             flushLogs(execution);
             long now = System.currentTimeMillis();
-            SfcTaskProgress progress = execution.getProgress();
-            long loaded = progress.getLoaded();
-            long total = progress.getTotal();
+            ProgressSnapshot snapshot = resolveProgress(execution);
+            long loaded = snapshot.loaded();
+            long total = snapshot.total();
             ProgressReportState state = progressStates.computeIfAbsent(execution.getTaskId(),
                     ignored -> new ProgressReportState(loaded, now));
             long elapsedMillis = Math.max(0L, now - state.lastReportTime);
@@ -276,8 +285,75 @@ class SfcTaskReporter {
             state.lastLoaded = loaded;
             state.lastReportTime = now;
             client.reportProgress(new TaskProgressReportParam(execution.getTaskId(),
-                    identity.getWorkerId(), loaded, total, speed, now));
+                    identity.getWorkerId(), loaded, total, speed, now, snapshot.extensions()));
         }
+    }
+
+    /**
+     * 解析一次进度快照：执行上下文设置了进度快照提供者时以其为准，否则使用进度对象。
+     *
+     * <p>提供者返回 null 或读取失败时同样回退到进度对象，保证进度上报不中断。</p>
+     *
+     * @param execution 执行上下文
+     * @return 进度快照（loaded / total / 扩展信息）
+     */
+    private ProgressSnapshot resolveProgress(SfcTaskExecution execution) {
+        Supplier<Map<String, Object>> source = execution.getProgressSource();
+        if (source != null) {
+            try {
+                Map<String, Object> snapshot = source.get();
+                if (snapshot != null) {
+                    long loaded = toLong(snapshot.get(KEY_LOADED), 0L);
+                    long total = toLong(snapshot.get(KEY_TOTAL), -1L);
+                    return new ProgressSnapshot(loaded, total, extractExtensions(snapshot));
+                }
+            } catch (Throwable e) {
+                log.debug("{}任务[{}]读取进度快照失败，回退到进度对象: {}",
+                        LOG_PREFIX, execution.getTaskId(), describe(e));
+            }
+        }
+        SfcTaskProgress progress = execution.getProgress();
+        return new ProgressSnapshot(progress.getLoaded(), progress.getTotal(), null);
+    }
+
+    /**
+     * 从完整进度快照中提取扩展信息：去掉 SDK 已单独上报的进度字段。
+     *
+     * @param snapshot 完整进度快照
+     * @return 扩展信息；没有扩展字段时返回 null
+     */
+    private static Map<String, Object> extractExtensions(Map<String, Object> snapshot) {
+        Map<String, Object> extensions = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> entry : snapshot.entrySet()) {
+            String key = entry.getKey();
+            if (key == null || KEY_LOADED.equals(key) || KEY_TOTAL.equals(key)
+                    || KEY_SPEED.equals(key) || KEY_LAST_UPDATE_TIME.equals(key)) {
+                continue;
+            }
+            extensions.put(key, entry.getValue());
+        }
+        return extensions.isEmpty() ? null : extensions;
+    }
+
+    /**
+     * 把快照片段解析为 long，无法识别时使用默认值。
+     *
+     * @param value        快照片段
+     * @param defaultValue 默认值
+     * @return 解析结果
+     */
+    private static long toLong(Object value, long defaultValue) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof CharSequence text) {
+            try {
+                return Long.parseLong(text.toString().trim());
+            } catch (NumberFormatException e) {
+                return defaultValue;
+            }
+        }
+        return defaultValue;
     }
 
     /**
@@ -331,5 +407,15 @@ class SfcTaskReporter {
             this.lastLoaded = lastLoaded;
             this.lastReportTime = lastReportTime;
         }
+    }
+
+    /**
+     * 一次进度上报所需的快照数据。
+     *
+     * @param loaded     已完成量
+     * @param total      总量，-1 表示未知
+     * @param extensions 进度扩展信息，可能为 null
+     */
+    private record ProgressSnapshot(long loaded, long total, Map<String, Object> extensions) {
     }
 }

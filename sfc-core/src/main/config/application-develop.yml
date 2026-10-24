@@ -160,8 +160,19 @@ sfc:
   internal:
     # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。留空 = 未配置：服务端拒绝全部 /api/internal/** 请求
     # （fail-closed，启动打印 ERROR），客户端也无法签发调用凭证；不得少于 32 个字符，例如 `openssl rand -hex 16`。
+    # ⚠️ core 单机部署（未启用微服务）也必须配置该密钥：内嵌 Worker 通过内部 HTTP 与调度面交互，
+    #    未配置时无法签发调用凭证，启动日志打印 ERROR 并自动禁用认领。
     key: ${SFC_INTERNAL_KEY:}
     # 本服务名（写入调用凭证的 iss，便于接收方审计/白名单）
     service-name: sfc-core
     # 是否在本进程启用服务端校验过滤器，默认 true（Servlet 应用自动装配）
     server-enabled: true
+  # 任务 Worker（内嵌执行者）配置：core 节点以 CORE 角色通过服务发现 + 内部 HTTP 与异步任务调度面交互。
+  task:
+    worker:
+      # 本实例的执行者角色：CORE = core 节点，SERVICE = 微服务实例
+      role: CORE
+      # 单实例最大并发执行任务数；普通任务受该上限限制，紧急任务（immediate=true）不受限制
+      max-concurrent-tasks: ${SFC_TASK_MAX_CONCURRENT_TASKS:64}
+      # 没有可认领任务时的长轮询等待秒数，越小则空闲期的请求越频繁
+      claim-wait-seconds: 10

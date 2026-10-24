@@ -1,10 +1,9 @@
 package com.sfc.cloud.task.worker;
 
+import com.sfc.cloud.constants.SfcServiceName;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-
-import java.time.Duration;
 
 /**
  * 任务 Worker 配置项，前缀 {@code sfc.task.worker}。
@@ -22,59 +21,46 @@ import java.time.Duration;
 public class SfcTaskWorkerProperties {
 
     /**
-     * 是否启用任务 Worker（默认 {@code true}）。
-     *
-     * <p>设为 {@code false} 时不注册/不认领/不执行任务，也不会暴露中断端点。</p>
+     * 是否启用任务 Worker（默认 {@code true}）；设为 {@code false} 时不认领任务，也不暴露中断端点。
      */
     private boolean enabled = true;
 
     /**
-     * sfc-core 的基础地址（默认 {@code http://127.0.0.1:8087}）。
+     * sfc-core 在服务注册中心中的服务名（默认 {@code sfc-core}）。
      *
-     * <p>所有内部接口调用（注册/认领/上报/提交）都会发往该地址，并自动携带内部调用凭证。</p>
+     * <p>Worker 经 Spring Cloud LoadBalancer 按该服务名从服务发现中选取 core 实例，多实例默认轮询。</p>
      */
-    private String coreBaseUrl = "http://127.0.0.1:8087";
+    private String coreServiceId = SfcServiceName.CORE;
 
     /**
-     * worker 唯一标识。留空时自动生成：{@code 服务名:主机:端口:随机后缀}。
-     *
-     * <p>同一服务的多个实例必须不同；固定该值可用于在重启后保持任务归属可追踪。</p>
-     */
-    private String workerId = "";
-
-    /**
-     * 所属服务名。留空时取 {@code spring.application.name}，再回退 {@code sfc-task-worker}。
+     * 所属服务名。留空时取服务注册信息（{@code Registration#getServiceId()}），
+     * 再回退 {@code spring.application.name}，最后回退 {@code sfc-task-worker}。
      */
     private String serviceName = "";
 
     /**
-     * 本实例对 core 的回调地址（不含路径），例如 {@code http://127.0.0.1:8090}。
+     * 本实例作为任务执行者的角色（默认 {@code SERVICE}）。
      *
-     * <p>core 通过 {@code {callbackBaseUrl}/api/internal/task/interrupt} 下发中断指令。
-     * 留空时自动探测：{@code http://本机地址:server.port}（端口取 Web 容器实际监听端口）。</p>
-     */
-    private String callbackBaseUrl = "";
-
-    /**
-     * 最大负载（默认 CPU 核数 * 100，100 表示 1 个 CPU 核心的算力），随心跳上报给 core。
-     */
-    private int maxLoad = Runtime.getRuntime().availableProcessors() * 100;
-
-    /**
-     * 心跳（重新注册）间隔，默认 10 秒。
+     * <p>取值与 core 的 {@code AsyncTaskConstants.WorkerRole} 一致：</p>
+     * <ul>
+     *     <li>{@code CORE}：core 节点内嵌的执行者；</li>
+     *     <li>{@code SERVICE}：微服务实例。</li>
+     * </ul>
      *
-     * <p>core 侧的 worker 注册信息有效期为 30 秒，本值必须明显小于该有效期，否则会被判定为失联
-     * 并触发任务回收。</p>
+     * <p>角色随任务认领上报，core 据此选择中断指令的下发方式（core 节点走集群 RPC，
+     * 微服务实例走 HTTP 回调）；留空时按 {@code SERVICE} 处理。</p>
      */
-    private Duration heartbeatInterval = Duration.ofSeconds(10);
+    private String role = "SERVICE";
 
     /**
-     * 认领任务时无任务可认领的长轮询等待秒数，默认 30 秒。小于等于 0 表示不等待。
+     * 认领任务时无任务可认领的长轮询等待秒数，默认 30 秒。小于等于 0 表示不等待；
+     * 实例满载（只认领紧急任务）时 SDK 会把等待秒数自动缩短为不超过 3 秒。
      */
     private int claimWaitSeconds = 30;
 
     /**
-     * 最大并发执行任务数，默认 CPU 核数。达到上限后暂停认领，直到有任务结束释放容量。
+     * 最大并发执行任务数，默认 CPU 核数。普通任务受该上限限制，满载时只认领紧急任务；
+     * 紧急任务不受限制，因此实际并发可能短暂超出本值。
      */
     private int maxConcurrentTasks = Runtime.getRuntime().availableProcessors();
 }

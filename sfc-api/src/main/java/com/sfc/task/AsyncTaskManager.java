@@ -42,12 +42,6 @@ public interface AsyncTaskManager {
     void submitAsyncTask(AsyncTaskRecord record) throws IOException;
 
     /**
-     * 立即执行异步任务，不加入队列调度
-     * @param record    任务记录
-     */
-    void executeAsyncTask(AsyncTaskRecord record) throws IOException;
-
-    /**
      * 快捷创建一个异步任务并提交执行
      * @param param 创建参数
      * @return 任务记录对象
@@ -57,7 +51,7 @@ public interface AsyncTaskManager {
     /**
      * 以指定用户身份创建并提交一个异步任务。
      * <p>用于服务间内部提交场景（例如微服务需要把任务交给异步任务系统统一调度），
-     * 调用方已经确定任务归属用户，不再从当前登录上下文中获取。</p>
+     * 调用方直接指定任务归属用户，不从当前登录上下文获取。</p>
      *
      * @param uid   任务归属用户id
      * @param param 创建参数
@@ -99,9 +93,4 @@ public interface AsyncTaskManager {
      * @param taskId 任务id
      */
     ProgressRecord getProgress(Long taskId) throws IOException;
-
-    /**
-     * 获取异步任务执行器
-     */
-    AsyncTaskExecutor getExecutor();
 }

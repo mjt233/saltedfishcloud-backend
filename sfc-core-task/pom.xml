@@ -11,16 +11,38 @@
 
     <artifactId>sfc-core-task</artifactId>
     <name>sfc-core-task</name>
-    <description>咸鱼云异步任务框架实现（调度/执行器/Worker/上报/协议/管理接口）</description>
+    <description>咸鱼云异步任务框架实现（调度/控制面：认领调度、健康检查、上报落库、中断路由、管理接口）</description>
+
+    <properties>
+        <!--
+            Spring Cloud 版本：本模块只使用 spring-cloud-commons 的 DiscoveryClient / Registration 契约，
+            用于「按服务发现判定执行者存活、定位中断回调地址」。版本与 sfc-core、microservices 保持一致。
+        -->
+        <spring-cloud.version>2025.1.0</spring-cloud.version>
+    </properties>
 
     <!--
         异步任务框架模块：从 sfc-core 拆分而来，便于独立管理与维护。
         - 契约与模型（AsyncTask/AsyncTaskFactory/AsyncTaskManager/AsyncTaskRecord/仓库接口等）仍在 sfc-api；
-        - 本模块只包含实现：类型路由认领调度、本地 Worker、健康检查、微服务 Worker 上报协议、前端管理接口等；
+        - 本模块只包含调度与控制面：类型路由认领调度、健康检查、上报落库、中断路由、前端管理接口等；
+        - 执行侧（池化执行、认领循环、进度/日志上报、中断接收、优雅停机）由 sfc-task-worker SDK 提供；
         - 包名保持 com.sfc.task 不变，sfc-core 通过依赖本模块并 @EnableAsyncTask 引入。
         Web（控制器/RestClient）、JPA、Validation、Lombok、测试等依赖由根 pom 的全局 <dependencies> 继承，
-        本模块只需显式声明宿主基础库 sfc-api 与内部接口鉴权 SDK sfc-auth。
+        本模块只需显式声明宿主基础库 sfc-api、内部接口鉴权 SDK sfc-auth 与任务执行者 SDK sfc-task-worker。
     -->
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud 版本列车：统一管理 spring-cloud-commons 等组件的实际版本 -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>com.xiaotao</groupId>
@@ -28,13 +50,30 @@
             <version>${api.version}</version>
         </dependency>
         <!--
-            内部接口鉴权 SDK：向微服务 Worker 下发中断指令时需要签发内部调用凭证
-            （SfcInternalTokenIssuer / SfcInternalTokenRequestInitializer）。
+            内部接口鉴权 SDK：/api/internal/task/** 内部接口的凭证签发与入站校验能力由 sfc-auth 提供，
+            执行者 SDK 的出站请求与其入站中断端点都依赖该能力。
         -->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-auth</artifactId>
             <version>${auth.version}</version>
+        </dependency>
+        <!--
+            任务执行者 SDK：Worker 运行时（认领/执行/上报/中断接收/停机）、内部协议报文与执行者身份
+            统一由 SDK 提供；本模块只保留调度与控制面。
+        -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-task-worker</artifactId>
+            <version>${task.worker.version}</version>
+        </dependency>
+        <!--
+            Spring Cloud 服务发现契约：DiscoveryClient（判定执行者是否存活、定位微服务实例地址）、
+            Registration（获取当前节点的 serviceId 与 instanceId 作为本地执行者身份）。
+        -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-commons</artifactId>
         </dependency>
     </dependencies>
 </project>

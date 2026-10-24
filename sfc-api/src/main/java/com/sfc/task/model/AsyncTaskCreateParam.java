@@ -41,7 +41,9 @@ public class AsyncTaskCreateParam {
     private Boolean isTemp;
 
     /**
-     * 是否立即执行
+     * 是否立即执行。
+     * <p>为 {@code true} 时任务以紧急优先级入队（{@link com.sfc.task.AsyncTaskConstants.Priority#URGENT}），
+     * 执行者满载时也会优先认领执行；否则按普通优先级排队。</p>
      */
     private Boolean immediate;
 }

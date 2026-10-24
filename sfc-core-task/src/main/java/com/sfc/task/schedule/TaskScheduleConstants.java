@@ -11,11 +11,6 @@ public final class TaskScheduleConstants {
      */
     public static final int MAX_RETRY = 3;
 
-    /**
-     * 任务执行者注册信息有效期（秒）
-     */
-    public static final int WORKER_TTL_SECONDS = 30;
-
     private TaskScheduleConstants() {
     }
 }

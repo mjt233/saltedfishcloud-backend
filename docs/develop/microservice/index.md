@@ -5,7 +5,7 @@
 这些工程与仓库内其它模块有两个关键区别：
 
 - **不继承 root `pom.xml`**：父 POM 是 `microservices/pom.xml`，而它的父 POM 才是 `spring-boot-starter-parent`，因此不会被拖入咸鱼云宿主约 200+ 个 jar 的技术栈；
-- **零宿主依赖**：不依赖任何 `com.xiaotao.saltedfishcloud:*` 坐标。允许的仓库内依赖是两个**共享库**：`com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页/远程契约）与 `com.sfc.cloud:sfc-common-data`（JPA 基座），以及 **local 注册中心客户端 SDK** `com.sfc.cloud:sfc-local-registry-client`。⚠️ 三者均**位于仓库根目录**且**不继承任何 parent**，自带 BOM；`sfc-common` 还必须保持零 JPA 依赖（网关无 JPA）。
+- **零宿主依赖**：不依赖任何 `com.xiaotao.saltedfishcloud:*` 坐标。允许的仓库内依赖是**共享库** `com.sfc.cloud:sfc-common`（轻量：常量/信封/异常/工具/分页/远程契约）、`com.sfc.cloud:sfc-common-data`（JPA 基座）、**local 注册中心客户端 SDK** `com.sfc.cloud:sfc-local-registry-client`，以及**内部接口鉴权 SDK** `com.xiaotao:sfc-auth`。⚠️ 这些模块均**位于仓库根目录**且**不继承任何 parent**，自带 BOM；`sfc-common` 还必须保持零 JPA 依赖（网关无 JPA）。
 
 ## 工程清单
 
@@ -20,7 +20,7 @@
 | `sfc-demo-service` | 微服务示例：演示最简工程结构、注册发现、远程调用、接口鉴权与异步任务接入 |
 | [`sfc-ai-service`](../../../microservices/sfc-ai-service/) | **AI 助手服务**（端口 `8091`）：原宿主插件 `sfc-ext-ai`，Phase 2 迁为独立微服务——WebSocket 流式 AI 对话 + LLM 提供商/模型 CRUD，**独立 SQLite `ai.db`**，身份取自 `X-Sfc-Uid`，网盘操作经 `sfc-remote-client` 回调 core。前端影响见其[适配清单](../../../microservices/sfc-ai-service/docs/frontend-adaptation-checklist.md) |
 
-依赖方向：`sfc-common` → `sfc-common-data` / `sfc-remote-client` / `sfc-task-worker` / `sfc-gateway` / `sfc-demo-service`。
+依赖方向：`sfc-common` → `sfc-common-data` / `sfc-auth` / `sfc-remote-client` / `sfc-task-worker` / `sfc-gateway` / `sfc-demo-service`。其中 `sfc-task-worker` 同时被宿主 `sfc-core-task` 依赖，宿主 core 与微服务共用同一套任务执行侧实现。
 
 ## 构建前置
 

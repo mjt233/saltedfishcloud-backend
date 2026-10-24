@@ -124,13 +124,22 @@
             <version>${api.version}</version>
         </dependency>
         <!--
-            异步任务框架实现模块：包含类型路由认领调度、本地 Worker、健康检查、
-            微服务 Worker 上报协议与前端管理接口，通过 @EnableAsyncTask 引入。
+            异步任务框架实现模块：包含类型路由认领调度、健康检查、执行者上报协议与前端管理接口，
+            通过 @EnableAsyncTask 引入；执行侧（Worker）由 sfc-task-worker SDK 提供。
         -->
         <dependency>
             <groupId>com.xiaotao</groupId>
             <artifactId>sfc-core-task</artifactId>
             <version>${revision}</version>
+        </dependency>
+        <!--
+            任务执行者 SDK：宿主进程内嵌其 Worker 运行时，以服务发现 + 内部 HTTP 与调度中心交互；
+            AsyncTaskFactory 由 sfc-core 的桥接配置适配为 SDK 的 SfcTaskHandler。
+        -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-task-worker</artifactId>
+            <version>${task.worker.version}</version>
         </dependency>
         <!--
             Nacos 服务注册与发现：提供 Spring Cloud 官方的 DiscoveryClient /

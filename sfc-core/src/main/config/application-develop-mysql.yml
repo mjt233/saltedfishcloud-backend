@@ -163,3 +163,9 @@ sfc:
     service-name: sfc-core
     # 是否在本进程启用服务端校验过滤器，默认 true（Servlet 应用自动装配）
     server-enabled: true
+  # 任务 Worker（内嵌执行者）配置：core 节点以 CORE 角色参与任务执行，并发上限按机器调整
+  task:
+    worker:
+      role: CORE
+      max-concurrent-tasks: ${SFC_TASK_MAX_CONCURRENT_TASKS:64}
+      claim-wait-seconds: 10

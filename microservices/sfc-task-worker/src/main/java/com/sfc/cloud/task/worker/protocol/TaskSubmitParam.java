@@ -3,17 +3,19 @@ package com.sfc.cloud.task.worker.protocol;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * 服务间提交任务请求参数，镜像 core 的 {@code com.sfc.task.protocol.TaskSubmitParam}。
+ * 服务间提交任务请求参数（调用方 → core）。
  *
- * <p>该接口只接受服务间内部调用（由 sfc-auth 校验内部调用凭证），因此 {@code uid} 表示
- * 「以哪个用户的身份创建该任务」，由调用方显式指定。</p>
+ * <p>仅接受服务间内部调用（由 sfc-auth 校验内部调用凭证）；{@code uid} 表示以哪个用户的身份创建任务，
+ * 由调用方显式指定。</p>
  *
  * @param name        任务名称
- * @param taskType    任务类型，须与某个执行者注册支持的任务类型一致
+ * @param taskType    任务类型，须与某个执行者声明的任务类型一致
  * @param params      任务参数
  * @param uid         任务归属用户id
  * @param cpuOverhead 任务的 CPU 开销指数
  * @param isTemp      是否为临时任务
+ * @param immediate   是否要求立即处理（紧急任务）。为 true 时任务进入紧急通道，
+ *                    执行者满载时仍会优先认领并执行
  */
 public record TaskSubmitParam(
         String name,
@@ -21,6 +23,7 @@ public record TaskSubmitParam(
         String params,
         Long uid,
         Integer cpuOverhead,
-        @JsonProperty("isTemp") Boolean isTemp
+        @JsonProperty("isTemp") Boolean isTemp,
+        Boolean immediate
 ) {
 }

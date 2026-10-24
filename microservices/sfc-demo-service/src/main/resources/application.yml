@@ -10,31 +10,26 @@
 #
 # 调用 core 内部接口（/api/internal/**）需要服务间共享密钥：各服务用同一份密钥自行签发调用凭证
 # （配置项 sfc.internal.key ← 环境变量 SFC_INTERNAL_KEY，由 sfc-auth SDK 提供）。
-# 留空则无法签发凭证、调用必然失败；core 侧未配置时对外一律 403（fail-closed）。
+# 留空时：本服务无法签发凭证（调用 core 必然失败），且任务 Worker 启动自检失败、自动禁用认领（应用仍可启动）；
+# core 侧未配置时对外一律 403（fail-closed）。
 sfc:
   internal:
     key: ${SFC_INTERNAL_KEY:}
   # 异步任务执行者（Worker）SDK 配置：本服务实现 SfcTaskHandler 后即可认领并执行 sfc-core 调度的任务
+  # 执行者身份取自服务注册中心（serviceId + host:port），core 通过服务发现判定存活并回调中断端点
   task:
     worker:
-      # 是否作为任务执行者启动（默认 true）。启动后会向 core 注册、心跳续约、长轮询认领并执行任务
+      # 是否作为任务执行者启动（默认 true）。启动后会先确认内部鉴权已配置、本实例已在注册中心可见，再长轮询认领并执行任务
       enabled: true
-      # sfc-core 内部接口基址（默认 http://127.0.0.1:8087）。微服务不在本机时改成 core 的实际地址
-      core-base-url: http://127.0.0.1:8087
-      # 本实例对 core 的回调地址（core 据此下发中断指令）。
-      # 留空则自动探测为 http://<本机地址>:<server.port>；容器/多网卡环境建议显式配置为 core 可达的地址
-      # callback-base-url: http://127.0.0.1:8090
-      # worker 唯一标识，留空自动生成「服务名:主机:端口:随机后缀」；多实例部署保持默认即可
-      # worker-id: sfc-demo-service-1
-      # 服务名，留空取 spring.application.name
+      # sfc-core 在服务注册中心中的服务名（默认 sfc-core），worker 经负载均衡按该服务名选取 core 实例
+      # core-service-id: sfc-core
+      # 所属服务名，留空时取服务注册信息（Registration）中的 serviceId
       # service-name: sfc-demo-service
-      # 最大负载（100 = 1 个 CPU 核心的算力），默认 CPU 核数 * 100，随心跳上报给 core
-      # max-load: 800
-      # 心跳（重新注册）间隔，默认 10s；core 侧注册有效期为 30s，需明显小于该值
-      # heartbeat-interval: 10s
-      # 认领任务的长轮询等待秒数，默认 30
+      # 本实例的执行者角色，默认 SERVICE（微服务保持默认即可；core 节点内嵌的 Worker 为 CORE）
+      # role: SERVICE
+      # 认领任务的长轮询等待秒数，默认 30；满载时 SDK 自动缩短为不超过 3 秒（只认领紧急任务）
       # claim-wait-seconds: 30
-      # 最大并发执行任务数，默认 CPU 核数；满载后暂停认领
+      # 最大并发执行任务数，默认 CPU 核数；满载后只认领紧急任务（紧急任务不受该上限限制）
       # max-concurrent-tasks: 8
 server:
   # 避开咸鱼云宿主的 8087、Nacos 控制台的 8080 与控制台 API 的 8848/9848

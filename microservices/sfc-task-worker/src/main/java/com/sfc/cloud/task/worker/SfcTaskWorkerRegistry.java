@@ -18,15 +18,14 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Worker 运行时注册表：保存「任务类型 → 处理器」能力映射与「任务id → 执行上下文」的运行中任务，
  * 并提供并发容量控制与中断入口。
  *
- * <p><b>中断语义（尽力而为且幂等）</b>：core 下发的中断指令可能早于执行上下文登记（worker 已认领、
- * 任务线程尚未开始执行）到达。此时中断不会被丢弃，而是先登记到有界的「待处理中断」集合中；
- * 对应任务开始执行时会立即生效。因此 {@link #interrupt(Long)} 对「已认领但未开始执行」的任务
- * 同样返回 true（已受理、稍后生效），并可在任务结束后安全地重复调用。</p>
+ * <p>中断为尽力而为且幂等：{@link #interrupt(Long)} 对已认领但尚未开始执行的任务同样返回 true，
+ * 任务开始执行时立即生效，并可在任务结束后安全地重复调用。</p>
  *
- * <p>由自动装配创建为单例，任务处理器无需直接使用本类。</p>
+ * <p>宿主（sfc-core 内嵌执行者）与微服务共用本实现，由自动装配创建为单例；
+ * 任务处理器无需直接使用本类。</p>
  */
 @Slf4j
-class SfcTaskWorkerRegistry {
+public class SfcTaskWorkerRegistry {
 
     /**
      * 日志前缀
@@ -39,7 +38,7 @@ class SfcTaskWorkerRegistry {
     private final Map<String, SfcTaskHandler> handlersByType;
 
     /**
-     * 待处理中断的 taskId 上限。超出后按「最旧优先」淘汰，避免 core 异常重试导致内存泄漏。
+     * 待处理中断的 taskId 上限，超出后按最旧优先淘汰。
      */
     private static final int MAX_PENDING_INTERRUPTS = 512;
 
@@ -54,12 +53,12 @@ class SfcTaskWorkerRegistry {
     private final Map<Long, SfcTaskExecution> runningExecutions = new ConcurrentHashMap<>();
 
     /**
-     * 尚未登记执行上下文的中断指令（插入顺序即「最旧优先」的淘汰顺序）
+     * 尚未登记执行上下文的中断指令
      */
     private final Set<Long> pendingInterrupts = new LinkedHashSet<>();
 
     /**
-     * 已认领但尚未开始执行的任务占位，避免认领循环在处理器线程启动前超量认领。
+     * 已认领但尚未开始执行的任务占位数
      */
     private final AtomicInteger pendingSlots = new AtomicInteger();
 
@@ -70,7 +69,7 @@ class SfcTaskWorkerRegistry {
      * @param properties 配置项
      * @throws IllegalStateException 任务类型为空或重复时抛出
      */
-    SfcTaskWorkerRegistry(List<SfcTaskHandler> handlers, SfcTaskWorkerProperties properties) {
+    public SfcTaskWorkerRegistry(List<SfcTaskHandler> handlers, SfcTaskWorkerProperties properties) {
         this.properties = properties;
         Map<String, SfcTaskHandler> map = new LinkedHashMap<>();
         if (handlers != null) {
@@ -119,7 +118,7 @@ class SfcTaskWorkerRegistry {
     }
 
     /**
-     * 获取支持的任务类型集合（注册给 core 的能力声明）。
+     * 获取支持的任务类型集合（认领任务时作为类型过滤条件提交给 core）。
      *
      * @return 任务类型集合
      */
@@ -130,7 +129,7 @@ class SfcTaskWorkerRegistry {
     /**
      * 登记一个运行中的任务执行上下文。
      *
-     * <p>若该任务在登记前已收到过中断指令（正常的认领→执行之间的窗口），登记后立即生效。</p>
+     * <p>若该任务在登记前已收到中断指令，登记后立即生效。</p>
      *
      * @param execution 执行上下文
      */
@@ -172,10 +171,17 @@ class SfcTaskWorkerRegistry {
     }
 
     /**
-     * 尝试占用一个执行容量（认领前调用）。
+     * 判断当前是否还有执行容量（运行中任务数与已认领未开始任务数之和小于
+     * {@code max-concurrent-tasks}）。
      *
-     * <p>容量口径为「运行中任务数 + 已认领未开始任务数」，保证并发任务数不超过
-     * {@code sfc.task.worker.max-concurrent-tasks}。</p>
+     * @return 还有空闲容量返回 true
+     */
+    boolean hasCapacity() {
+        return runningExecutions.size() + pendingSlots.get() < maxConcurrentTasks();
+    }
+
+    /**
+     * 尝试占用一个执行容量（认领前调用）。
      *
      * @return 占用成功返回 true；已满载返回 false
      */
@@ -201,10 +207,6 @@ class SfcTaskWorkerRegistry {
 
     /**
      * 受理一个任务的中断请求（尽力而为且幂等）。
-     *
-     * <p>已登记执行上下文 → 立即标记中断并触发回调；尚未登记（worker 已认领、执行线程还未开始）→
-     * 登记到有界的待处理中断集合，任务开始执行时立即生效。两种情况都返回 true 表示「已受理」，
-     * 避免 core 侧把正常的执行前窗口误判为中断失败。</p>
      *
      * @param taskId 任务id
      * @return 已受理返回 true；{@code taskId} 为空返回 false
@@ -241,18 +243,6 @@ class SfcTaskWorkerRegistry {
             log.info("{}任务[{}]尚未开始执行，已暂存中断指令，开始执行时立即生效", LOG_PREFIX, taskId);
         }
         return true;
-    }
-
-    /**
-     * 获取当前负载：按运行中任务数折算为与 {@code max-load} 同一量纲的开销指数。
-     *
-     * @return 当前负载，不超过最大负载
-     */
-    int getCurrentLoad() {
-        int maxLoad = Math.max(1, properties.getMaxLoad());
-        int maxConcurrent = maxConcurrentTasks();
-        int loadPerTask = Math.max(1, maxLoad / maxConcurrent);
-        return Math.min(maxLoad, runningExecutions.size() * loadPerTask);
     }
 
     /**

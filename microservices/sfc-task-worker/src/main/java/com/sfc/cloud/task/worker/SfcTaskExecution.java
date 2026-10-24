@@ -7,10 +7,12 @@ import java.io.PrintWriter;
 import java.io.Writer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 /**
  * 任务执行上下文。
@@ -21,7 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  *     <li>任务基本信息：{@link #getTaskId()}、{@link #getTaskName()}、{@link #getTaskType()}、
  *         {@link #getUid()}、{@link #getParams()}；</li>
  *     <li>日志输出流：{@link #getLogWriter()} 或 {@link #log(String)}，SDK 会缓冲并按批上报给 core；</li>
- *     <li>进度对象：{@link #getProgress()}（loaded / total，由 SDK 计算速度并节流上报）；</li>
+ *     <li>进度对象：{@link #getProgress()}（loaded / total）；</li>
+ *     <li>完整进度快照：{@link #setProgressSource(Supplier)}，供内嵌执行者（如 core 本地任务）提供
+ *         包含扩展字段的进度快照；</li>
  *     <li>中断协作：{@link #onInterrupt(Runnable)} 注册回调、{@link #isInterruptRequested()} 查询、
  *         {@link #checkInterrupted()} 在已中断时抛出 {@link SfcTaskInterruptedException}。</li>
  * </ul>
@@ -32,7 +36,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public final class SfcTaskExecution {
 
     /**
-     * 本地最多缓冲的日志行数。超出后丢弃最旧的行并记录丢弃数量，避免 core 长时间不可达时内存膨胀。
+     * 本地最多缓冲的日志行数，超出后按最旧优先丢弃。
      */
     private static final int MAX_BUFFERED_LOG_LINES = 5000;
 
@@ -77,6 +81,11 @@ public final class SfcTaskExecution {
     private final SfcTaskProgress progress = new SfcTaskProgress();
 
     /**
+     * 完整进度快照提供者；未设置时为 null（按 {@link #progress} 上报）
+     */
+    private volatile Supplier<Map<String, Object>> progressSource;
+
+    /**
      * 待上报的日志行缓冲
      */
     private final ConcurrentLinkedQueue<String> logLines = new ConcurrentLinkedQueue<>();
@@ -97,12 +106,12 @@ public final class SfcTaskExecution {
     private final AtomicBoolean interruptRequested = new AtomicBoolean(false);
 
     /**
-     * 是否已结束（结束上报或放弃上报后置位，SDK 不再对该任务做进度/日志上报）
+     * 是否已结束（结束上报或放弃上报后置位）
      */
     private final AtomicBoolean finished = new AtomicBoolean(false);
 
     /**
-     * 上报与结束/放弃流程的互斥锁（保证结束上报后不再有进度/日志上报到达 core）
+     * 上报与结束/放弃流程的互斥锁
      */
     private final Object reportLock = new Object();
 
@@ -196,6 +205,31 @@ public final class SfcTaskExecution {
     }
 
     /**
+     * 设置完整进度快照提供者。
+     *
+     * <p>供内嵌执行者（如 sfc-core 本地任务）使用：进度快照以 {@code Map<String, Object>} 形式给出，
+     * 其中键 {@code loaded} / {@code total} 为进度量，其余键（{@code speed}、{@code lastUpdateTime} 除外）
+     * 作为进度扩展信息一并上报；SDK 会在每个上报周期重新读取快照。</p>
+     *
+     * <p>微服务任务处理器无需使用本方法，直接通过 {@link #getProgress()} 更新进度即可。</p>
+     *
+     * @param progressSource 进度快照提供者，返回 null 时回退到 {@link #getProgress()} 的进度值；
+     *                       传 null 表示取消提供者
+     */
+    public void setProgressSource(Supplier<Map<String, Object>> progressSource) {
+        this.progressSource = progressSource;
+    }
+
+    /**
+     * 获取完整进度快照提供者（仅由 Worker SDK 的进度上报使用）。
+     *
+     * @return 进度快照提供者，未设置时返回 null
+     */
+    Supplier<Map<String, Object>> getProgressSource() {
+        return progressSource;
+    }
+
+    /**
      * 获取日志输出流。
      *
      * <p>写入的内容会按行缓冲，由 SDK 定期（约 1 秒）批量上报给 core；任务结束时残余内容会随
@@ -235,10 +269,7 @@ public final class SfcTaskExecution {
     /**
      * 注册中断回调。
      *
-     * <p>core 下发中断指令时，SDK 会依次执行已注册的回调，用于关闭资源、打断阻塞等待等；
-     * 回调应快速返回，耗时逻辑请异步处理。</p>
-     *
-     * <p>若注册时任务已经处于中断状态，回调会立即执行一次。</p>
+     * <p>回调应快速返回，耗时逻辑请异步处理；注册时任务已处于中断状态则立即执行一次。</p>
      *
      * @param callback 中断回调，为 null 时忽略
      */
@@ -402,8 +433,7 @@ public final class SfcTaskExecution {
     }
 
     /**
-     * 按行切分的日志 Writer：遇到换行符即产出一行，未换行的内容保留到 {@link #flush()} 或
-     * SDK 在任务结束时主动冲刷。
+     * 按行切分的日志 Writer。
      */
     private final class LineBufferingWriter extends Writer {
 
