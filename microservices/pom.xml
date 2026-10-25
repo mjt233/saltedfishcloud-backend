@@ -30,6 +30,7 @@
         <module>sfc-gateway</module>
         <module>sfc-demo-service</module>
         <module>sfc-ai-service</module>
+        <module>sfc-download-service</module>
     </modules>
 
     <properties>

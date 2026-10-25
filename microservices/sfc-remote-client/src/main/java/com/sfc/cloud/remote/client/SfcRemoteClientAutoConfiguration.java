@@ -38,7 +38,8 @@ import java.net.http.HttpClient;
  */
 @AutoConfiguration
 @ConditionalOnClass(Client.class)
-@EnableFeignClients(clients = {SfcCoreFileFeignClient.class, SfcCoreUserFeignClient.class, SfcCoreConfigFeignClient.class})
+@EnableFeignClients(clients = {SfcCoreFileFeignClient.class, SfcCoreUserFeignClient.class, SfcCoreConfigFeignClient.class,
+        SfcCoreProxyFeignClient.class})
 @EnableConfigurationProperties(SfcRemoteClientProperties.class)
 public class SfcRemoteClientAutoConfiguration {
 
@@ -103,6 +104,18 @@ public class SfcRemoteClientAutoConfiguration {
     @ConditionalOnMissingBean
     public SfcCoreUserClient sfcCoreUserClient(SfcCoreUserFeignClient feignClient) {
         return new SfcCoreUserClient(feignClient);
+    }
+
+    /**
+     * sfc-core 代理节点查询统一客户端（按用户查询可用代理）。
+     *
+     * @param feignClient Feign 链路实现：按用户查询可用代理
+     * @return 代理节点查询客户端
+     */
+    @Bean
+    @ConditionalOnMissingBean
+    public SfcCoreProxyClient sfcCoreProxyClient(SfcCoreProxyFeignClient feignClient) {
+        return new SfcCoreProxyClient(feignClient);
     }
 
     /**

@@ -1,12 +1,15 @@
 package com.sfc.task.controller.internal;
 
 import com.sfc.cloud.task.worker.protocol.TaskAbandonParam;
+import com.sfc.cloud.task.worker.protocol.TaskCancelParam;
 import com.sfc.cloud.task.worker.protocol.TaskClaimParam;
 import com.sfc.cloud.task.worker.protocol.TaskDispatchInfo;
 import com.sfc.cloud.task.worker.protocol.TaskFinishReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskLogReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskProgressReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskReportStartParam;
+import com.sfc.cloud.task.worker.protocol.TaskStateInfo;
+import com.sfc.cloud.task.worker.protocol.TaskStateQueryParam;
 import com.sfc.cloud.task.worker.protocol.TaskSubmitParam;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.json.SfcJsonResult;
@@ -15,6 +18,8 @@ import com.sfc.task.AsyncTaskConstants;
 import com.sfc.task.AsyncTaskManager;
 import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
+import com.sfc.task.prog.ProgressRecord;
+import com.sfc.task.repo.AsyncTaskRecordRepo;
 import com.sfc.task.report.TaskReportService;
 import com.sfc.task.schedule.TaskClaimService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
@@ -30,6 +35,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Objects;
 
 /**
  * 异步任务执行者（worker）内部协议控制器。
@@ -40,7 +49,8 @@ import java.io.IOException;
  *
  * <p>本控制器是任务执行者 SDK（core 内嵌执行者与微服务实例共用）与调度中心之间的完整协议面：
  * 执行者通过它认领任务、上报执行进度与结果，协议报文使用
- * {@code com.sfc.cloud.task.worker.protocol} 包中的统一定义。</p>
+ * {@code com.sfc.cloud.task.worker.protocol} 包中的统一定义；微服务也通过它按任务id批量查询
+ * 状态与进度、取消任务（用于校准本地任务镜像与响应用户操作）。</p>
  */
 @Slf4j
 @RestController
@@ -55,11 +65,18 @@ public class TaskWorkerInternalController {
      */
     public static final String PREFIX = "/api/internal/task";
 
+    /**
+     * 单次批量查询任务状态允许的最大任务数量
+     */
+    private static final int MAX_QUERY_TASK_COUNT = 500;
+
     private final TaskClaimService claimService;
 
     private final TaskReportService reportService;
 
     private final AsyncTaskManager asyncTaskManager;
+
+    private final AsyncTaskRecordRepo taskRecordRepo;
 
     private final UserService userService;
 
@@ -132,6 +149,87 @@ public class TaskWorkerInternalController {
                 .build();
         AsyncTaskRecord record = asyncTaskManager.submitTaskForUser(param.uid(), createParam);
         return SfcJsonResult.getInstance(record.getId());
+    }
+
+    /**
+     * 批量查询任务的状态与最新进度快照。
+     *
+     * <p>供微服务按任务id校准本地保存的任务状态镜像：返回结果只包含 core 中实际存在的任务，
+     * 不存在的任务id会被忽略（调用方按 {@link TaskStateInfo#taskId()} 对齐）；进度来自 core 的
+     * 进度快照缓存，任务没有快照时进度字段为 null。</p>
+     *
+     * @param param 查询参数
+     * @return 任务状态与进度列表，可能为空
+     */
+    @PostMapping("query")
+    @AllowAnonymous
+    @NotBlock
+    public SfcJsonResult<List<TaskStateInfo>> query(@RequestBody TaskStateQueryParam param) {
+        List<Long> taskIds = param == null ? null : param.taskIds();
+        if (taskIds == null || taskIds.isEmpty()) {
+            throw new SfcJsonException(400, "taskIds 不能为空");
+        }
+        if (taskIds.size() > MAX_QUERY_TASK_COUNT) {
+            throw new SfcJsonException(400, "单次最多查询 " + MAX_QUERY_TASK_COUNT + " 个任务");
+        }
+        List<Long> ids = taskIds.stream().filter(Objects::nonNull).distinct().toList();
+        if (ids.isEmpty()) {
+            return SfcJsonResult.getInstance(List.of());
+        }
+        List<TaskStateInfo> result = new ArrayList<>(ids.size());
+        for (AsyncTaskRecord record : taskRecordRepo.findAllById(ids)) {
+            result.add(toTaskStateInfo(record));
+        }
+        return SfcJsonResult.getInstance(result);
+    }
+
+    /**
+     * 由任务记录与最新进度快照构建任务状态信息。
+     *
+     * @param record 任务记录
+     * @return 任务状态与进度信息
+     */
+    private TaskStateInfo toTaskStateInfo(AsyncTaskRecord record) {
+        ProgressRecord progress = reportService.getProgress(record.getId());
+        Long loaded = null;
+        Long total = null;
+        Long speed = null;
+        if (progress != null) {
+            loaded = progress.getLoaded();
+            total = progress.getTotal();
+            speed = progress.getSpeed();
+        }
+        Date finishDate = record.getFinishDate() != null ? record.getFinishDate() : record.getFailedDate();
+        return new TaskStateInfo(record.getId(), record.getStatus(), loaded, total, speed, finishDate);
+    }
+
+    /**
+     * 取消一个任务。
+     *
+     * <p>等待中的任务由 core 直接置为已取消（不会再被执行者认领）；运行中的任务由 core 按服务发现
+     * 定位执行者实例地址后下发中断指令。中断是尽力而为的：执行者已失联或中断指令下发失败时返回 409，
+     * 调用方可稍后重试或按业务语义处理。</p>
+     *
+     * @param param 取消参数
+     * @return 空成功响应
+     * @throws IOException 中断指令下发过程中出现 IO 异常时抛出
+     */
+    @PostMapping("cancel")
+    @AllowAnonymous
+    @NotBlock
+    public SfcJsonResult<Object> cancel(@RequestBody TaskCancelParam param) throws IOException {
+        Long taskId = param == null ? null : param.taskId();
+        if (taskId == null) {
+            throw new SfcJsonException(400, "taskId 不能为空");
+        }
+        try {
+            asyncTaskManager.interrupt(taskId);
+        } catch (IllegalArgumentException e) {
+            throw new SfcJsonException(400, "取消失败：" + e.getMessage());
+        } catch (IllegalStateException e) {
+            throw new SfcJsonException(409, "取消失败：" + e.getMessage());
+        }
+        return SfcJsonResult.emptySuccess();
     }
 
     /**

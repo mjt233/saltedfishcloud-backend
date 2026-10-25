@@ -4,6 +4,7 @@ import com.sfc.cloud.auth.SfcInternalTokenIssuer;
 import com.sfc.cloud.auth.client.SfcInternalTokenRequestInitializer;
 import com.sfc.cloud.constants.SfcServiceName;
 import com.sfc.cloud.task.worker.protocol.TaskAbandonParam;
+import com.sfc.cloud.task.worker.protocol.TaskCancelParam;
 import com.sfc.cloud.task.worker.protocol.TaskClaimParam;
 import com.sfc.cloud.task.worker.protocol.TaskDispatchInfo;
 import com.sfc.cloud.task.worker.protocol.TaskFinishReportParam;
@@ -11,6 +12,8 @@ import com.sfc.cloud.task.worker.protocol.TaskInterruptCommand;
 import com.sfc.cloud.task.worker.protocol.TaskLogReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskProgressReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskReportStartParam;
+import com.sfc.cloud.task.worker.protocol.TaskStateInfo;
+import com.sfc.cloud.task.worker.protocol.TaskStateQueryParam;
 import com.sfc.cloud.task.worker.protocol.TaskSubmitParam;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.json.SfcJsonResult;
@@ -26,22 +29,32 @@ import org.springframework.web.client.RestClientResponseException;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 /**
  * sfc-core 任务执行者内部协议客户端。
  *
- * <p>基于 {@link RestClient} 实现：发往 sfc-core 的请求会通过
- * {@link SfcInternalTokenRequestInitializer} 在请求头 {@code X-Sfc-Internal-Token} 中携带
+ * <p>基于 {@link RestClient} 实现：两类出站请求（发往 sfc-core 的内部接口、回调 worker 实例的中断指令）
+ * 都会通过 {@link SfcInternalTokenRequestInitializer} 在请求头 {@code X-Sfc-Internal-Token} 中携带
  * 每请求新签发的 HS256 内部调用凭证（签发器由 sfc-auth SDK 的自动装配提供）。</p>
  *
- * <p>core 回调 worker 实例的中断指令（{@link #requestInterrupt(String, Long)}）使用绝对地址，
- * 走独立的、不经过负载均衡的 {@link RestClient}。</p>
+ * <p>core 回调 worker 实例的中断指令（{@link #interruptWorker(String, Long)}）使用绝对地址，
+ * 走独立的、不经过负载均衡的 {@link RestClient}；但目标地址仍是执行者侧的 {@code /api/internal/**}
+ * 内部接口，其入站过滤器同样校验内部调用凭证，因此该客户端也必须携带凭证头，否则中断请求会被拒绝（403）。</p>
  *
  * <p>负载均衡拦截器与内部调用凭证签发器由自动装配强制注入，缺失时由 Spring Boot 启动失败兜底。</p>
  *
  * <p>对外公开的能力：{@link #submit(TaskSubmitParam)}（提交任务）、
- * {@link #requestInterrupt(String, Long)}（core 向指定 worker 实例下发中断指令）、
+ * {@link #queryTasks(Collection)}（批量查询任务状态与进度）、{@link #cancel(Long)}（取消任务）、
+ * {@link #interruptWorker(String, Long)}（core 向指定 worker 实例下发中断指令，仅供 core 内部回环使用）、
  * {@link #isAuthConfigured()}（内部鉴权配置自检）。</p>
+ *
+ * <p><b>后续演进方向：</b>「core → worker 中断回调」本质上是 core 的调度/控制面能力，不属于面向微服务的
+ * 执行者 SDK 公开契约；当前为兼容 core 既有调用方暂留在此（见 {@link #interruptWorker(String, Long)}
+ * 方法上的 TODO），后续计划迁移到 core 内部实现（例如 {@code sfc-core-task} 内的专用客户端），
+ * 届时本方法可降为包内可见或移除，SDK 对外只保留 {@code submit / queryTasks / cancel} 等控制面能力。</p>
  */
 @Slf4j
 public class SfcTaskWorkerClient {
@@ -97,6 +110,16 @@ public class SfcTaskWorkerClient {
     private static final String PATH_INTERRUPT = PATH_PREFIX + "/interrupt";
 
     /**
+     * 批量查询任务状态与进度
+     */
+    private static final String PATH_QUERY = PATH_PREFIX + "/query";
+
+    /**
+     * 取消任务
+     */
+    private static final String PATH_CANCEL = PATH_PREFIX + "/cancel";
+
+    /**
      * 连接 sfc-core 的超时时间
      */
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
@@ -122,7 +145,8 @@ public class SfcTaskWorkerClient {
     private final RestClient coreRestClient;
 
     /**
-     * core 回调 worker 实例的 RestClient：直接使用绝对地址，不经过负载均衡
+     * core 回调 worker 实例的 RestClient：直接使用绝对地址，不经过负载均衡；
+     * 每次请求同样携带内部调用凭证（执行者侧 {@code /api/internal/**} 的入站过滤器会校验）
      */
     private final RestClient workerRestClient;
 
@@ -138,6 +162,11 @@ public class SfcTaskWorkerClient {
 
     /**
      * 构造客户端（由自动装配创建）。
+     *
+     * <p>同时构建两个 {@link RestClient}：发往 sfc-core 的负载均衡客户端与回调 worker 实例绝对地址的
+     * 中断客户端。两者都注册 {@link SfcInternalTokenRequestInitializer}：前者的目标是 core 的
+     * {@code /api/internal/task/**}，后者是执行者侧的 {@code /api/internal/task/interrupt}，
+     * 都属于内部接口，均须携带内部调用凭证。</p>
      *
      * @param properties              配置项
      * @param loadBalancerInterceptor Spring Cloud LoadBalancer 官方拦截器
@@ -160,8 +189,12 @@ public class SfcTaskWorkerClient {
                 .requestInterceptor(loadBalancerInterceptor)
                 .requestInitializer(new SfcInternalTokenRequestInitializer(issuer))
                 .build();
-        // 中断指令的目标是具体 worker 实例的绝对地址，不能经过负载均衡（否则会把 IP 当作服务名）
-        this.workerRestClient = RestClient.builder().requestFactory(requestFactory).build();
+        // 中断指令的目标是具体 worker 实例的绝对地址，不能经过负载均衡（否则会把 IP 当作服务名）；
+        // 但目标仍是执行者侧 /api/internal/** 内部接口，其入站过滤器会校验内部调用凭证，必须携带鉴权头
+        this.workerRestClient = RestClient.builder()
+                .requestFactory(requestFactory)
+                .requestInitializer(new SfcInternalTokenRequestInitializer(issuer))
+                .build();
     }
 
     /**
@@ -206,17 +239,64 @@ public class SfcTaskWorkerClient {
     }
 
     /**
-     * 向指定 worker 实例下发任务中断指令。
+     * 批量查询任务的状态与最新进度快照（对外公开能力）。
+     *
+     * <p>供微服务校准本地保存的任务状态镜像：core 按任务id批量返回状态与进度快照，
+     * 不存在的任务id会被忽略（返回结果只包含 core 中实际存在的任务，且不保证与入参顺序一致）。
+     * 单次最多查询 500 个任务，超出时 core 返回 400（由本方法抛出 {@link SfcJsonException}）。</p>
+     *
+     * @param taskIds 要查询的任务id集合，不能为 null 或空
+     * @return 任务状态与进度列表，可能为空
+     * @throws SfcJsonException 参数为空、调用失败或 core 返回错误时抛出
+     */
+    public List<TaskStateInfo> queryTasks(Collection<Long> taskIds) {
+        if (taskIds == null || taskIds.isEmpty()) {
+            throw new SfcJsonException(400, "查询任务状态的 taskIds 不能为空");
+        }
+        List<TaskStateInfo> result = post(PATH_QUERY,
+                new TaskStateQueryParam(new ArrayList<>(taskIds)),
+                new ParameterizedTypeReference<SfcJsonResult<List<TaskStateInfo>>>() {
+                });
+        return result == null ? List.of() : result;
+    }
+
+    /**
+     * 取消一个任务（对外公开能力）。
+     *
+     * <p>core 对等待中的任务直接置为已取消（不会再被任何执行者认领）；对运行中的任务按服务发现
+     * 定位执行者实例地址后下发中断指令，中断是尽力而为的：执行者已失联或中断指令下发失败时
+     * core 返回 409，由调用方决定是否重试。</p>
+     *
+     * @param taskId 要取消的任务id，不能为 null
+     * @throws SfcJsonException 任务id为空、调用失败或 core 拒绝取消（任务不存在/状态不可中断/中断下发失败）时抛出
+     */
+    public void cancel(Long taskId) {
+        if (taskId == null) {
+            throw new SfcJsonException(400, "取消任务的 taskId 不能为空");
+        }
+        post(PATH_CANCEL, new TaskCancelParam(taskId), new ParameterizedTypeReference<SfcJsonResult<Object>>() {
+        });
+    }
+
+    // TODO 后续考虑把「core → worker 中断回调」迁移到 core 内部实现（例如 sfc-core-task 内的专用客户端），
+    //      之所以暂留在执行者 SDK：core 的 TaskInterruptRouter 目前通过本类下发中断指令。
+    //      · 它不是面向业务微服务的控制面能力（业务侧应使用 submit / queryTasks / cancel）；
+    //      · 迁移完成后本方法可降为包内可见或直接移除，SDK 对外仅保留控制面 API。
+    /**
+     * 向指定 worker 实例下发任务中断指令（core → 执行者实例，点对点回调）。
      *
      * <p>用于 core 侧按服务发现定位到的实例地址回调微服务执行者：向
      * {@code {baseUrl}/api/internal/task/interrupt} 发起 POST，请求体为 {@link TaskInterruptCommand}。
      * 中断是尽力而为的：失败只记录 WARN 并返回 false，由调用方决定是否重试或直接取消任务。</p>
      *
+     * <p><b>调用方限定：</b>仅供 core 侧的调度/中断路由使用，业务微服务请使用
+     * {@link #cancel(Long)}（控制面取消，覆盖等待中与运行中任务）。</p>
+     *
      * @param baseUrl worker 实例的基础地址，形如 {@code http://192.168.1.10:8090}
      * @param taskId  要中断的任务id
      * @return 中断指令下发成功返回 true；地址或任务id为空、调用失败时返回 false
      */
-    public boolean requestInterrupt(String baseUrl, Long taskId) {
+    public boolean interruptWorker(String baseUrl, Long taskId) {
         if (!hasText(baseUrl) || taskId == null) {
             log.warn("{}下发任务中断指令失败：worker 地址或任务id为空（baseUrl={}, taskId={}）",
                     LOG_PREFIX, baseUrl, taskId);

@@ -23,8 +23,6 @@ sfc:
       enabled: true
       # sfc-core 在服务注册中心中的服务名（默认 sfc-core），worker 经负载均衡按该服务名选取 core 实例
       # core-service-id: sfc-core
-      # 所属服务名，留空时取服务注册信息（Registration）中的 serviceId
-      # service-name: sfc-demo-service
       # 本实例的执行者角色，默认 SERVICE（微服务保持默认即可；core 节点内嵌的 Worker 为 CORE）
       # role: SERVICE
       # 认领任务的长轮询等待秒数，默认 30；满载时 SDK 自动缩短为不超过 3 秒（只认领紧急任务）

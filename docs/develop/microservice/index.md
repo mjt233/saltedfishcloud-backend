@@ -19,8 +19,9 @@
 | `sfc-gateway` | 独立网关（Spring Cloud Gateway Server WebFlux）：整站唯一入口与微服务代理 |
 | `sfc-demo-service` | 微服务示例：演示最简工程结构、注册发现、远程调用、接口鉴权与异步任务接入 |
 | [`sfc-ai-service`](../../../microservices/sfc-ai-service/) | **AI 助手服务**（端口 `8091`）：原宿主插件 `sfc-ext-ai`，Phase 2 迁为独立微服务——WebSocket 流式 AI 对话 + LLM 提供商/模型 CRUD，**独立 SQLite `ai.db`**，身份取自 `X-Sfc-Uid`，网盘操作经 `sfc-remote-client` 回调 core。前端影响见其[适配清单](../../../microservices/sfc-ai-service/docs/frontend-adaptation-checklist.md) |
+| [`sfc-download-service`](../../../microservices/sfc-download-service/) | **离线下载服务**（端口 `8092`）：原宿主插件 `sfc-ext-download` 迁为独立微服务——创建/查询/中断离线下载任务，HTTP/HTTPS 下载到网盘（支持代理、进度、中断），任务经 `sfc-task-worker` 以 `SERVICE` 角色执行；**独立 SQLite `download.db`**，网盘落盘经 `sfc-remote-client` 回调 core；经网关默认动态路由 `/api/service/sfc-download-service/task/download/**` 访问（前端 URL 需手动调整），前端影响见其[适配清单](../../../microservices/sfc-download-service/docs/frontend-adaptation-checklist.md) |
 
-依赖方向：`sfc-common` → `sfc-common-data` / `sfc-auth` / `sfc-remote-client` / `sfc-task-worker` / `sfc-gateway` / `sfc-demo-service`。其中 `sfc-task-worker` 同时被宿主 `sfc-core-task` 依赖，宿主 core 与微服务共用同一套任务执行侧实现。
+依赖方向：`sfc-common` → `sfc-common-data` / `sfc-auth` / `sfc-remote-client` / `sfc-task-worker` / `sfc-gateway` / `sfc-demo-service` / `sfc-download-service`。其中 `sfc-task-worker` 同时被宿主 `sfc-core-task` 依赖，宿主 core 与微服务共用同一套任务执行侧实现。
 
 ## 构建前置
 

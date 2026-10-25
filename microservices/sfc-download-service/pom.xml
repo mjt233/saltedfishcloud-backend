@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    咸鱼云离线下载微服务（原 sfc-ext/sfc-ext-download 插件）。
+
+    迁移方式与 sfc-ai-service 一致：
+      · 不再继承宿主根 pom（父 POM 是 microservices 聚合器，Spring Boot 4.0.8 基线）；
+      · 不再有 maven-dependency-plugin / plugin-lib（那是插件加载形态才需要的）；
+      · 零宿主依赖：仓库内只允许引用 com.sfc.cloud:* 的共享库与微服务 SDK。
+
+    版本与构建配置【零重复】：Boot / Spring Cloud / SCA 的版本、Lombok、proc=full、java 版本
+    全部继承 microservices/pom.xml，本 POM 只声明"用哪些依赖"。
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sfc.cloud</groupId>
+        <artifactId>microservices</artifactId>
+        <version>1.0.0</version>
+        <relativePath>../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>sfc-download-service</artifactId>
+    <name>sfc-download-service</name>
+    <description>咸鱼云离线下载微服务（原 sfc-ext-download 插件）</description>
+
+    <properties>
+        <!-- 共享库版本：本 pom 不继承根 pom，故不能引用根 pom 的 sfc.common.version -->
+        <sfc.common.version>1.0.0</sfc.common.version>
+    </properties>
+
+    <dependencies>
+        <!-- ============ 仓库内共享库（唯一允许的仓库内依赖） ============ -->
+        <!-- 响应信封 / 异常 / 常量 / 工具 / 分页：SfcJsonResult、SfcJsonException、SfcPageInfo… -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common</artifactId>
+            <version>${sfc.common.version}</version>
+        </dependency>
+        <!-- JPA 基座：SfcBaseModel→SfcAuditModel、SfcBaseRepo、雪花主键、@SfcUID -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-common-data</artifactId>
+            <version>${sfc.common.version}</version>
+        </dependency>
+        <!-- 回调 sfc-core 的内部网盘接口（SfcCoreFileClient）与用户身份接口（SfcCoreUserClient） -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-remote-client</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <!-- 异步任务执行者 SDK：实现 SfcTaskHandler 后即可认领并执行 sfc-core 调度的离线下载任务 -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-task-worker</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <!-- ============ 注册发现 ============ -->
+        <!-- local 注册中心客户端 SDK（未启用 Nacos 时接入 sfc-core 的本地注册中心） -->
+        <dependency>
+            <groupId>com.sfc.cloud</groupId>
+            <artifactId>sfc-local-registry-client</artifactId>
+            <version>1.0.0</version>
+        </dependency>
+        <!-- 与宿主/网关同 group=SFC、namespace=""（空串） -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+        </dependency>
+
+        <!-- ============ Web ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-webmvc</artifactId>
+        </dependency>
+        <!--
+            SfcUIDValidator 实现了 jakarta.validation.ConstraintValidator，类加载即需要校验 API；
+            sfc-common-data 里它声明为 provided（不传递），故此处显式引入实现。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+
+        <!-- ============ 独立数据源：本服务自己的 SQLite ============ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.xerial</groupId>
+            <artifactId>sqlite-jdbc</artifactId>
+        </dependency>
+        <!-- Hibernate 的 SQLite 方言在此包中（与宿主、sfc-ai-service 同款做法） -->
+        <dependency>
+            <groupId>org.hibernate.orm</groupId>
+            <artifactId>hibernate-community-dialects</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <!-- 打出可执行 jar，便于以 java -jar 形态独立运行 -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

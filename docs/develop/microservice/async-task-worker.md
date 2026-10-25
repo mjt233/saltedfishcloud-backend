@@ -204,7 +204,60 @@ AsyncTaskRecord task = AsyncTaskRecord.builder()
 asyncTaskManager.submitAsyncTask(task);
 ```
 
-## 6. 运行机制
+## 6. 查询任务状态与进度
+
+微服务自己维护的任务状态镜像（如业务表里的状态/已下载量/总大小字段）需要定期与 core 的任务记录对齐：
+
+```java
+import com.sfc.cloud.task.worker.SfcTaskWorkerClient;
+import com.sfc.cloud.task.worker.protocol.TaskStateInfo;
+
+List<Long> taskIds = taskRecords.stream().map(MyTask::getTaskId).toList();
+List<TaskStateInfo> states = taskWorkerClient.queryTasks(taskIds);
+for (TaskStateInfo state : states) {
+    // state.taskId()     任务id
+    // state.status()     0 等待中 / 1 运行中 / 2 执行完成 / 3 任务失败 / 4 已取消 / 5 任务离线
+    // state.loaded()     已完成的量；无进度快照时为 null
+    // state.total()      目标总量；无进度快照时为 null，-1 表示总量未知
+    // state.speed()      速度（单位由任务实现自行约定）；无进度快照时为 null
+    // state.finishDate() 完成/失败/取消时间；任务未结束时为 null
+}
+```
+
+约束：
+
+- **内部接口**：`POST /api/internal/task/query` 由 sfc-auth 校验内部调用凭证，调用方必须与 core 配置同一份
+  `sfc.internal.key`，并注册到同一服务注册中心；
+- **批量上限 500**：`taskIds` 不能为空且单次最多 500 个，超出时 core 返回 400，建议按本地分页/批次查询；
+- **只返回存在的任务**：core 中不存在的 taskId 会被忽略，结果**不保证**与入参顺序一致，调用方应按
+  `taskId` 对齐并对缺失项按「任务已不存在」处理；
+- **进度是快照**：进度来自 core 的进度快照缓存（执行者约 1 秒上报一次、快照 10 秒过期），只有运行中的任务
+  通常有值；任务结束后不再保证有进度，最终体量以任务结果/业务表为准；
+- **fail-soft 建议**：查询失败（如 core 暂时不可用，异常码 503）时只记录 WARN 并回退本地镜像，不要阻塞
+  列表查询本身；
+- **多 core 部署**：需使用共享缓存（`cache-provider=redis`），否则可能查不到其他 core 节点接收的进度快照；
+  任务状态来自共享数据库，不受影响。
+
+## 7. 取消任务
+
+```java
+// 取消等待中或运行中的任务；已结束（完成/失败/取消）的任务会返回 400
+taskWorkerClient.cancel(taskId);
+```
+
+约束：
+
+- **语义**：等待中的任务由 core 直接置为已取消，不会再被执行者认领；运行中的任务由 core 从注册中心查出
+  执行者 `host:port` 后下发中断指令，最终状态由执行者上报（CANCEL）或由 core 侧判定；
+- **尽力而为**：中断能否立刻生效取决于处理器是否响应 `checkInterrupted()` / `onInterrupt(...)`；
+  处理器不响应时只能等待任务自然结束；
+- **错误映射**：`taskId` 为空、任务不存在或不在可中断状态（已完成/已失败/已取消）时抛出
+  `SfcJsonException(400)`；执行者已失联或中断指令下发失败时抛出 `SfcJsonException(409)`；
+  无可用 core 实例或网络失败时抛出 `SfcJsonException(503)`；
+- **幂等建议**：对已结束任务调用会得到 400，调用方应按「本地状态已是终态则直接返回」做幂等处理；
+- 取消不会删除任务记录、运行日志与历史日志。
+
+## 8. 运行机制
 
 | 环节 | 行为 |
 |---|---|
@@ -224,7 +277,7 @@ asyncTaskManager.submitAsyncTask(task);
 > 因此多 core 部署需要共享缓存（`cache-provider=redis`）与共享 MQ（`mq-provider=redis`），
 > 否则运行中日志和进度快照只落在接收上报的那个 core 节点上，从其他节点查询可能缺失（历史日志在任务结束时统一落库，不受影响）。
 
-## 7. 示例与验证
+## 9. 示例与验证
 
 `sfc-demo-service` 内置了完整示例：
 
@@ -238,7 +291,7 @@ asyncTaskManager.submitAsyncTask(task);
   4. 调用 `POST /api/asyncTask/interrupt` 可中断任务，任务状态变为已取消；
   5. 传 `immediate=true` 可验证紧急任务在满载时仍被执行；传 `taskType=test` 可验证 core 内嵌 Worker 同样能认领并执行任务。
 
-## 8. 注意事项
+## 10. 注意事项
 
 - **任务类型是全局路由键**：多个执行者声明同一类型时，任务会被任意一个认领（可用于同类任务的横向扩容）；
   不同业务务必使用不同的任务类型前缀（如 `ai-xxx`、`report-xxx`）避免误认领；同一实例内类型重复会在启动时报错；

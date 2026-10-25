@@ -80,7 +80,9 @@ public class TaskInterruptRouter {
                     LOG_PREFIX, record.getId());
             return false;
         }
-        boolean success = workerClient.requestInterrupt(buildBaseUrl(instance), record.getId());
+        // TODO 后续考虑把 core → worker 的中断回调迁移到 core 内部实现（见 SfcTaskWorkerClient#interruptWorker 上的 TODO），
+        //      届时不再经由 sfc-task-worker SDK 的公开方法下发。
+        boolean success = workerClient.interruptWorker(buildBaseUrl(instance), record.getId());
         if (!success) {
             log.warn("{}向worker[{}]下发任务 {}-{} 中断指令失败，任务将保持运行",
                     LOG_PREFIX, workerId, record.getName(), record.getId());
