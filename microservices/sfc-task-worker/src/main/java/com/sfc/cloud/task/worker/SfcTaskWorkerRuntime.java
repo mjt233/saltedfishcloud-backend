@@ -27,8 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * （也可由宿主按同样的依赖手工创建），并在 Web 容器启动完成后自动启动
  * （{@link SmartLifecycle} 默认 phase）。</p>
  *
- * <p>启动自检：内部接口鉴权未配置，或消费方未启用服务发现/负载均衡（无法定位 sfc-core）时记录 ERROR
- * 并跳过启动（应用继续运行）；停机时先停止认领，再把正在执行的任务上报放弃，任务会重新排队。</p>
+ * <p>停机时先停止认领，再把正在执行的任务上报放弃，任务会重新排队。</p>
  */
 @Slf4j
 public class SfcTaskWorkerRuntime implements SmartLifecycle {
@@ -188,7 +187,7 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
     }
 
     /**
-     * 启动 Worker。内部接口鉴权未配置，或消费方未启用服务发现/负载均衡（无法定位 sfc-core）时禁用 Worker
+     * 启动 Worker。内部接口鉴权密钥未配置，或未启用服务发现（无法自检本实例可见性）时禁用 Worker
      * 并记录 ERROR，应用继续运行；本方法不阻塞启动流程。
      */
     @Override
@@ -201,9 +200,9 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
                     + "无法调用 sfc-core 内部接口，Worker 已禁用（应用继续运行）", LOG_PREFIX);
             return;
         }
-        if (discoveryClient == null || !client.isCoreLocatable()) {
-            log.error("{}未启用服务发现/负载均衡能力（未找到 DiscoveryClient 或 LoadBalancerClient），"
-                    + "无法定位 sfc-core，Worker 已禁用（应用继续运行）", LOG_PREFIX);
+        if (discoveryClient == null) {
+            log.error("{}未启用服务发现（未找到 DiscoveryClient），无法自检本实例是否已在注册中心可见，"
+                    + "Worker 已禁用（应用继续运行）", LOG_PREFIX);
             return;
         }
         running = true;
@@ -440,8 +439,8 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
         boolean pendingLogged = false;
         while (running) {
             attempts++;
-            if (identity.isRegistered() && !identity.hasRegisteredInstance()) {
-                // 注册中心的实例端口要等 Web 容器绑定完成后回填，此时还不能把退化标识固定下来
+            if (!identity.hasRegisteredInstance()) {
+                // 注册信息中的实例端口要等 Web 容器绑定完成后回填，未回填前无法与注册中心中的实例比对
                 if (!pendingLogged) {
                     log.info("{}服务注册信息尚未完整（实例端口可能还没回填），等待注册完成后再开始认领", LOG_PREFIX);
                     pendingLogged = true;

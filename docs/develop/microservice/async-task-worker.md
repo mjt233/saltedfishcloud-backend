@@ -81,6 +81,12 @@ public class MyServiceApplication { ... }
 > ⚠️ **内部调用密钥是必配项**：`sfc.internal.key`（环境变量 `SFC_INTERNAL_KEY`）必须与 core 完全一致，
 > 且不少于 32 个字符。未配置时本服务无法签发凭证（提交任务/认领上报全部失败），
 > Worker 启动自检还会打印 ERROR 并自动禁用认领（应用继续运行）；配置不一致时 core 返回 403。
+>
+> ⚠️ **负载均衡拦截器、凭证签发器与服务注册信息是必需 Bean**：Worker SDK 直接注入
+> `BlockingLoadBalancerInterceptor`（由 `spring-cloud-starter-loadbalancer` 自动装配）、`SfcInternalTokenIssuer`
+> （由 `sfc-auth` 自动装配）与 `Registration`（由服务注册实现提供），任一缺失时 Bean 创建失败、
+> **应用直接启动失败**（由 Spring Boot 默认策略报错），不再静默降级。请确认已引入
+> `spring-cloud-starter-loadbalancer`（本 SDK 已传递引入）并启用服务注册与发现。
 
 ### 3.3 实现任务处理器
 
@@ -137,7 +143,6 @@ public class ReportExportTaskHandler implements SfcTaskHandler {
 |---|---|---|
 | `enabled` | `true` | 是否启用 Worker（关闭后不认领任务，也不暴露中断端点） |
 | `core-service-id` | `sfc-core` | core 在服务注册中心中的服务名，SDK 经负载均衡按该服务名选取 core 实例 |
-| `service-name` | 服务注册信息 / `spring.application.name` | 所属服务名（正常部署由服务注册信息提供） |
 | `role` | `SERVICE` | 本实例的执行者角色：`CORE` = core 节点内嵌 Worker，`SERVICE` = 微服务实例；留空按 `SERVICE` 处理 |
 | `claim-wait-seconds` | `30` | 认领任务的长轮询等待秒数，≤0 表示不等待；满载时 SDK 自动缩短为不超过 3 秒 |
 | `max-concurrent-tasks` | CPU 核数 | 普通任务的最大并发槽位；达到上限后只认领紧急任务（紧急任务不受该上限限制） |
@@ -150,6 +155,8 @@ public class ReportExportTaskHandler implements SfcTaskHandler {
 
 > `role` 随认领请求上报，仅用于任务记录的角色标注与排障；微服务保持默认 `SERVICE` 即可。
 > 仅 core 节点（`sfc-core` 的部署配置）应显式设置 `role: CORE`。
+>
+> 执行者身份（`serviceId` 与 `workerId=host:port`）直接取自服务注册信息（`Registration`，必需 Bean），不提供配置项。
 >
 > SDK 仅在 **Servlet Web 应用**（Spring MVC）中自动装配；非 Web 应用不会启动 Worker。
 
@@ -201,7 +208,7 @@ asyncTaskManager.submitAsyncTask(task);
 
 | 环节 | 行为 |
 |---|---|
-| 启动自检 | `SmartLifecycle` 在 Web 容器启动后拉起 Worker：先检查内部接口鉴权是否已配置、是否具备服务发现/负载均衡能力（能否定位 sfc-core），任一不满足即打印 ERROR 并禁用认领（应用继续运行）；认领线程随后等待「本实例已在服务注册中心可见」，最多 60 秒，超时打印 ERROR 并停止认领 |
+| 启动自检 | `SmartLifecycle` 在 Web 容器启动后拉起 Worker：先检查内部接口鉴权密钥是否已配置、是否启用服务发现，任一不满足即打印 ERROR 并禁用认领（应用继续运行）；负载均衡拦截器、凭证签发器与服务注册信息缺失则应用在启动阶段直接失败（Spring Boot 依赖注入兜底）。认领线程随后等待「本实例已在服务注册中心可见」，最多 60 秒，超时打印 ERROR 并停止认领 |
 | 认领 | 单线程长轮询 `claim`，携带 `serviceId`、`workerId`（`host:port`）、`role`（配置项，默认 `SERVICE`）、支持的任务类型；无任务时最多等待 `claim-wait-seconds` |
 | 紧急车道 | 满载（运行中任务数 + 已认领未开始任务数 ≥ `max-concurrent-tasks`）时以 `urgentOnly=true` 只认领紧急任务，且不占用并发槽位；等容量释放后回到普通车道 |
 | 执行 | 弹性线程池（核心线程数 = `max-concurrent-tasks`，上限 1024）：普通任务由认领槽位限流，紧急任务可超出槽位立即执行；任务开始前上报 `report/start`（任务已被取消时跳过执行） |
@@ -212,7 +219,8 @@ asyncTaskManager.submitAsyncTask(task);
 | 中断 | core 从服务注册中心查出本实例的 `host:port`，向 `http://host:port/api/internal/task/interrupt` 下发中断指令；SDK 触发中断标记与回调，任务尚未开始执行时先暂存指令、开始执行后立即生效；中断幂等且尽力而为 |
 | 优雅停机 | 停止认领 → 对运行中任务上报 `report/abandon`（普通任务回到队列，临时任务置失败）→ 最多等待数秒让执行线程退出；实例从注册中心消失后，core 的健康检查会兜底回收漏报的任务 |
 
-> **上报目的地**：Worker 的每次内部调用都由 Spring Cloud LoadBalancer 选路，多实例默认轮询。
+> **上报目的地**：Worker 的每次内部调用都以服务名作为 URL 的 host（默认 `http://sfc-core`），
+> 由 Spring Cloud LoadBalancer 官方拦截器在请求发出前改写为真实实例地址（多实例默认轮询）。
 > 因此多 core 部署需要共享缓存（`cache-provider=redis`）与共享 MQ（`mq-provider=redis`），
 > 否则运行中日志和进度快照只落在接收上报的那个 core 节点上，从其他节点查询可能缺失（历史日志在任务结束时统一落库，不受影响）。
 

@@ -71,7 +71,7 @@
 - **没有任何执行者支持的任务会一直排队等待**，不会丢失；健康检查会对「等待超过 5 分钟」的任务输出聚合告警
   （即使不知道具体哪个实例应该支持该类型，也能暴露「类型写错 / 服务未部署」）；
 - 无任务时认领以**长轮询**等待，新任务发布广播会立即唤醒等待者，避免高频空转轮询数据库；
-- Worker 启动后先做两项自检：内部接口鉴权是否已配置、能否定位 sfc-core；认领线程还会等待「本实例已在服务注册中心可见」（最多 60 秒）。任一项不满足都会打印 ERROR 并禁用认领，应用继续运行（详见第 9 节）。
+- Worker 启动后先做两项自检：内部接口鉴权密钥是否已配置、是否启用服务发现；认领线程还会等待「本实例已在服务注册中心可见」（最多 60 秒）。任一项不满足都会打印 ERROR 并禁用认领，应用继续运行（详见第 9 节）；负载均衡拦截器、凭证签发器与服务注册信息是必需 Bean，缺失时应用启动失败。
 
 ### 2.3 紧急通道（immediate）
 
@@ -103,8 +103,8 @@
 > **多个 core 节点部署必须使用 `nacos`**（`sys.service.registry-provider=nacos`），否则各节点互相看不到对方的实例，
 > 健康检查会把其他节点执行的任务误判为失联。微服务侧同样需要注册到与 core 相同的注册中心。
 >
-> Worker 的 `workerId` 统一为服务注册信息中的 `host:port`；取不到注册信息时会退化为本机地址并告警，
-> 这种实例不在注册中心中，core 会把它认领的任务误判为失联并回收。
+> Worker 的 `workerId` 来自服务注册信息（`Registration`）中的 `host:port`。该 bean 是 Worker SDK 的必需依赖，
+> 未启用服务注册时应用按 Spring Boot 默认策略启动失败；实例若不在注册中心中，core 会把它认领的任务误判为失联并回收。
 
 ## 4. 数据表与状态机
 
@@ -441,8 +441,9 @@ core 内嵌 Worker 通过内部 HTTP 调用本机（或其他 core 节点）的 
 
 - Worker 经 Spring Cloud LoadBalancer 按服务名（`sfc.task.worker.core-service-id`，默认 `sfc-core`）从注册中心
   选取 core 实例，多实例默认轮询；每次出站请求（认领/上报/提交）重新选路，**不支持直连兜底地址**；
-- 因此 Worker 所在服务必须注册到与 core 相同的注册中心；未启用服务发现/负载均衡时 Worker 启动自检失败，
-  打印 ERROR 并停止认领（应用继续运行）；
+- Worker SDK 直接注入负载均衡拦截器 `BlockingLoadBalancerInterceptor`、内部凭证签发器 `SfcInternalTokenIssuer`
+  与服务注册信息 `Registration`：三者缺失时应用**启动失败**（Spring Boot 默认依赖注入策略，不静默降级）；
+  未启用服务发现（无 `DiscoveryClient`）时 Worker 启动自检失败，打印 ERROR 并停止认领（应用继续运行）；
 - 认领前会自检「本实例已在注册中心可见」，最多等待 60 秒；超时后打印 ERROR 并停止认领（应用继续运行）。
   出现该日志时应检查服务名、namespace、group 是否与 core 一致。
 
@@ -465,7 +466,8 @@ core 内嵌 Worker 通过内部 HTTP 调用本机（或其他 core 节点）的 
 | 现象 / 日志 | 含义与处理 |
 |---|---|
 | `未配置内部接口鉴权密钥（sfc.internal.key / 环境变量 SFC_INTERNAL_KEY）... Worker 已禁用` | 配置密钥后重启（单机也需要） |
-| `未启用服务发现/负载均衡能力（未找到 DiscoveryClient 或 LoadBalancerClient）... Worker 已禁用` | 为 Worker 所在服务启用服务发现与负载均衡，并注册到与 core 相同的注册中心 |
+| `未启用服务发现（未找到 DiscoveryClient），无法自检本实例是否已在注册中心可见，Worker 已禁用` | 为 Worker 所在服务启用服务发现，并注册到与 core 相同的注册中心 |
+| 启动失败：`NoSuchBeanDefinitionException`（`BlockingLoadBalancerInterceptor` / `SfcInternalTokenIssuer` / `Registration`） | Worker SDK 必需依赖缺失：启用服务发现/负载均衡（`spring-cloud-starter-loadbalancer`）、`sfc-auth` 自动装配与服务注册（local/nacos） |
 | `等待 60 秒后仍未在服务注册中心中发现本实例，已停止认领任务` | 注册中心配置不一致（服务名/namespace/group）或注册失败 |
 | `未发现任何 SfcTaskHandler Bean，本实例不会认领任何任务` | 本实例没有可执行的任务类型；检查处理器是否被扫描 |
 | `存在 N 个等待超过 5 分钟仍未被执行者认领的任务（按类型: ...）` | 任务类型写错或对应执行者未部署 |

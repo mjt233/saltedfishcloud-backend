@@ -16,9 +16,7 @@ import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.json.SfcJsonResult;
 import com.sfc.common.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.cloud.client.ServiceInstance;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.cloud.client.loadbalancer.BlockingLoadBalancerInterceptor;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -34,11 +32,12 @@ import java.time.Duration;
  *
  * <p>基于 {@link RestClient} 实现：发往 sfc-core 的请求会通过
  * {@link SfcInternalTokenRequestInitializer} 在请求头 {@code X-Sfc-Internal-Token} 中携带
- * 每请求新签发的 HS256 内部调用凭证（签发器由消费方的 {@code @EnableSfcInternalAuth} 提供）。</p>
+ * 每请求新签发的 HS256 内部调用凭证（签发器由 sfc-auth SDK 的自动装配提供）。</p>
  *
- * <p>sfc-core 的实例由 {@link LoadBalancerClient} 按服务名（{@code sfc.task.worker.core-service-id}，
- * 默认 {@code sfc-core}）从服务发现中选取，多实例默认轮询；因此消费方必须启用服务发现与负载均衡，
- * 本 SDK 不支持直连兜底地址。</p>
+ * <p>core 回调 worker 实例的中断指令（{@link #requestInterrupt(String, Long)}）使用绝对地址，
+ * 走独立的、不经过负载均衡的 {@link RestClient}。</p>
+ *
+ * <p>负载均衡拦截器与内部调用凭证签发器由自动装配强制注入，缺失时由 Spring Boot 启动失败兜底。</p>
  *
  * <p>对外公开的能力：{@link #submit(TaskSubmitParam)}（提交任务）、
  * {@link #requestInterrupt(String, Long)}（core 向指定 worker 实例下发中断指令）、
@@ -113,14 +112,19 @@ public class SfcTaskWorkerClient {
     private static final long READ_TIMEOUT_MARGIN_SECONDS = 15L;
 
     /**
-     * 底层 RestClient（不含固定 baseUrl，每次请求按负载均衡选出的实例地址拼装绝对地址）
+     * sfc-core 内部接口使用的 URL scheme（URL 的 host 为服务名，由负载均衡拦截器改写为真实实例地址）
      */
-    private final RestClient restClient;
+    private static final String CORE_URL_SCHEME = "http";
 
     /**
-     * 负载均衡选路器：按 {@code coreServiceId} 从服务发现中选取 core 实例；消费方未启用服务发现/负载均衡时为 null
+     * 调用 sfc-core 内部接口的 RestClient：baseUrl 的 host 为服务名，由负载均衡拦截器改写为真实实例
      */
-    private final LoadBalancerClient loadBalancerClient;
+    private final RestClient coreRestClient;
+
+    /**
+     * core 回调 worker 实例的 RestClient：直接使用绝对地址，不经过负载均衡
+     */
+    private final RestClient workerRestClient;
 
     /**
      * sfc-core 在服务注册中心中的服务名（空白时回退 {@link SfcServiceName#CORE}）
@@ -128,61 +132,47 @@ public class SfcTaskWorkerClient {
     private final String coreServiceId;
 
     /**
-     * 内部调用凭证签发器；消费方未开启 {@code @EnableSfcInternalAuth} 时为 null
+     * 内部调用凭证签发器（由 sfc-auth SDK 的自动装配提供）
      */
     private final SfcInternalTokenIssuer issuer;
 
     /**
      * 构造客户端（由自动装配创建）。
      *
-     * @param properties           配置项
-     * @param loadBalancerProvider 负载均衡选路器提供者；消费方未启用服务发现/负载均衡时为空，
-     *                             此时所有发往 sfc-core 的请求都会以 503 失败（Worker 启动自检会提前禁用）
-     * @param issuerProvider       内部调用凭证签发器提供者；消费方未开启 {@code @EnableSfcInternalAuth}
-     *                             时为空，此时请求不携带凭证
+     * @param properties              配置项
+     * @param loadBalancerInterceptor Spring Cloud LoadBalancer 官方拦截器
+     * @param issuer                  内部调用凭证签发器
      */
     SfcTaskWorkerClient(SfcTaskWorkerProperties properties,
-                        ObjectProvider<LoadBalancerClient> loadBalancerProvider,
-                        ObjectProvider<SfcInternalTokenIssuer> issuerProvider) {
-        this.loadBalancerClient = loadBalancerProvider == null ? null : loadBalancerProvider.getIfAvailable();
+                        BlockingLoadBalancerInterceptor loadBalancerInterceptor,
+                        SfcInternalTokenIssuer issuer) {
         this.coreServiceId = resolveCoreServiceId(properties);
+        this.issuer = issuer;
         HttpClient httpClient = HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build();
         JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
         requestFactory.setReadTimeout(Duration.ofSeconds(Math.max(
                 MIN_READ_TIMEOUT_SECONDS,
                 Math.max(0, properties.getClaimWaitSeconds()) + READ_TIMEOUT_MARGIN_SECONDS)));
-        RestClient.Builder builder = RestClient.builder().requestFactory(requestFactory);
-        SfcInternalTokenIssuer resolvedIssuer = issuerProvider == null ? null : issuerProvider.getIfAvailable();
-        this.issuer = resolvedIssuer;
-        if (resolvedIssuer != null) {
-            builder.requestInitializer(new SfcInternalTokenRequestInitializer(resolvedIssuer));
-        } else {
-            log.warn("{}未找到内部调用凭证签发器（SfcInternalTokenIssuer）：发往 sfc-core 的内部接口请求将不带凭证，"
-                    + "请确认消费方已开启 @EnableSfcInternalAuth 并配置 sfc.internal.key（环境变量 SFC_INTERNAL_KEY）",
-                    LOG_PREFIX);
-        }
-        this.restClient = builder.build();
+        this.coreRestClient = RestClient.builder()
+                .requestFactory(requestFactory)
+                // host 即服务名：由负载均衡拦截器在请求发出前替换为真实实例地址
+                .baseUrl(CORE_URL_SCHEME + "://" + coreServiceId)
+                .requestInterceptor(loadBalancerInterceptor)
+                .requestInitializer(new SfcInternalTokenRequestInitializer(issuer))
+                .build();
+        // 中断指令的目标是具体 worker 实例的绝对地址，不能经过负载均衡（否则会把 IP 当作服务名）
+        this.workerRestClient = RestClient.builder().requestFactory(requestFactory).build();
     }
 
     /**
      * 判断内部接口调用凭证是否可用。
      *
-     * <p>只有在找到凭证签发器且共享密钥已配置时才可用；不可用时所有发往 sfc-core 的内部接口请求
-     * 都会被鉴权拒绝。</p>
+     * <p>只有在共享密钥已配置时才可用；不可用时所有发往 sfc-core 的内部接口请求都会被鉴权拒绝。</p>
      *
      * @return 可以签发内部调用凭证返回 true
      */
     public boolean isAuthConfigured() {
-        return issuer != null && issuer.isConfigured();
-    }
-
-    /**
-     * 判断是否具备定位 sfc-core 的能力（消费方已提供服务发现与负载均衡选路器）。
-     *
-     * @return 具备定位能力返回 true
-     */
-    boolean isCoreLocatable() {
-        return loadBalancerClient != null;
+        return issuer.isConfigured();
     }
 
     /**
@@ -234,9 +224,7 @@ public class SfcTaskWorkerClient {
         }
         String target = normalizeBaseUrl(baseUrl);
         try {
-            doPost(target, PATH_INTERRUPT, new TaskInterruptCommand(taskId),
-                    new ParameterizedTypeReference<SfcJsonResult<Boolean>>() {
-                    });
+            postToWorker(target, new TaskInterruptCommand(taskId));
             log.info("{}已向worker[{}]下发任务[{}]的中断指令", LOG_PREFIX, target, taskId);
             return true;
         } catch (Throwable e) {
@@ -314,25 +302,29 @@ public class SfcTaskWorkerClient {
     }
 
     /**
-     * POST 调用一个内部接口并取出响应信封中的业务数据。
+     * POST 调用 sfc-core 内部接口并取出响应信封中的业务数据。
      *
-     * <p>每次请求先由负载均衡选路器选取一个 core 实例；请求失败不换实例重试，由调用方兜底：
-     * 认领循环每秒重试，开始/结束/放弃上报自带重试，进度与日志随下一个上报周期重发。</p>
+     * <p>目标地址的 host 为服务名，由负载均衡拦截器在请求发出前改写为真实实例地址（每次请求重新选路）；
+     * 请求失败不重试，由调用方兜底：认领循环每秒重试，开始/结束/放弃上报自带重试，
+     * 进度与日志随下一个上报周期重发。</p>
      *
      * @param path    接口路径
      * @param body    请求体
      * @param typeRef 响应信封的类型引用
      * @param <T>     业务数据类型
      * @return 业务数据，可能为 null
-     * @throws SfcJsonException 无法定位 core、网络失败、HTTP 非 2xx 或信封 code 非 200 时抛出
+     * @throws SfcJsonException 未启用负载均衡、无可用实例、网络失败、HTTP 非 2xx 或信封 code 非 200 时抛出
      */
     private <T> T post(String path, Object body, ParameterizedTypeReference<SfcJsonResult<T>> typeRef) {
-        String baseUrl = resolveCoreBaseUrl(path);
         try {
-            return doPost(baseUrl, path, body, typeRef);
+            return doPost(path, body, typeRef);
+        } catch (IllegalStateException e) {
+            // Spring Cloud LoadBalancer 在服务发现中没有可用实例时抛出 IllegalStateException
+            throw new SfcJsonException(503, "调用 sfc-core 内部接口[" + path + "]失败：服务发现中无可用 sfc-core["
+                    + coreServiceId + "]实例（" + describe(e) + "）");
         } catch (ResourceAccessException e) {
-            throw new SfcJsonException(503, "调用 sfc-core 内部接口[" + path + "]失败：无法连接 "
-                    + baseUrl + "（" + describe(e) + "）");
+            throw new SfcJsonException(503, "调用 sfc-core 内部接口[" + path
+                    + "]失败：无法连接 sfc-core[" + coreServiceId + "]（" + describe(e) + "）");
         } catch (RestClientResponseException e) {
             throw new SfcJsonException(e.getStatusCode().value(), "调用 sfc-core 内部接口[" + path
                     + "]失败：HTTP " + e.getStatusCode().value() + resolveErrorMessage(e.getResponseBodyAsString()));
@@ -344,53 +336,51 @@ public class SfcTaskWorkerClient {
     }
 
     /**
-     * 通过负载均衡选路器解析本次请求要用的 sfc-core 实例基础地址。
+     * 向 sfc-core 内部接口发起一次 POST（URL 的 host 为服务名，由负载均衡拦截器改写目标地址）。
      *
-     * @param path 接口路径（仅用于异常信息）
-     * @return 实例基础地址，形如 {@code http://192.168.1.10:8087}
-     * @throws SfcJsonException 未启用服务发现/负载均衡、服务发现查询失败或没有可用实例时抛出
-     */
-    private String resolveCoreBaseUrl(String path) {
-        if (loadBalancerClient == null) {
-            throw new SfcJsonException(503, "调用 sfc-core 内部接口[" + path
-                    + "]失败：未启用服务发现/负载均衡，无法定位 sfc-core[" + coreServiceId + "]");
-        }
-        ServiceInstance instance;
-        try {
-            instance = loadBalancerClient.choose(coreServiceId);
-        } catch (Throwable e) {
-            throw new SfcJsonException(503, "调用 sfc-core 内部接口[" + path + "]失败：服务发现查询 sfc-core["
-                    + coreServiceId + "]实例失败（" + describe(e) + "）");
-        }
-        if (instance == null || !hasText(instance.getHost()) || instance.getPort() <= 0) {
-            throw new SfcJsonException(503, "调用 sfc-core 内部接口[" + path
-                    + "]失败：服务发现中无可用 sfc-core[" + coreServiceId + "]实例");
-        }
-        String scheme = instance.getScheme();
-        if (!hasText(scheme)) {
-            scheme = instance.isSecure() ? "https" : "http";
-        }
-        return scheme.trim() + "://" + instance.getHost().trim() + ":" + instance.getPort();
-    }
-
-    /**
-     * 向指定基础地址发起一次内部接口调用，并取出响应信封中的业务数据。
-     *
-     * @param baseUrl 目标实例基础地址（{@code scheme://host:port}）
      * @param path    接口路径
      * @param body    请求体
      * @param typeRef 响应信封的类型引用
      * @param <T>     业务数据类型
      * @return 业务数据，可能为 null
      */
-    private <T> T doPost(String baseUrl, String path, Object body,
-                         ParameterizedTypeReference<SfcJsonResult<T>> typeRef) {
-        SfcJsonResult<T> result = restClient.post()
-                .uri(baseUrl + path)
+    private <T> T doPost(String path, Object body, ParameterizedTypeReference<SfcJsonResult<T>> typeRef) {
+        SfcJsonResult<T> result = coreRestClient.post()
+                .uri(path)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(body)
                 .retrieve()
                 .body(typeRef);
+        return unwrap(result, path);
+    }
+
+    /**
+     * 向指定绝对地址上的内部接口发起一次中断指令（core 回调 worker 实例，不经过负载均衡）。
+     *
+     * @param baseUrl worker 实例基础地址（{@code scheme://host:port}）
+     * @param body    请求体
+     */
+    private void postToWorker(String baseUrl, Object body) {
+        SfcJsonResult<Boolean> result = workerRestClient.post()
+                .uri(baseUrl + PATH_INTERRUPT)
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(new ParameterizedTypeReference<>() {
+                });
+        unwrap(result, PATH_INTERRUPT);
+    }
+
+    /**
+     * 校验响应信封并取出业务数据。
+     *
+     * @param result 响应信封
+     * @param path   接口路径（仅用于异常信息）
+     * @param <T>    业务数据类型
+     * @return 业务数据，可能为 null
+     * @throws SfcJsonException 响应体为空或信封 code 非 200 时抛出
+     */
+    private static <T> T unwrap(SfcJsonResult<T> result, String path) {
         if (result == null) {
             throw new SfcJsonException(500, "调用 sfc-core 内部接口[" + path + "]失败：响应体为空");
         }

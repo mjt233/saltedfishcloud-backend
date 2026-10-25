@@ -8,10 +8,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
-import org.springframework.cloud.client.loadbalancer.LoadBalancerClient;
+import org.springframework.cloud.client.loadbalancer.BlockingLoadBalancerInterceptor;
 import org.springframework.cloud.client.serviceregistry.Registration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.core.env.Environment;
 
 /**
  * 任务 Worker SDK 自动装配。
@@ -20,7 +19,7 @@ import org.springframework.core.env.Environment;
  * {@code sfc.task.worker.enabled}（默认 {@code true}）控制。装配内容：</p>
  * <ul>
  *     <li>{@link SfcTaskWorkerProperties}：配置项；</li>
- *     <li>{@link SfcTaskWorkerClient}：出站内部协议客户端（经负载均衡按服务名定位 sfc-core）；</li>
+ *     <li>{@link SfcTaskWorkerClient}：出站内部协议客户端（请求 host 为服务名，由 Spring Cloud LoadBalancer 拦截器选路）；</li>
  *     <li>{@link SfcTaskWorkerIdentity}：执行者身份；</li>
  *     <li>{@link SfcTaskWorkerRegistry}：任务类型能力与运行中任务注册表；</li>
  *     <li>{@link SfcTaskReporter} / {@link SfcTaskExecutionRunner}：进度日志上报与任务执行；</li>
@@ -37,35 +36,31 @@ import org.springframework.core.env.Environment;
 public class SfcTaskWorkerAutoConfiguration {
 
     /**
-     * 内部协议客户端：负责认领/上报/提交等出站调用，经负载均衡按服务名定位 sfc-core。
-     *
-     * @param properties           配置项
-     * @param loadBalancerProvider 负载均衡选路器提供者（消费方未启用服务发现/负载均衡时为空）
-     * @param issuerProvider       内部调用凭证签发器提供者（由 sfc-auth SDK 提供）
+     * 内部协议客户端：负责认领/上报/提交等出站调用；请求 URL 的 host 即服务名，
+     * 由 Spring Cloud LoadBalancer 官方拦截器改写为真实实例地址。
+     * @param properties              配置项
+     * @param loadBalancerInterceptor 负载均衡拦截器（必需，由 spring-cloud-starter-loadbalancer 提供）
+     * @param issuer                  内部调用凭证签发器（必需，由 sfc-auth SDK 提供）
      * @return 内部协议客户端
      */
     @Bean
     @ConditionalOnMissingBean
     public SfcTaskWorkerClient sfcTaskWorkerClient(SfcTaskWorkerProperties properties,
-                                                   ObjectProvider<LoadBalancerClient> loadBalancerProvider,
-                                                   ObjectProvider<SfcInternalTokenIssuer> issuerProvider) {
-        return new SfcTaskWorkerClient(properties, loadBalancerProvider, issuerProvider);
+                                                   BlockingLoadBalancerInterceptor loadBalancerInterceptor,
+                                                   SfcInternalTokenIssuer issuer) {
+        return new SfcTaskWorkerClient(properties, loadBalancerInterceptor, issuer);
     }
 
     /**
      * 当前 worker 实例身份信息。
      *
-     * @param properties    配置项
-     * @param environment   Spring 环境
-     * @param registrations 服务注册信息提供者（消费方未启用服务注册时为空）
+     * @param registration 当前实例的注册信息（必需，缺失时应用启动失败）
      * @return 实例身份信息
      */
     @Bean
     @ConditionalOnMissingBean
-    public SfcTaskWorkerIdentity sfcTaskWorkerIdentity(SfcTaskWorkerProperties properties,
-                                                       Environment environment,
-                                                       ObjectProvider<Registration> registrations) {
-        return new SfcTaskWorkerIdentity(properties, environment, registrations);
+    public SfcTaskWorkerIdentity sfcTaskWorkerIdentity(Registration registration) {
+        return new SfcTaskWorkerIdentity(registration);
     }
 
     /**

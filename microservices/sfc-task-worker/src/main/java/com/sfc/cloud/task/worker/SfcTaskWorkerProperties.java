@@ -33,12 +33,6 @@ public class SfcTaskWorkerProperties {
     private String coreServiceId = SfcServiceName.CORE;
 
     /**
-     * 所属服务名。留空时取服务注册信息（{@code Registration#getServiceId()}），
-     * 再回退 {@code spring.application.name}，最后回退 {@code sfc-task-worker}。
-     */
-    private String serviceName = "";
-
-    /**
      * 本实例作为任务执行者的角色（默认 {@code SERVICE}）。
      *
      * <p>取值与 core 的 {@code AsyncTaskConstants.WorkerRole} 一致：</p>

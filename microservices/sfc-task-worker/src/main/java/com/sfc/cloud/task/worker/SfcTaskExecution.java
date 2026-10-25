@@ -1,6 +1,8 @@
 package com.sfc.cloud.task.worker;
 
 import com.sfc.cloud.task.worker.protocol.TaskDispatchInfo;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.PrintWriter;
@@ -48,41 +50,65 @@ public final class SfcTaskExecution {
     /**
      * 任务id
      */
+    @Getter
     private final Long taskId;
 
     /**
      * 任务名称
      */
+    @Getter
     private final String taskName;
 
     /**
      * 任务类型
      */
+    @Getter
     private final String taskType;
 
     /**
      * 任务创建者用户id
      */
+    @Getter
     private final Long uid;
 
     /**
      * 任务参数（JSON 或纯文本，由任务处理器自行解析）
      */
+    @Getter
     private final String params;
 
     /**
      * 执行任务的 worker 标识
      */
+    @Getter
     private final String workerId;
 
     /**
      * 进度快照
      */
+    @Getter
     private final SfcTaskProgress progress = new SfcTaskProgress();
 
     /**
      * 完整进度快照提供者；未设置时为 null（按 {@link #progress} 上报）
+     * -- SETTER --
+     *  设置完整进度快照提供者。
+     *  <p>供内嵌执行者（如 sfc-core 本地任务）使用：进度快照以
+     *  形式给出，
+     *  其中键
+     *  /
+     *  为进度量，其余键（
+     * 、
+     *  除外）
+     *  作为进度扩展信息一并上报；SDK 会在每个上报周期重新读取快照。</p>
+     *  <p>微服务任务处理器无需使用本方法，直接通过
+     *  更新进度即可。</p>
+     *
+     * @param progressSource 进度快照提供者，返回 null 时回退到 {@link #getProgress()} 的进度值；
+     *                       传 null 表示取消提供者
+
      */
+    @Setter
     private volatile Supplier<Map<String, Object>> progressSource;
 
     /**
@@ -117,7 +143,16 @@ public final class SfcTaskExecution {
 
     /**
      * 日志输出流
+     * -- GETTER --
+     *  获取日志输出流。
+     *  <p>写入的内容会按行缓冲，由 SDK 定期（约 1 秒）批量上报给 core；任务结束时残余内容会随
+     *  结束上报一并提交。
+     *  会自动换行并触发刷新。</p>
+     *
+     * @return 日志输出流
+
      */
+    @Getter
     private final PrintWriter logWriter;
 
     /**
@@ -142,103 +177,12 @@ public final class SfcTaskExecution {
     }
 
     /**
-     * 获取任务id。
-     *
-     * @return 任务id
-     */
-    public Long getTaskId() {
-        return taskId;
-    }
-
-    /**
-     * 获取任务名称。
-     *
-     * @return 任务名称
-     */
-    public String getTaskName() {
-        return taskName;
-    }
-
-    /**
-     * 获取任务类型。
-     *
-     * @return 任务类型
-     */
-    public String getTaskType() {
-        return taskType;
-    }
-
-    /**
-     * 获取任务创建者用户id。
-     *
-     * @return 用户id
-     */
-    public Long getUid() {
-        return uid;
-    }
-
-    /**
-     * 获取任务参数（JSON 或纯文本，由任务处理器自行解析）。
-     *
-     * @return 任务参数，可能为 null
-     */
-    public String getParams() {
-        return params;
-    }
-
-    /**
-     * 获取执行本任务的 worker 标识。
-     *
-     * @return worker 标识
-     */
-    public String getWorkerId() {
-        return workerId;
-    }
-
-    /**
-     * 获取任务进度对象。
-     *
-     * @return 进度对象（loaded / total）
-     */
-    public SfcTaskProgress getProgress() {
-        return progress;
-    }
-
-    /**
-     * 设置完整进度快照提供者。
-     *
-     * <p>供内嵌执行者（如 sfc-core 本地任务）使用：进度快照以 {@code Map<String, Object>} 形式给出，
-     * 其中键 {@code loaded} / {@code total} 为进度量，其余键（{@code speed}、{@code lastUpdateTime} 除外）
-     * 作为进度扩展信息一并上报；SDK 会在每个上报周期重新读取快照。</p>
-     *
-     * <p>微服务任务处理器无需使用本方法，直接通过 {@link #getProgress()} 更新进度即可。</p>
-     *
-     * @param progressSource 进度快照提供者，返回 null 时回退到 {@link #getProgress()} 的进度值；
-     *                       传 null 表示取消提供者
-     */
-    public void setProgressSource(Supplier<Map<String, Object>> progressSource) {
-        this.progressSource = progressSource;
-    }
-
-    /**
      * 获取完整进度快照提供者（仅由 Worker SDK 的进度上报使用）。
      *
      * @return 进度快照提供者，未设置时返回 null
      */
     Supplier<Map<String, Object>> getProgressSource() {
         return progressSource;
-    }
-
-    /**
-     * 获取日志输出流。
-     *
-     * <p>写入的内容会按行缓冲，由 SDK 定期（约 1 秒）批量上报给 core；任务结束时残余内容会随
-     * 结束上报一并提交。{@link java.io.PrintWriter#println(String)} 会自动换行并触发刷新。</p>
-     *
-     * @return 日志输出流
-     */
-    public PrintWriter getLogWriter() {
-        return logWriter;
     }
 
     /**
