@@ -16,6 +16,7 @@ import com.sfc.download.repo.DownloadTaskRepo;
 import com.sfc.download.util.DownloadFileUtils;
 import com.sfc.download.util.IgnoreSSLHttpRequestFactory;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpEntity;
@@ -36,6 +37,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -55,9 +57,15 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p><b>并发说明：</b>本处理器是 Spring 单例，会被 Worker 线程池并发调用，因此自身不持有任何
  * 任务级可变状态；一次执行的全部可变状态都保存在每次新建的 {@link DownloadContext} 中。</p>
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class DownloadTaskHandler implements SfcTaskHandler {
+
+    /**
+     * 日志前缀：应用日志与任务运行日志共用，便于按前缀检索。
+     */
+    private static final String LOG_PREFIX = DownloadTaskConstants.LOG_PREFIX;
 
     /**
      * 默认 User-Agent。
@@ -138,25 +146,39 @@ public class DownloadTaskHandler implements SfcTaskHandler {
     public void execute(SfcTaskExecution execution) {
         DownloadTaskParams params = parseParams(execution);
         Long downloadId = params.downloadId;
+        Long taskId = execution.getTaskId();
+        long startNanos = System.nanoTime();
         DownloadContext context = new DownloadContext(execution, params);
         try {
-            execution.log(DownloadTaskConstants.LOG_PREFIX + "开始执行离线下载任务: " + params);
+            execution.log(LOG_PREFIX + "开始执行离线下载任务: " + params);
+            log.info("{}开始执行离线下载任务: downloadId={}, taskId={}, uid={}, url={}, savePath={}, method={}, proxy={}",
+                    LOG_PREFIX, downloadId, taskId, params.uid, params.url, params.savePath, params.method,
+                    SfcStringUtils.hasText(params.proxy) ? params.proxy : "直连");
             downloadTaskRepo.updateStatus(downloadId, DownloadTaskConstants.Status.RUNNING);
             context.run();
+            log.info("{}离线下载任务执行完成: downloadId={}, taskId={}, 文件={}, 大小={}字节, 总耗时={}ms",
+                    LOG_PREFIX, downloadId, taskId, context.fileName, context.loadedBytes(), elapsedMillis(startNanos));
         } catch (SfcTaskInterruptedException e) {
-            execution.log(DownloadTaskConstants.LOG_PREFIX + "任务已被取消: " + describe(e));
+            execution.log(LOG_PREFIX + "任务已被取消: " + describe(e));
+            log.info("{}离线下载任务已取消: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
+                    LOG_PREFIX, downloadId, taskId, describe(e), elapsedMillis(startNanos));
             updateCancelStatusQuietly(execution, downloadId);
             throw e;
         } catch (Exception e) {
             if (execution.isInterruptRequested()) {
                 // 中断回调关闭下载流会让阻塞中的 read 抛 IOException，这里统一还原为「取消」语义
                 String reason = describe(e);
-                execution.log(DownloadTaskConstants.LOG_PREFIX + "任务因中断而终止: " + reason);
+                execution.log(LOG_PREFIX + "任务因中断而终止: " + reason);
+                log.info("{}离线下载任务因中断而终止: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
+                        LOG_PREFIX, downloadId, taskId, reason, elapsedMillis(startNanos));
                 updateCancelStatusQuietly(execution, downloadId);
                 throw new SfcTaskInterruptedException("离线下载任务被中断: " + reason, e);
             }
             String message = describe(e);
-            execution.log(DownloadTaskConstants.LOG_PREFIX + "任务执行失败: " + message);
+            execution.log(LOG_PREFIX + "任务执行失败: " + message);
+            // 异常堆栈由 Worker SDK 统一以 ERROR 级别输出，这里只补一条带任务上下文的应用日志
+            log.warn("{}离线下载任务执行失败: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
+                    LOG_PREFIX, downloadId, taskId, message, elapsedMillis(startNanos));
             updateFailureQuietly(execution, downloadId, message);
             throw e;
         } finally {
@@ -207,7 +229,7 @@ public class DownloadTaskHandler implements SfcTaskHandler {
         try {
             downloadTaskRepo.updateStatus(downloadId, DownloadTaskConstants.Status.CANCEL);
         } catch (RuntimeException e) {
-            execution.log(DownloadTaskConstants.LOG_PREFIX + "回写本地任务状态失败: " + describe(e));
+            execution.log(LOG_PREFIX + "回写本地任务状态失败: " + describe(e));
         }
     }
 
@@ -223,7 +245,7 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             downloadTaskRepo.updateFailure(downloadId, DownloadTaskConstants.Status.FAILED,
                     truncateMessage(message), new Date());
         } catch (RuntimeException e) {
-            execution.log(DownloadTaskConstants.LOG_PREFIX + "回写本地任务失败信息失败: " + describe(e));
+            execution.log(LOG_PREFIX + "回写本地任务失败信息失败: " + describe(e));
         }
     }
 
@@ -259,6 +281,16 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             end--;
         }
         return message.substring(0, end) + "...";
+    }
+
+    /**
+     * 计算从指定纳秒时间戳到当前时刻的耗时。
+     *
+     * @param startNanos 起始时间（取自 {@link System#nanoTime()}）
+     * @return 耗时毫秒数
+     */
+    private static long elapsedMillis(long startNanos) {
+        return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
     }
 
     /**
@@ -327,6 +359,15 @@ public class DownloadTaskHandler implements SfcTaskHandler {
         }
 
         /**
+         * 获取本次任务已接收的字节数。
+         *
+         * @return 已下载字节数
+         */
+        private long loadedBytes() {
+            return execution.getProgress().getLoaded();
+        }
+
+        /**
          * 执行下载主流程：参数校验 → 保存目录校验 → 请求装配 → 流式下载 → 上传落盘。
          */
         private void run() {
@@ -376,6 +417,8 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                 throw new SfcJsonException(400, "无效的保存路径:" + params.savePath);
             }
             log("保存目录校验通过");
+            log.info("{}保存目录校验通过: downloadId={}, uid={}, path={}",
+                    LOG_PREFIX, downloadId, params.uid, params.savePath);
         }
 
         /**
@@ -390,6 +433,7 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                 if (SfcStringUtils.hasText(params.proxy)) {
                     throw new SfcJsonException(400, "无效的代理配置: 缺少代理地址快照（" + params.proxy + "）");
                 }
+                log.info("{}未配置代理，下载请求使用直连: downloadId={}", LOG_PREFIX, downloadId);
                 return;
             }
             if (params.proxyPort == null || params.proxyPort < MIN_PROXY_PORT || params.proxyPort > MAX_PROXY_PORT) {
@@ -399,6 +443,10 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             this.proxy = new Proxy(proxyType, new InetSocketAddress(params.proxyAddress, params.proxyPort));
             log("使用代理: " + (SfcStringUtils.hasText(params.proxy) ? params.proxy + " - " : "")
                     + proxyType + "://" + params.proxyAddress + ":" + params.proxyPort);
+            log.info("{}使用代理: downloadId={}, 名称={}, 类型={}, 地址={}:{}",
+                    LOG_PREFIX, downloadId,
+                    SfcStringUtils.hasText(params.proxy) ? params.proxy : "-",
+                    proxyType, params.proxyAddress, params.proxyPort);
         }
 
         /**
@@ -439,6 +487,10 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             HttpHeaders headers = buildHeaders();
             this.fileName = DownloadFileUtils.parseFileNameFromUrl(params.url);
             log("开始下载: method=" + method + ", 初始文件名=" + fileName);
+            log.info("{}发起下载请求: downloadId={}, method={}, url={}, connectTimeout={}ms, readTimeout={}ms",
+                    LOG_PREFIX, downloadId, method, params.url,
+                    params.connectTimeout > 0 ? params.connectTimeout : DEFAULT_CONNECT_TIMEOUT,
+                    params.readTimeout > 0 ? params.readTimeout : DEFAULT_READ_TIMEOUT);
             restTemplate.execute(params.url, method, restTemplate.httpEntityCallback(new HttpEntity<>(headers)),
                     response -> {
                         receive(response);
@@ -478,6 +530,9 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             downloadTaskRepo.updateSizeAndName(downloadId, totalSize, fileName);
             log("响应已到达: 文件名=" + fileName
                     + ", 大小=" + (totalSize >= 0 ? totalSize + " 字节" : "未知"));
+            log.info("{}下载响应到达: downloadId={}, 状态码={}, 文件名={}, 声明大小={}",
+                    LOG_PREFIX, downloadId, response.getStatusCode().value(), fileName,
+                    totalSize >= 0 ? totalSize + "字节" : "未知");
 
             try {
                 this.tempFile = DownloadFileUtils.createTaskTempFile(String.valueOf(downloadId), fileName);
@@ -485,7 +540,10 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                 throw new IOException("创建本地临时文件失败: " + e.getMessage(), e);
             }
             log("创建本地临时文件: " + tempFile.toAbsolutePath());
+            log.debug("{}已创建本地临时文件: downloadId={}, path={}",
+                    LOG_PREFIX, downloadId, tempFile.toAbsolutePath());
 
+            long receiveStartNanos = System.nanoTime();
             try (InputStream body = response.getBody(); OutputStream out = Files.newOutputStream(tempFile)) {
                 activeInputStream.set(body);
                 copyStream(body, out);
@@ -499,6 +557,8 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                         + "，文件可能不完整");
             }
             log("文件接收完成: " + loaded + " 字节");
+            log.info("{}文件接收完成: downloadId={}, 字节数={}, 耗时={}ms",
+                    LOG_PREFIX, downloadId, loaded, elapsedMillis(receiveStartNanos));
         }
 
         /**
@@ -561,10 +621,15 @@ public class DownloadTaskHandler implements SfcTaskHandler {
         private void save() {
             long loaded = execution.getProgress().getLoaded();
             log("开始保存文件到网盘: uid=" + params.uid + ", path=" + params.savePath);
+            log.info("{}开始保存文件到网盘: downloadId={}, uid={}, path={}, 文件名={}, 大小={}字节",
+                    LOG_PREFIX, downloadId, params.uid, params.savePath, fileName, loaded);
             String finalName = DownloadFileUtils.generateNonConflictName(fileName, listExistingNames());
             if (!finalName.equals(fileName)) {
                 log("目标目录存在同名文件，保存文件名调整为: " + finalName);
+                log.debug("{}目标目录存在同名文件，保存文件名调整: downloadId={}, 原文件名={}, 调整后={}",
+                        LOG_PREFIX, downloadId, fileName, finalName);
             }
+            long uploadStartNanos = System.nanoTime();
             SfcJsonResult<Long> uploadResult = fileClient.upload(
                     new FileSystemResource(tempFile), params.uid, params.savePath, finalName, null);
             uploadResult.requireSuccess();
@@ -572,6 +637,8 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                     loaded, loaded, finalName, new Date());
             this.fileName = finalName;
             log("文件保存成功: " + finalName + "（" + loaded + " 字节）");
+            log.info("{}文件保存成功: downloadId={}, 文件名={}, 大小={}字节, 上传耗时={}ms",
+                    LOG_PREFIX, downloadId, finalName, loaded, elapsedMillis(uploadStartNanos));
         }
 
         /**
@@ -597,6 +664,7 @@ public class DownloadTaskHandler implements SfcTaskHandler {
          */
         private void handleInterrupt() {
             log("收到下载中断指令，正在关闭下载流");
+            log.info("{}收到下载中断指令，正在关闭下载流: downloadId={}", LOG_PREFIX, downloadId);
             closeActiveStream();
         }
 
@@ -624,18 +692,23 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             }
             Path taskDir = tempFile.getParent();
             log("清理本地临时文件: " + tempFile.toAbsolutePath());
+            log.info("{}清理本地临时文件: downloadId={}, path={}",
+                    LOG_PREFIX, downloadId, tempFile.toAbsolutePath());
             DownloadFileUtils.deleteQuietly(tempFile);
             DownloadFileUtils.deleteQuietly(taskDir);
             tempFile = null;
         }
 
         /**
-         * 输出带统一前缀的运行日志。
+         * 输出带统一前缀的任务运行日志（经 {@link SfcTaskExecution#log(String)} 上报到 core，前端任务详情可见）。
+         *
+         * <p>注意：本方法输出的是「任务运行日志」，与 SLF4J 应用日志（本类各处的 {@code log.info} /
+         * {@code log.debug}）是两套独立输出，前者面向任务使用者，后者面向服务运维排障。</p>
          *
          * @param message 日志内容
          */
         private void log(String message) {
-            execution.log(DownloadTaskConstants.LOG_PREFIX + message);
+            execution.log(LOG_PREFIX + message);
         }
     }
 }

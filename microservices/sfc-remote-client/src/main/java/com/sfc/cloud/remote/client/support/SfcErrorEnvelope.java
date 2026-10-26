@@ -1,6 +1,7 @@
 package com.sfc.cloud.remote.client.support;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.sfc.common.model.json.SfcJsonResult;
@@ -25,7 +26,6 @@ final class SfcErrorEnvelope {
 
     /**
      * 解析 core 响应信封。
-     *
      * @param body 响应体原文
      * @return 解析出的信封；响应体不是 core 信封时返回 null
      */
@@ -34,8 +34,12 @@ final class SfcErrorEnvelope {
             return null;
         }
         try {
+            JsonNode root = OBJECT_MAPPER.readTree(body);
+            if (root == null || !root.isObject() || !root.has("code")) {
+                return null;
+            }
             @SuppressWarnings("unchecked")
-            SfcJsonResult<Object> envelope = OBJECT_MAPPER.readValue(body, SfcJsonResult.class);
+            SfcJsonResult<Object> envelope = OBJECT_MAPPER.treeToValue(root, SfcJsonResult.class);
             if (envelope.getCode() == 0 && envelope.getMsg() == null) {
                 return null;
             }

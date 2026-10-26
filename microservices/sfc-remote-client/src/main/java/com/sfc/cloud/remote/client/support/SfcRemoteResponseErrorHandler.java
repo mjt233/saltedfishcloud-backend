@@ -38,8 +38,8 @@ public class SfcRemoteResponseErrorHandler implements ResponseErrorHandler {
         String body = new String(rawBody, charset);
         SfcJsonResult<Object> envelope = SfcErrorEnvelope.parse(body);
         if (envelope != null) {
-            log.debug("[sfc-remote] core 返回错误：method={}, http={}, code={}, msg={}",
-                    method, statusCode.value(), envelope.getCode(), envelope.getMsg());
+            log.error("[sfc-remote] core {} 返回错误：method={}, http={}, code={}, msg={}",
+                    url, method, statusCode.value(), envelope.getCode(), envelope.getMsg());
             throw new SfcRemoteApiException(statusCode.value(), envelope.getCode(),
                     envelope.getBusinessCode(), null, envelope.getMsg());
         }

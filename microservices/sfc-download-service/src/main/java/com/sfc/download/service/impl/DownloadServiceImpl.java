@@ -12,6 +12,7 @@ import com.sfc.cloud.task.worker.protocol.TaskSubmitParam;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.json.SfcJsonResult;
 import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.download.constant.DownloadTaskConstants;
 import com.sfc.download.identity.SfcCurrentUserSupport;
 import com.sfc.download.model.DownloadTaskParams;
@@ -100,6 +101,9 @@ public class DownloadServiceImpl implements DownloadService {
      */
     @Override
     public String createTask(DownloadTaskParams params, long creator) {
+        log.info("{}收到创建离线下载任务请求: uid={}, creator={}, url={}, savePath={}, method={}, proxy={}",
+                LOG_PREFIX, params.uid, creator, params.url, params.savePath, params.method,
+                SfcStringUtils.hasText(params.proxy) ? params.proxy : "直连");
         validateSavePath(params.uid, params.savePath);
         resolveProxy(params, creator);
 
@@ -111,6 +115,8 @@ public class DownloadServiceImpl implements DownloadService {
         task.setSavePath(params.savePath);
         task.setStatus(DownloadTaskConstants.Status.WAITING);
         task = downloadTaskRepo.save(task);
+        log.info("{}下载任务已创建: downloadId={}, uid={}, creator={}, savePath={}",
+                LOG_PREFIX, task.getId(), params.uid, creator, params.savePath);
 
         // 任务处理器从参数 JSON 中回读 downloadId，用于执行期回写进度/状态
         params.downloadId = task.getId();
@@ -126,6 +132,7 @@ public class DownloadServiceImpl implements DownloadService {
             ));
             task.setTaskId(asyncTaskId);
             downloadTaskRepo.save(task);
+            log.info("{}已提交异步任务: downloadId={}, taskId={}", LOG_PREFIX, task.getId(), asyncTaskId);
         } catch (RuntimeException e) {
             log.error("{}提交离线下载任务失败: downloadId={}, url={}", LOG_PREFIX, task.getId(), params.url, e);
             downloadTaskRepo.updateFailure(task.getId(), DownloadTaskConstants.Status.FAILED,
@@ -146,6 +153,7 @@ public class DownloadServiceImpl implements DownloadService {
         if (taskId == null) {
             throw new SfcJsonException(400, "下载任务id不能为空");
         }
+        log.info("{}收到下载任务中断请求: downloadId={}", LOG_PREFIX, taskId);
         DownloadTaskInfo task = downloadTaskRepo.findById(taskId)
                 .orElseThrow(() -> new SfcJsonException(404, "下载任务不存在: " + taskId));
         SfcUIDValidator.validateWithException(task.getCreatedBy(), false);
@@ -159,6 +167,8 @@ public class DownloadServiceImpl implements DownloadService {
             throw new SfcJsonException(400, "任务尚未提交到异步任务系统，无法中断");
         }
         taskWorkerClient.cancel(asyncTaskId);
+        log.info("{}下载任务中断指令已下发: downloadId={}, taskId={}, status={}",
+                LOG_PREFIX, task.getId(), asyncTaskId, status);
 
         // 等待中的任务不会被执行者感知，core 只会把异步任务置为已取消，这里同步把镜像置为取消；
         // 运行中的任务由执行者在中断后自行回写状态镜像（避免与执行线程竞争写同一行）
@@ -353,11 +363,14 @@ public class DownloadServiceImpl implements DownloadService {
         }
 
         Integer coreStatus = state.status();
-        if (coreStatus == null || coreStatus.equals(task.getStatus())) {
+        Integer localStatus = task.getStatus();
+        if (coreStatus == null || coreStatus.equals(localStatus)) {
             return;
         }
         task.setStatus(coreStatus);
         task.setAsyncTaskRecord(new AsyncTaskRef(task.getTaskId(), coreStatus));
+        log.info("{}下载任务状态已校准: downloadId={}, taskId={}, 本地状态={}, core状态={}",
+                LOG_PREFIX, task.getId(), task.getTaskId(), localStatus, coreStatus);
         try {
             if (isFinalStatus(coreStatus)) {
                 // 终态：把大小/已下载/文件名/结束时间一并落库，避免任务执行实例掉线后镜像长期残缺
