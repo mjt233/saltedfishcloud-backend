@@ -31,6 +31,9 @@ spring:
       server-addr: "localhost:8087"
       password: 114514
       metadata:
+        # 配置面板入口：core 的 ConfigController#listServicesPluginConfig 发现该 metadata 后会
+        # 请求本服务的 /api/meta/pluginInfo，在管理员后台渲染「插件配置」面板
+        sfc.plugin.info: /api/meta/pluginInfo
         sfc.plugin.autoload: /static/index.umd.js,/static/style.css
     nacos:
       discovery:
@@ -44,6 +47,7 @@ spring:
         # 临时实例：客户端心跳续约，停服后实例自动消失
         ephemeral: true
         metadata:
+          sfc.plugin.info: /api/meta/pluginInfo
           sfc.plugin.autoload: /static/index.umd.js,/static/style.css
   datasource:
     driver-class-name: org.sqlite.JDBC
@@ -89,3 +93,14 @@ sfc:
       enabled: true
       # 离线下载属于 IO 密集型任务，并发上限不必与 CPU 核数对齐，按宿主机带宽/磁盘能力设置为 8
       max-concurrent-tasks: 8
+  # 本服务内部调优（部署期配置，修改后需重启生效）。
+  # ⚠️ 这里【只】放与部署环境相关、与业务无关的参数。aria2 / Git 等业务开关统一由 sfc-core 的
+  #    系统配置管理（管理员后台「插件配置」面板 → 存 core 配置表 → 本服务经 SfcDownloadConfigService
+  #    读取），刻意不在 yml 里重复声明，避免「两处取值、排障时无法判断谁生效」的双数据源问题。
+  download:
+    config:
+      # 统一配置快照缓存时长（毫秒）：管理员在 core 后台改完配置后，最长该时长即生效，无需重启
+      refresh-interval-millis: 5000
+    capability:
+      # 下载类型能力（例如 aria2 是否可达）的探测结果缓存时长（秒）
+      cache-seconds: 30

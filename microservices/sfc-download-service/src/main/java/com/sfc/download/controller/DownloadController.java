@@ -6,6 +6,8 @@ import com.sfc.cloud.model.SfcProxyInfo;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.SfcPageInfo;
 import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.download.engine.DownloadCapability;
+import com.sfc.download.engine.DownloadType;
 import com.sfc.download.identity.SfcCurrentUserSupport;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.param.TaskType;
@@ -110,6 +112,45 @@ public class DownloadController {
     @GetMapping("proxy")
     public SfcJsonResult<List<SfcProxyInfo>> listAvailableProxy() {
         return SfcJsonResult.getInstance(downloadService.listAvailableProxy());
+    }
+
+    /**
+     * 查询本服务支持的下载类型与当前可用性。
+     *
+     * <p>未登录返回 401。{@code refresh=true} 时先强制刷新统一配置快照（用于管理员刚在 core 后台
+     * 打开 aria2 后立即验证）；aria2 的连通性探测另有约 30 秒缓存，可能仍需等待其自然过期。</p>
+     *
+     * @param refresh 是否先强制刷新统一配置快照，默认 false
+     * @return 能力列表，每项含 type/name/engineId/available/reason/options
+     */
+    @GetMapping("capabilities")
+    public SfcJsonResult<List<DownloadCapability>> listCapabilities(
+            @RequestParam(defaultValue = "false") boolean refresh) {
+        if (SfcCurrentUserSupport.getCurrentUid() == null) {
+            throw new SfcJsonException(401, "请先登录");
+        }
+        return SfcJsonResult.getInstance(downloadService.listCapabilities(refresh));
+    }
+
+    /**
+     * 按下载地址推断下载类型。
+     *
+     * <p>供前端在用户修改/粘贴下载地址后自动选择「下载类型」（用户仍可手动修改）。推断是纯本地语法判断，
+     * 不访问 core、不发起网络请求；结果只作为建议——类型是否存在可用引擎、来源是否合法，仍由创建任务接口
+     * 校验。无法识别时返回 {@code data=null}（信封 {@code code=200}），前端应保持当前选择。</p>
+     *
+     * <p>需登录（与 {@code /capabilities} 一致）：未登录返回信封 {@code code=401}。</p>
+     *
+     * @param url 下载地址，允许为 {@code null} 或空白
+     * @return 下载类型编码（如 {@code "GIT"}）；无法识别时为 {@code null}
+     */
+    @GetMapping("detect-type")
+    public SfcJsonResult<String> detectType(@RequestParam(required = false) String url) {
+        if (SfcCurrentUserSupport.getCurrentUid() == null) {
+            throw new SfcJsonException(401, "请先登录");
+        }
+        DownloadType type = downloadService.detectType(url);
+        return SfcJsonResult.getInstance(type == null ? null : type.getCode());
     }
 
     /**

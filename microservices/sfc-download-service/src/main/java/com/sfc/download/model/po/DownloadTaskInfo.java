@@ -9,7 +9,6 @@ import jakarta.persistence.Index;
 import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.persistence.Transient;
-import jakarta.validation.constraints.NotEmpty;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -35,9 +34,23 @@ import java.util.Date;
 public class DownloadTaskInfo extends SfcAuditModel {
 
     /**
-     * 要下载的文件 URL。
+     * 下载类型编码（取值见 {@link com.sfc.download.engine.DownloadType#getCode()}）。
+     *
+     * <p>创建任务时由请求体中的 {@code type} 原样写入，服务端不做推导；该列<b>刻意允许为空</b>：
+     * SQLite 对已有数据的表执行 {@code ALTER TABLE ... ADD COLUMN ... NOT NULL} 会直接失败，
+     * 因此升级前的历史记录读出来是 {@code null}。实体与查询逻辑都不为其补默认值，
+     * 以免把「历史未知」伪装成「明确是某个类型」。</p>
      */
-    @NotEmpty
+    @Column(length = 32)
+    private String type;
+
+    /**
+     * 下载来源。
+     *
+     * <p>HTTP / Git / 磁力链 / ed2k 任务直接是该来源的地址；<b>种子任务在「由客户端上传种子内容」的场景下
+     * 可以为空</b>，此时种子内容由任务参数的 {@code torrentBase64} 提供。因此本字段不使用
+     * {@code @NotEmpty} 约束，来源合法性统一由下载引擎在创建期校验。</p>
+     */
     @Lob
     private String url;
 

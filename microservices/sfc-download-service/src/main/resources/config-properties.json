@@ -1,0 +1,12 @@
+[
+  {
+    "name": "download-aria2",
+    "title": "P2P 下载（aria2）",
+    "typeRef": "com.sfc.download.model.property.Aria2Property"
+  },
+  {
+    "name": "download-git",
+    "title": "Git 克隆",
+    "typeRef": "com.sfc.download.model.property.GitProperty"
+  }
+]

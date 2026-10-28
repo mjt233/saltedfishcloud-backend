@@ -1,6 +1,8 @@
 package com.sfc.download.util;
 
 import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.download.constant.DownloadTaskConstants;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpMethod;
 
 import java.io.IOException;
@@ -32,11 +34,14 @@ import java.util.stream.Stream;
  *     <li>清洗文件名中的非法字符、控制字符与平台不可移植字符；</li>
  *     <li>在已有文件名集合下生成不冲突的保存名（重名时追加 {@code .1}、{@code .2}…）；</li>
  *     <li>创建、删除下载过程使用的本地临时文件与临时目录，并尽力清理历史残留；</li>
- *     <li>校验下载 URL 与解析 HTTP 请求方法。</li>
+ *     <li>校验下载来源协议（HTTP/HTTPS、磁力链、ed2k、Git 仓库、.torrent 种子地址）与解析 HTTP 请求方法；</li>
+ *     <li>为下载引擎「按下载地址推断类型」提供来源语法判断（协议前缀、路径后缀、SCP 风格 Git 地址）。</li>
  * </ul>
  *
- * <p>本类不负责发起 HTTP 请求，也不依赖宿主（sfc-core）的任何类型，仅使用 sfc-common 的字符串工具。</p>
+ * <p>本类不负责发起 HTTP 请求，也不依赖宿主（sfc-core）的任何类型；除本模块的日志前缀常量外，
+ * 只使用 sfc-common 的字符串工具。</p>
  */
+@Slf4j
 public final class DownloadFileUtils {
 
     /**
@@ -67,6 +72,13 @@ public final class DownloadFileUtils {
      * 任务标识在临时目录/文件名中的最大长度，避免任务标识过长撑爆路径。
      */
     private static final int MAX_TASK_FLAG_LENGTH = 32;
+
+    /**
+     * SCP 风格的 Git 地址，例如 {@code git@github.com:owner/repo.git}。
+     *
+     * <p>仅用于来源语法识别与校验提示，不代表本服务支持 SSH 传输。</p>
+     */
+    private static final Pattern SCP_LIKE_GIT = Pattern.compile("^[\\w.\\-]+@[\\w.\\-]+:.+$");
 
     /**
      * 文件名中不允许出现的字符：Windows 保留字符、路径分隔符以及所有控制字符。
@@ -113,30 +125,13 @@ public final class DownloadFileUtils {
     /**
      * 判断下载 URL 是否合法。
      *
-     * <p>合法条件：非空白、可被 {@link URI} 解析、协议为 {@code http}/{@code https} 且带有主机名
-     * （或至少带有 authority）。</p>
+     * <p>语义与 {@link #isHttpUrl(String)} 完全一致，保留本方法是为了兼容既有调用方。</p>
      *
      * @param url 待校验的下载地址，允许为 {@code null}
      * @return 合法返回 {@code true}，否则返回 {@code false}
      */
     public static boolean isValidUrl(String url) {
-        if (!SfcStringUtils.hasText(url)) {
-            return false;
-        }
-        try {
-            URI uri = new URI(url.trim());
-            String scheme = uri.getScheme();
-            if (scheme == null) {
-                return false;
-            }
-            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
-                return false;
-            }
-            // 优先要求解析出 host；对包含下划线等非常规字符的主机，退化为要求存在 authority
-            return uri.getHost() != null || uri.getRawAuthority() != null;
-        } catch (URISyntaxException e) {
-            return false;
-        }
+        return isHttpUrl(url);
     }
 
     /**
@@ -157,6 +152,185 @@ public final class DownloadFileUtils {
             return HttpMethod.valueOf(method.trim().toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("不支持的下载请求方法: " + method, e);
+        }
+    }
+
+    // ==================== 下载来源协议校验 ====================
+
+    /**
+     * 判断是否为合法的 HTTP/HTTPS 地址。
+     *
+     * <p>合法条件：非空白、可被 {@link URI} 解析、协议为 {@code http}/{@code https} 且带有主机名
+     * （或至少带有 authority）。</p>
+     *
+     * @param url 待校验的下载地址，允许为 {@code null}
+     * @return 合法返回 {@code true}，否则返回 {@code false}
+     */
+    public static boolean isHttpUrl(String url) {
+        if (!SfcStringUtils.hasText(url)) {
+            return false;
+        }
+        try {
+            URI uri = new URI(url.trim());
+            String scheme = uri.getScheme();
+            if (scheme == null) {
+                return false;
+            }
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return false;
+            }
+            // 优先要求解析出 host；对包含下划线等非常规字符的主机，退化为要求存在 authority
+            return uri.getHost() != null || uri.getRawAuthority() != null;
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 判断是否为合法的磁力链（{@code magnet:?} 且携带 {@code xt=} 参数）。
+     *
+     * @param source 待校验的磁力链，允许为 {@code null}
+     * @return 合法返回 {@code true}，否则返回 {@code false}
+     */
+    public static boolean isValidMagnet(String source) {
+        if (!SfcStringUtils.hasText(source)) {
+            return false;
+        }
+        String value = source.trim();
+        return value.regionMatches(true, 0, "magnet:?", 0, "magnet:?".length())
+                && value.toLowerCase(Locale.ROOT).contains("xt=");
+    }
+
+    /**
+     * 判断是否为合法的 ed2k 链接（{@code ed2k://} 前缀且后半段非空）。
+     *
+     * @param source 待校验的 ed2k 链接，允许为 {@code null}
+     * @return 合法返回 {@code true}，否则返回 {@code false}
+     */
+    public static boolean isValidEd2k(String source) {
+        if (!SfcStringUtils.hasText(source)) {
+            return false;
+        }
+        String value = source.trim();
+        int prefixLength = "ed2k://".length();
+        return value.regionMatches(true, 0, "ed2k://", 0, prefixLength) && value.length() > prefixLength;
+    }
+
+    /**
+     * 判断是否为本期可用的 Git 仓库地址。
+     *
+     * <p>只接受 {@code http}/{@code https} 与 {@code git://}：SSH 形式（含 {@code ssh://} 与
+     * {@code git@host:path}）因缺少传输实现而不算合法；{@code file://}、{@code ext::} 等本地协议
+     * 同样返回 {@code false}，由调用方给出更具体的错误提示。</p>
+     *
+     * @param url 待校验的仓库地址，允许为 {@code null}
+     * @return 合法返回 {@code true}，否则返回 {@code false}
+     */
+    public static boolean isValidGitUrl(String url) {
+        if (!SfcStringUtils.hasText(url)) {
+            return false;
+        }
+        String value = url.trim();
+        if (value.toLowerCase(Locale.ROOT).startsWith("git://")) {
+            return hasAuthority(value);
+        }
+        return isHttpUrl(value);
+    }
+
+    /**
+     * 判断是否为指向 {@code .torrent} 文件的 HTTP/HTTPS 地址。
+     *
+     * <p>只按 URL 路径判断，忽略查询串与片段（例如 {@code /a.torrent?token=x} 仍判定为合法）。</p>
+     *
+     * @param url 待校验的地址，允许为 {@code null}
+     * @return 是 .torrent 文件地址返回 {@code true}
+     */
+    public static boolean isTorrentUrl(String url) {
+        if (!SfcStringUtils.hasText(url)) {
+            return false;
+        }
+        try {
+            URI uri = new URI(url.trim());
+            String scheme = uri.getScheme();
+            if (scheme == null) {
+                return false;
+            }
+            if (!"http".equalsIgnoreCase(scheme) && !"https".equalsIgnoreCase(scheme)) {
+                return false;
+            }
+            String path = uri.getPath();
+            return path != null && path.toLowerCase(Locale.ROOT).endsWith(".torrent");
+        } catch (URISyntaxException e) {
+            return false;
+        }
+    }
+
+    /**
+     * 判断下载来源是否以 {@code http://} 或 {@code https://} 开头。
+     *
+     * <p>只做语法前缀判断（大小写不敏感），<b>不校验地址是否合法</b>：用于「按下载地址推断类型」时
+     * 给出类型候选，真正的合法性由 {@link #isHttpUrl(String)} 在创建任务阶段校验。</p>
+     *
+     * @param source 下载来源，允许为 {@code null}
+     * @return 以 http/https 协议开头返回 {@code true}
+     */
+    public static boolean startsWithHttpScheme(String source) {
+        if (!SfcStringUtils.hasText(source)) {
+            return false;
+        }
+        String value = source.trim().toLowerCase(Locale.ROOT);
+        return value.startsWith("http://") || value.startsWith("https://");
+    }
+
+    /**
+     * 去掉地址的查询串与片段，便于按路径后缀判断下载类型。
+     *
+     * <p>例如 {@code https://host/a.torrent?token=x#frag} → {@code https://host/a.torrent}。
+     * 入参为 {@code null} 时返回空串。</p>
+     *
+     * @param url 原始地址，允许为 {@code null}
+     * @return 只保留 scheme + authority + path 的部分
+     */
+    public static String stripQueryAndFragment(String url) {
+        if (url == null) {
+            return "";
+        }
+        int cut = url.length();
+        int queryIndex = url.indexOf('?');
+        if (queryIndex >= 0) {
+            cut = queryIndex;
+        }
+        int fragmentIndex = url.indexOf('#');
+        if (fragmentIndex >= 0 && fragmentIndex < cut) {
+            cut = fragmentIndex;
+        }
+        return url.substring(0, cut);
+    }
+
+    /**
+     * 判断是否为 SCP 风格的 Git 地址，例如 {@code git@github.com:owner/repo.git}。
+     *
+     * <p>本服务不支持 SSH 传输，这里只用于识别「看起来是 Git 仓库」的来源并给出明确提示。</p>
+     *
+     * @param source 下载来源，允许为 {@code null}
+     * @return 是 SCP 风格地址返回 {@code true}
+     */
+    public static boolean isScpLikeGit(String source) {
+        return SfcStringUtils.hasText(source) && SCP_LIKE_GIT.matcher(source.trim()).matches();
+    }
+
+    /**
+     * 判断 URI 是否带有主机名或 authority。
+     *
+     * @param rawUrl 待解析的地址
+     * @return 带有 host 或 authority 返回 {@code true}
+     */
+    private static boolean hasAuthority(String rawUrl) {
+        try {
+            URI uri = new URI(rawUrl);
+            return uri.getHost() != null || uri.getRawAuthority() != null;
+        } catch (URISyntaxException e) {
+            return false;
         }
     }
 
@@ -276,7 +450,12 @@ public final class DownloadFileUtils {
     /**
      * 尽力删除文件或目录（目录会递归删除），不抛出任何异常。
      *
-     * <p>用于任务收尾阶段的临时文件清理：删除失败（例如文件仍被占用）只记录日志，不影响任务结果。</p>
+     * <p>用于任务收尾阶段的临时文件清理与下载产物清理。删除前会先清除只读属性：Windows 上 JGit 会把
+     * Git 对象包（{@code pack-*.pack} / {@code pack-*.idx}）标记为只读，直接删除会抛
+     * {@code AccessDeniedException}，导致子文件残留、父目录删不掉（例如 {@code keep-git-dir=false} 时
+     * 网盘里仍残留 {@code .git}，以及临时目录无法回收）。其它平台上清除只读对可写文件是无害的空操作。</p>
+     *
+     * <p>删除失败不会向上抛出，但会记录一条 WARN 日志（含路径与异常类型），避免出现「静默残留」而难以定位。</p>
      *
      * @param path 待删除的路径，允许为 {@code null}
      */
@@ -288,14 +467,37 @@ public final class DownloadFileUtils {
             if (Files.notExists(path, LinkOption.NOFOLLOW_LINKS)) {
                 return;
             }
+            // 目录分支：先递归删除子项（子项中的只读文件会在其自身的调用里被清除只读），
+            // 子项删完后目录才可能为空，再走下面的「清只读 + 删除」
             if (Files.isDirectory(path, LinkOption.NOFOLLOW_LINKS)) {
                 try (Stream<Path> children = Files.list(path)) {
                     children.forEach(DownloadFileUtils::deleteQuietly);
                 }
             }
+            clearReadOnly(path);
             Files.deleteIfExists(path);
         } catch (IOException | RuntimeException e) {
-            // 临时文件清理属于 best-effort，不向上抛出
+            // best-effort：清理失败不向上抛出，但必须留下可检索的日志（Windows 只读 pack 文件残留问题
+            // 曾因完全静默而难以定位）
+            log.warn("{}删除文件/目录失败，已跳过: path={}, cause={}: {}",
+                    DownloadTaskConstants.LOG_PREFIX, path, e.getClass().getSimpleName(), e.getMessage());
+        }
+    }
+
+    /**
+     * 尽力清除只读属性。
+     *
+     * <p>Windows 上 JGit 会把 Git 对象包（{@code pack-*.pack} / {@code pack-*.idx}）标记为只读，
+     * 直接删除会抛 {@code AccessDeniedException}；其它平台上该调用对可写文件是无害的空操作。
+     * 清除失败不抛出：后续的删除结果才是最终判据。</p>
+     *
+     * @param path 目标路径
+     */
+    private static void clearReadOnly(Path path) {
+        try {
+            path.toFile().setWritable(true);
+        } catch (RuntimeException ignored) {
+            // best-effort：清不掉就继续尝试删除，最终由 deleteIfExists 的结果决定
         }
     }
 
@@ -320,7 +522,9 @@ public final class DownloadFileUtils {
             children.filter(child -> isStale(child, threshold))
                     .forEach(DownloadFileUtils::deleteQuietly);
         } catch (IOException | RuntimeException e) {
-            // best-effort：清理失败不影响下载流程
+            // best-effort：清理失败不影响下载流程，但保留调试日志便于排查
+            log.debug("{}清理历史临时目录失败: tempDir={}, cause={}: {}",
+                    DownloadTaskConstants.LOG_PREFIX, tempDir, e.getClass().getSimpleName(), e.getMessage());
         }
     }
 
@@ -336,7 +540,9 @@ public final class DownloadFileUtils {
         try {
             cleanupStaleTempDirs(STALE_TEMP_DIR_MAX_AGE);
         } catch (RuntimeException e) {
-            // best-effort：清理失败不影响下载流程
+            // best-effort：清理失败不影响下载流程，但保留调试日志便于排查
+            log.debug("{}一次性清理历史临时目录失败: cause={}: {}",
+                    DownloadTaskConstants.LOG_PREFIX, e.getClass().getSimpleName(), e.getMessage());
         }
     }
 

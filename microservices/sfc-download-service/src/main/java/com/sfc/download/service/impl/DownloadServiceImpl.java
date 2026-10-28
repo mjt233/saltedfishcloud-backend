@@ -13,7 +13,12 @@ import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.json.SfcJsonResult;
 import com.sfc.common.utils.SfcMapperHolder;
 import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.download.config.SfcDownloadConfigService;
 import com.sfc.download.constant.DownloadTaskConstants;
+import com.sfc.download.engine.DownloadCapability;
+import com.sfc.download.engine.DownloadEngine;
+import com.sfc.download.engine.DownloadEngineRegistry;
+import com.sfc.download.engine.DownloadType;
 import com.sfc.download.identity.SfcCurrentUserSupport;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.param.TaskType;
@@ -56,9 +61,6 @@ public class DownloadServiceImpl implements DownloadService {
     /** 日志前缀 */
     private static final String LOG_PREFIX = DownloadTaskConstants.LOG_PREFIX;
 
-    /** 离线下载任务的 CPU 开销指数（纯 IO 密集，与旧插件提交值一致） */
-    private static final int CPU_OVERHEAD = 20;
-
     /** 单次向 core 查询任务状态的最大数量（core 侧硬限制 500，超出会返回 400） */
     private static final int MAX_STATE_QUERY_BATCH = 500;
 
@@ -92,22 +94,39 @@ public class DownloadServiceImpl implements DownloadService {
     /** core 异步任务客户端（提交 / 批量查状态 / 取消） */
     private final SfcTaskWorkerClient taskWorkerClient;
 
+    /** 下载引擎注册表（类型解析、创建期统一校验、能力声明） */
+    private final DownloadEngineRegistry engineRegistry;
+
+    /** 统一配置访问入口（能力接口的 refresh 参数用于强制刷新其缓存） */
+    private final SfcDownloadConfigService configService;
+
     /**
      * {@inheritDoc}
      *
-     * <p>执行顺序：校验保存路径 → 解析代理（按名称）→ 落库等待中记录 → 提交 core 异步任务 →
-     * 回写异步任务 id。提交失败时把任务标记为失败并抛出原异常，避免出现"本地有任务、core 无记录"
-     * 却仍显示为等待中的假象。</p>
+     * <p>执行顺序：统一校验（类型必填 / 能力 / 来源协议 / 引擎参数）→ 校验保存路径 →
+     * 解析代理（仅 HTTP 与 P2P 类型）→ 落库等待中记录 → 提交 core 异步任务 → 回写异步任务 id。
+     * 提交失败时把任务标记为失败并抛出原异常，避免出现"本地有任务、core 无记录"却仍显示为等待中的假象。</p>
+     *
+     * <p><b>为什么统一校验必须最先做：</b>「引擎未接入」（ed2k）与「外部程序未启用」（aria2 关闭时的
+     * 磁力链 / 种子）这类能力问题，如果先走 core 的保存目录校验，会被「无效的保存路径」抢先挡住，
+     * 导致前端收到的是一个误导性的失败原因；前置校验同时避免了「提交一条必然失败的异步任务」。</p>
+     *
+     * <p><b>类型落库口径：</b>只写调用方显式传入的 {@code params.type}，服务端<b>不做任何推导或降级</b>：
+     * 该字段由 Bean Validation 保证非空，落库值与请求值一致，任务处理器从参数 JSON 中读到的也是同一个值。</p>
      */
     @Override
     public String createTask(DownloadTaskParams params, long creator) {
-        log.info("{}收到创建离线下载任务请求: uid={}, creator={}, url={}, savePath={}, method={}, proxy={}",
-                LOG_PREFIX, params.uid, creator, params.url, params.savePath, params.method,
+        engineRegistry.validate(params);
+        DownloadType type = params.type;
+        log.info("{}收到创建下载任务请求: uid={}, creator={}, type={}, url={}, savePath={}, method={}, proxy={}",
+                LOG_PREFIX, params.uid, creator, type.getCode(), params.url, params.savePath, params.method,
                 SfcStringUtils.hasText(params.proxy) ? params.proxy : "直连");
+        DownloadEngine engine = engineRegistry.get(type);
         validateSavePath(params.uid, params.savePath);
-        resolveProxy(params, creator);
+        resolveProxy(params, creator, type);
 
         DownloadTaskInfo task = new DownloadTaskInfo();
+        task.setType(type.getCode());
         task.setUrl(params.url);
         task.setProxy(params.proxy);
         task.setUid(params.uid);
@@ -115,18 +134,18 @@ public class DownloadServiceImpl implements DownloadService {
         task.setSavePath(params.savePath);
         task.setStatus(DownloadTaskConstants.Status.WAITING);
         task = downloadTaskRepo.save(task);
-        log.info("{}下载任务已创建: downloadId={}, uid={}, creator={}, savePath={}",
-                LOG_PREFIX, task.getId(), params.uid, creator, params.savePath);
+        log.info("{}下载任务已创建: downloadId={}, uid={}, creator={}, type={}, savePath={}",
+                LOG_PREFIX, task.getId(), params.uid, creator, type.getCode(), params.savePath);
 
         // 任务处理器从参数 JSON 中回读 downloadId，用于执行期回写进度/状态
         params.downloadId = task.getId();
         try {
             Long asyncTaskId = taskWorkerClient.submit(new TaskSubmitParam(
-                    DownloadTaskConstants.TASK_NAME,
+                    engine.taskName(),
                     DownloadTaskConstants.TASK_TYPE,
                     SfcMapperHolder.toJsonNoEx(params),
                     params.uid,
-                    CPU_OVERHEAD,
+                    engine.cpuOverhead(),
                     false,
                     false
             ));
@@ -140,6 +159,19 @@ public class DownloadServiceImpl implements DownloadService {
             throw e;
         }
         return String.valueOf(task.getId());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>纯本地语法推断：委托 {@link DownloadEngineRegistry#detect(String)} 依次询问各引擎，不访问 core、
+     * 不发起网络请求。无法识别时返回 {@code null}（接口层以 {@code data=null} 返回），由前端保持当前选择。</p>
+     */
+    @Override
+    public DownloadType detectType(String url) {
+        DownloadType type = engineRegistry.detect(url);
+        log.debug("{}按下载地址推断类型: url={}, type={}", LOG_PREFIX, url, type == null ? "未识别" : type.getCode());
+        return type;
     }
 
     /**
@@ -228,6 +260,29 @@ public class DownloadServiceImpl implements DownloadService {
         }
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p><b>两个参数语义：</b></p>
+     * <ul>
+     *   <li>{@code refresh=false}：直接读取引擎注册表汇总出的能力，走统一配置的本地缓存（默认 5 秒 TTL）；</li>
+     *   <li>{@code refresh=true}：先强制刷新统一配置快照，再汇总能力，用于「管理员刚在 core 后台打开 aria2，
+     *       需要立刻验证」的场景。</li>
+     * </ul>
+     *
+     * <p><b>注意：</b>强制刷新只作用于统一配置，不会顺带清空引擎自身的外部依赖探活缓存
+     * （aria2 RPC 探活结果按 {@code sfc.download.capability.cache-seconds} 缓存，最多 30 秒自然更新）。
+     * 因此 {@code refresh=true} 后立即看到的结果，若探活缓存仍处于「上一次失败」的有效期内，可能仍是不可用状态。</p>
+     */
+    @Override
+    public List<DownloadCapability> listCapabilities(boolean refresh) {
+        if (refresh) {
+            log.info("{}收到刷新下载能力请求，先强制刷新统一配置快照", LOG_PREFIX);
+            configService.refresh();
+        }
+        return engineRegistry.capabilities();
+    }
+
     // ── 内部实现 ──
 
     /**
@@ -253,16 +308,46 @@ public class DownloadServiceImpl implements DownloadService {
     }
 
     /**
+     * 判断指定下载类型是否消费代理配置。
+     *
+     * <p>HTTP 由引擎自行装配代理；磁力链 / 种子由 aria2 的 {@code all-proxy} 选项承载。
+     * Git 克隆走 JGit 自带的传输实现、ed2k 引擎尚未接入，两者都不消费代理。</p>
+     *
+     * @param type 下载类型
+     * @return 支持代理返回 {@code true}
+     */
+    private static boolean supportsProxy(DownloadType type) {
+        return type == DownloadType.HTTP
+                || type == DownloadType.MAGNET
+                || type == DownloadType.TORRENT;
+    }
+
+    /**
      * 按代理名称解析代理节点，并把连接信息快照进任务参数。
      *
      * <p>旧插件保存的是代理 id，前端传的是代理名称；新契约统一按名称解析，并在创建任务时把
      * 类型 / 地址 / 端口快照进参数，避免任务执行时代理配置已被删除。</p>
      *
+     * <p>当前下载类型不支持代理时（Git / ed2k）直接跳过并清空相关字段，避免把「不会生效的代理」
+     * 写进任务记录而误导使用者。</p>
+     *
      * @param params  下载参数（{@code proxy} 非空时会被解析并回填快照字段）
      * @param creator 任务创建者 uid（用于计算该用户可见的代理范围）
+     * @param type    解析后的下载类型
      * @throws SfcJsonException 代理不存在或 core 调用失败时抛出
      */
-    private void resolveProxy(DownloadTaskParams params, long creator) {
+    private void resolveProxy(DownloadTaskParams params, long creator, DownloadType type) {
+        if (!supportsProxy(type)) {
+            if (SfcStringUtils.hasText(params.proxy)) {
+                log.info("{}当前下载类型不消费代理配置，已忽略: type={}, proxy={}",
+                        LOG_PREFIX, type.getCode(), params.proxy);
+            }
+            params.proxy = null;
+            params.proxyType = null;
+            params.proxyAddress = null;
+            params.proxyPort = null;
+            return;
+        }
         String proxyName = params.proxy;
         if (proxyName == null || proxyName.isBlank()) {
             return;
