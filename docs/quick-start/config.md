@@ -288,8 +288,10 @@ spring:
           max-active: 8
   servlet:
     multipart:
-      max-file-size: 8192MB
-      max-request-size: 8192MB
+      # 单文件上限需大于最大可上传/可保存的文件（离线下载会把下载结果上传到 core）；
+      # multipart 会先落临时文件再写入存储，上传期间需约 2 倍文件大小的空闲磁盘
+      max-file-size: 32768MB
+      max-request-size: 33792MB
   profiles:
     active: ^spring-profile^
   web:

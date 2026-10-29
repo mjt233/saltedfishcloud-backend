@@ -8,5 +8,47 @@
     "name": "download-git",
     "title": "Git 克隆",
     "typeRef": "com.sfc.download.model.property.GitProperty"
+  },
+  {
+    "name": "download-ssh",
+    "title": "SSH 凭据管理",
+    "nodes": [
+      {
+        "nodes": [
+          {
+            "name": "download-ssh-credential-manager",
+            "title": "SSH 凭据管理",
+            "describe": "管理当前登录用户的 SSH 凭据（私钥 / 带口令私钥 / 密码），以及（仅管理员）SSH 主机密钥信任记录。凭据用于 Git SSH 克隆；主机信任记录为 TOFU 首次信任结果，主机密钥变更导致克隆失败时由管理员删除旧记录后重试。",
+            "defaultValue": "",
+            "inputType": "template",
+            "template": "download-ssh-credential-manager",
+            "params": {
+              "credentialApi": "/api/service/sfc-download-service/task/download/ssh-credential",
+              "hostKeyApi": "/api/service/sfc-download-service/task/download/ssh-host-key",
+              "authTypes": [
+                "PRIVATE_KEY",
+                "PASSWORD"
+              ],
+              "defaultAuthType": "PRIVATE_KEY",
+              "supportsUpdate": false,
+              "hostKeyAdminOnly": true,
+              "sections": [
+                {
+                  "key": "credentials",
+                  "title": "我的 SSH 凭据",
+                  "adminOnly": false
+                },
+                {
+                  "key": "hostKeys",
+                  "title": "SSH 主机信任记录",
+                  "adminOnly": true
+                }
+              ],
+              "doc": "microservices/sfc-download-service/docs/git-proxy-ssh-clone-frontend-guide.md"
+            }
+          }
+        ]
+      }
+    ]
   }
 ]

@@ -26,7 +26,7 @@
   （若前端 SDK 会自动补 `/api`，则只需把插件前缀改为 `/service/sfc-download-service/task/download`）。
 - 过渡期：未修改前，旧地址 `/api/task/download/**` 会落到 core 的兜底路由并返回 **404**（core 已不再加载该插件），属预期。
 - 请求方法、参数不变；请求体新增**必填**的 `type`：
-  - `POST`：`{type, url, uid, savePath, options?, torrentBase64?, headers?, method?, proxy?, connectTimeout?, readTimeout?}`
+  - `POST`：`{type, url, uid, savePath, options?, torrentBase64?, headers?, method?, proxy?, sshCredentialId?, connectTimeout?, readTimeout?}`
     （`type` 缺失会返回 HTTP 422，服务端不再自动识别；自动选型请调用 `GET /task/download/detect-type?url=`）
   - `GET`：`uid, page, size, type(ALL/DOWNLOADING/FINISH/FAILED)`
   - `DELETE`：`taskId`（多余的 `uid` 参数会被忽略）
@@ -97,7 +97,8 @@
 | `torrentBase64` | 种子文件内容的 Base64，与 `url` 二选一（此时 `type` 必须为 `TORRENT`） |
 
 同时行为变化：`url` 不再限定为 HTTP(S) 链接（磁力链、ed2k、Git 地址均可），格式校验改为按 `type` 进行。
-`proxy` 仅对 `HTTP` / `MAGNET` / `TORRENT` 生效，`GIT` 会忽略并清空。
+`proxy` 对 `HTTP` / `MAGNET` / `TORRENT` 以及 `GIT`（HTTP(S) 与 SSH 克隆）生效；`git://` 地址不支持代理
+（带代理创建会返回 400 业务错误），`ED2K` 仍忽略并清空代理。
 
 ### 6.3 列表响应的增量字段
 
@@ -132,3 +133,77 @@
 
 本次**没有修改** `src/main/resources/static/index.umd.js` 与 `style.css`，仍是旧版本。
 前端需在前端仓库完成改造后重新构建，并把产物输出到本服务的 `src/main/resources/static/`。
+
+---
+
+## 七、SSH 克隆与凭据增量变更（GIT 类型）
+
+> 本次在 Git 类型上新增 SSH 克隆（`ssh://host[:port]/path` 与 SCP 风格 `git@host:owner/repo.git`），
+> 并新增用户级 SSH 凭据管理与管理员侧主机信任记录管理。完整的字段表、示例 JSON 与前端交互建议见
+> [`frontend-adapter-guide.md`](./frontend-adapter-guide.md) 的 §五 / §九 / §十；**本次改造的专项对接说明**
+> （含页面交互、配置面板 template 组件、联调用例）见
+> [`git-proxy-ssh-clone-frontend-guide.md`](./git-proxy-ssh-clone-frontend-guide.md)。本节只列出增量。
+
+### 7.1 类型与代理的能力变化
+
+- `GIT` 地址现支持 `http(s)` / `git://` / `ssh://host[:port]/path` / `git@host:owner/repo.git`；
+- `proxy` 对 `GIT` 生效：HTTP(S) 克隆与 SSH 克隆都支持 HTTP 代理与 SOCKS（SOCKS5）代理；`git://` 地址带代理会返回 400；
+- `capabilities` 与 `detect-type` 的规则**不变**：SSH 地址仍推断为 `GIT`，`GIT` 的 `options` 没有新增键
+  （SSH 凭据是任务的**顶层字段**，不在 `options` 里）。
+
+### 7.2 新增接口
+
+| 方法 | 网关路径 | 权限 | 说明 |
+|---|---|---|---|
+| GET | `/api/service/sfc-download-service/task/download/ssh-credential` | 登录用户 | 当前用户 SSH 凭据列表（不含私钥/口令/密码；返回 `id/name/authType/username/fingerprint/createAt`） |
+| POST | `/api/service/sfc-download-service/task/download/ssh-credential` | 登录用户 | 新增凭据（返回新增后的凭据元信息） |
+| DELETE | `/api/service/sfc-download-service/task/download/ssh-credential?id=` | 登录用户 | 删除本人凭据（不存在或非本人返回 400） |
+| GET | `/api/service/sfc-download-service/task/download/ssh-host-key?connectAddress=` | 管理员 | 主机信任记录列表（`connectAddress` 可选过滤；非管理员信封 `code=403`，HTTP 仍为 200） |
+| DELETE | `/api/service/sfc-download-service/task/download/ssh-host-key?id=` | 管理员 | 删除信任记录（记录不存在返回 404） |
+
+### 7.3 创建任务新增顶层字段
+
+| 字段 | 说明 |
+|---|---|
+| `sshCredentialId` | 仅 `type=GIT` 且地址为 SSH 时使用：**SSH 地址必填**，否则 400「SSH 地址必须选择 SSH 凭据（sshCredentialId）」；非 SSH 地址携带该字段 → 400「仅 SSH 地址支持选择 SSH 凭据」；凭据必须存在且属于当前创建者（否则 400「无效的 SSH 凭据: {id}」）；私钥认证时 SSH 地址未携带用户名且凭据未配置 `username` → 400「SSH 地址未携带用户名，请在 SSH 凭据中配置用户名」。JSON 中可为数字或字符串，本服务 Long 统一序列化为**字符串**；执行前凭据被删除 → 任务失败「SSH 凭据不存在或已被删除: {id}」 |
+
+### 7.4 错误文案补充
+
+> 仍以信封 `code` 判定结果；未登录、凭据非法、非管理员等业务失败时 HTTP 状态**可能仍是 200**。
+
+| 场景 | 信封 `code` | 典型 `msg` |
+|---|---|---|
+| 凭据接口未登录 | 401 | `请先登录` |
+| 非管理员访问主机信任记录接口 | 403 | `仅管理员可管理 SSH 主机信任记录` |
+| SSH 地址未提供凭据 | 400 | `SSH 地址必须选择 SSH 凭据（sshCredentialId）` |
+| 非 SSH 地址携带 `sshCredentialId` | 400 | `仅 SSH 地址支持选择 SSH 凭据` |
+| 非 `GIT` 类型携带 `sshCredentialId` | 400 | `仅 Git SSH 克隆支持选择 SSH 凭据` |
+| 凭据不存在或不属于当前用户 | 400 | `无效的 SSH 凭据: {id}` |
+| 私钥认证且 SSH 地址未携带用户名、凭据也未配置用户名 | 400 | `SSH 地址未携带用户名，请在 SSH 凭据中配置用户名` |
+| `git://` 地址带代理 | 400 | `git:// 协议不支持代理，请改用 http(s) 或 ssh 地址` |
+| 删除不存在的信任记录 | 404 | `SSH 主机信任记录不存在: {id}` |
+| 私钥无法解析 / 密码方式缺用户名 | 400 | `SSH 私钥解析失败: <原因>` / `SSH 密码认证需要提供用户名` |
+| SSH Git 地址格式非法 | 400 | `无效的 SSH Git 仓库地址: <原文>` |
+| 新增凭据缺少 `name` / `authType` | 422 | `name: SSH 凭据名称不能为空` / `authType: SSH 认证方式不能为空` |
+
+### 7.5 前端交互建议
+
+- 「下载类型」为 `GIT` 且地址以 `ssh://` 开头、或形如 `user@host:path` 时，展示「SSH 凭据」下拉框
+  （调用 `GET /ssh-credential`），选中后把凭据 id 放进请求体**顶层** `sshCredentialId`；
+- 非 SSH 地址时隐藏该字段且**不要提交**（否则返回 400）；地址切换为 SSH 但用户未选凭据时，提交前先提示选择；
+- 无可用凭据时提供「新增凭据」入口（私钥 / 带口令私钥 / 密码三种输入），新增成功后刷新下拉并选中新凭据；
+- 凭据列表不含私钥 / 口令 / 密码，仅能用 `name` / `authType` / `username` / `fingerprint` / `createAt` 展示；
+  **没有编辑（更新）接口**，修改请删除后重新新增；
+- 管理员端可提供主机信任记录列表（按 `connectAddress` 过滤）与删除操作；普通用户调用会得到信封 `code=403`。
+
+### 7.6 后台配置面板新增 template 组件
+
+`config-properties.json` 新增菜单「SSH 凭据管理」，其配置项为 `inputType=template`：
+
+- 组件名：`download-ssh-credential-manager`（前端按现有 template 组件规范注册）；
+- `params` 提供 `credentialApi` / `hostKeyApi` / `authTypes` / `sections`（我的凭据 + 主机信任记录）/
+  `supportsUpdate=false` / `hostKeyAdminOnly=true` 等契约字段；
+- 组件建议复用 §7.5 的凭据管理与主机信任记录逻辑；非管理员调用主机信任记录接口返回信封 `code=403`。
+
+组件契约与完整实现要求见
+[`git-proxy-ssh-clone-frontend-guide.md`](./git-proxy-ssh-clone-frontend-guide.md) 的 §2.4。

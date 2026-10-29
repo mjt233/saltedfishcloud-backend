@@ -4,6 +4,11 @@
 > 测试方式：真实启动 core + 下载服务 + aria2，直接对服务端口发 HTTP 请求（不经网关，用 `X-Sfc-Uid` 模拟网关信任头）
 > 报告版本：**v3（D1 / D2 / D4 全部修复后的最终复测）**
 > 结论速览：**25 PASS / 0 FAIL / 0 SKIP**（共 25 个用例）。首轮发现的 D1、D2、D4 三个缺陷均已修复并通过复测验证；MAGNET 已能完整下载 129MB 并正确落盘。
+>
+> ⚠️ **能力变更提示**：本报告是「多类型下载改造」阶段的回归记录。此后本服务已新增 **Git SSH 克隆**能力
+> （`ssh://` 与 `git@host:path`，需用户级 SSH 凭据与主机密钥信任记录），因此表中 **T7「本期不支持 SSH 协议」的结论已失效**；
+> 最新能力与接口契约见 [`docs/extension/download.md`](../../../docs/extension/download.md) 与
+> [`README.md`](../README.md)。
 
 ---
 
@@ -41,7 +46,7 @@
 | T4 | `GET /capabilities?refresh=true` | 200，与 T2 一致 | 一致 | **PASS** |
 | T5 | `type=ED2K` 创建 | 400 + 明确文案；**不产生异步任务** | 信封 `code=400`、文案一致；core 异步任务数 `135 → 135` | **PASS** |
 | T6 | `type=GIT` + `file:///C:/Windows` | 400「不支持本地文件协议」 | 一致 | **PASS** |
-| T7 | `type=GIT` + `ssh://git@github.com/a/b.git` | 400「本期不支持 SSH 协议」 | 一致 | **PASS** |
+| T7 | `type=GIT` + `ssh://git@github.com/a/b.git` | 400「本期不支持 SSH 协议」 | 一致 | **PASS**（当时能力边界；现已支持 SSH，结论失效，见文首提示） |
 | T8 | `type=FOO` | 400 且可读（非 500） | HTTP **400**，`请求体格式错误: 不支持的下载类型: FOO` | **PASS** |
 | T9 | 磁力链**不传 type** | 自动识别为 MAGNET | 落库 `type=MAGNET`，任务创建成功 | **PASS** |
 | T10 | 旧请求体（仅 url/uid/savePath） | 行为不变 | 创建成功，按 HTTP 处理 | **PASS** |

@@ -23,9 +23,14 @@ import com.sfc.download.identity.SfcCurrentUserSupport;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.param.TaskType;
 import com.sfc.download.model.po.DownloadTaskInfo;
+import com.sfc.download.model.po.SshCredential;
+import com.sfc.download.model.po.SshCredentialAuthType;
 import com.sfc.download.model.vo.AsyncTaskRef;
 import com.sfc.download.repo.DownloadTaskRepo;
 import com.sfc.download.service.DownloadService;
+import com.sfc.download.service.SshCredentialService;
+import com.sfc.download.util.DownloadFileUtils;
+import com.sfc.download.util.DownloadLogUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -91,6 +96,9 @@ public class DownloadServiceImpl implements DownloadService {
     /** core 代理查询客户端 */
     private final SfcCoreProxyClient proxyClient;
 
+    /** 用户 SSH 凭据服务（Git SSH 克隆时校验凭据归属） */
+    private final SshCredentialService sshCredentialService;
+
     /** core 异步任务客户端（提交 / 批量查状态 / 取消） */
     private final SfcTaskWorkerClient taskWorkerClient;
 
@@ -103,8 +111,9 @@ public class DownloadServiceImpl implements DownloadService {
     /**
      * {@inheritDoc}
      *
-     * <p>执行顺序：统一校验（类型必填 / 能力 / 来源协议 / 引擎参数）→ 校验保存路径 →
-     * 解析代理（仅 HTTP 与 P2P 类型）→ 落库等待中记录 → 提交 core 异步任务 → 回写异步任务 id。
+     * <p>执行顺序：统一校验（类型必填 / 能力 / 来源协议 / 引擎参数）→ 校验 SSH 凭据归属（仅 GIT）→
+     * 校验保存路径 → 解析代理（HTTP / GIT / P2P 类型）→ 落库等待中记录 →
+     * 提交 core 异步任务 → 回写异步任务 id。
      * 提交失败时把任务标记为失败并抛出原异常，避免出现"本地有任务、core 无记录"却仍显示为等待中的假象。</p>
      *
      * <p><b>为什么统一校验必须最先做：</b>「引擎未接入」（ed2k）与「外部程序未启用」（aria2 关闭时的
@@ -119,9 +128,12 @@ public class DownloadServiceImpl implements DownloadService {
         engineRegistry.validate(params);
         DownloadType type = params.type;
         log.info("{}收到创建下载任务请求: uid={}, creator={}, type={}, url={}, savePath={}, method={}, proxy={}",
-                LOG_PREFIX, params.uid, creator, type.getCode(), params.url, params.savePath, params.method,
-                SfcStringUtils.hasText(params.proxy) ? params.proxy : "直连");
+                LOG_PREFIX, params.uid, creator, type.getCode(), DownloadLogUtils.maskUrl(params.url), params.savePath,
+                params.method, SfcStringUtils.hasText(params.proxy) ? params.proxy : "直连");
         DownloadEngine engine = engineRegistry.get(type);
+        // 本地校验优先：SSH 凭据归属只查本服务数据库，放在需要回源 core 的保存路径/代理解析之前，
+        // 避免「保存路径无效」这类远端错误抢先掩盖更直接的凭据问题
+        resolveSshCredential(params, creator);
         validateSavePath(params.uid, params.savePath);
         resolveProxy(params, creator, type);
 
@@ -139,6 +151,8 @@ public class DownloadServiceImpl implements DownloadService {
 
         // 任务处理器从参数 JSON 中回读 downloadId，用于执行期回写进度/状态
         params.downloadId = task.getId();
+        // 创建者快照：执行期记录 SSH 主机密钥「首次信任」时用于审计（客户端传入无效）
+        params.creatorUid = creator;
         try {
             Long asyncTaskId = taskWorkerClient.submit(new TaskSubmitParam(
                     engine.taskName(),
@@ -310,14 +324,16 @@ public class DownloadServiceImpl implements DownloadService {
     /**
      * 判断指定下载类型是否消费代理配置。
      *
-     * <p>HTTP 由引擎自行装配代理；磁力链 / 种子由 aria2 的 {@code all-proxy} 选项承载。
-     * Git 克隆走 JGit 自带的传输实现、ed2k 引擎尚未接入，两者都不消费代理。</p>
+     * <p>HTTP 由引擎自行装配代理；磁力链 / 种子由 aria2 的 {@code all-proxy} 选项承载，种子任务以 URL
+     * 提交时 {@code .torrent} 文件由本服务按同一份代理快照拉取（HTTP / SOCKS 均支持）；Git 克隆由 JGit
+     * 按任务注入代理（HTTP(S) 用连接工厂、SSH 用代理数据工厂）。仅 ed2k 引擎尚未接入，不消费代理。</p>
      *
      * @param type 下载类型
      * @return 支持代理返回 {@code true}
      */
     private static boolean supportsProxy(DownloadType type) {
         return type == DownloadType.HTTP
+                || type == DownloadType.GIT
                 || type == DownloadType.MAGNET
                 || type == DownloadType.TORRENT;
     }
@@ -328,7 +344,7 @@ public class DownloadServiceImpl implements DownloadService {
      * <p>旧插件保存的是代理 id，前端传的是代理名称；新契约统一按名称解析，并在创建任务时把
      * 类型 / 地址 / 端口快照进参数，避免任务执行时代理配置已被删除。</p>
      *
-     * <p>当前下载类型不支持代理时（Git / ed2k）直接跳过并清空相关字段，避免把「不会生效的代理」
+     * <p>当前下载类型不支持代理时（ed2k）直接跳过并清空相关字段，避免把「不会生效的代理」
      * 写进任务记录而误导使用者。</p>
      *
      * @param params  下载参数（{@code proxy} 非空时会被解析并回填快照字段）
@@ -369,6 +385,40 @@ public class DownloadServiceImpl implements DownloadService {
         params.proxyType = proxy.getType();
         params.proxyAddress = proxy.getAddress();
         params.proxyPort = proxy.getPort();
+    }
+
+    /**
+     * 解析并校验 Git SSH 克隆所选的用户 SSH 凭据。
+     *
+     * <p>任务参数中只保存凭据 id：创建任务时校验「凭据存在且属于当前创建者」，执行期再按 id 读取。
+     * 因此这里只做归属校验并把 id 归一化（避免客户端传负数/非法值），不把任何密钥内容写进任务参数。</p>
+     *
+     * <p>未选择凭据时直接返回；「SSH 地址必须选择凭据」「非 SSH 地址不得携带凭据」这两条跨字段约束
+     * 由 Git 引擎的创建期校验负责，本方法只处理「选择了凭据」的情形。</p>
+     *
+     * <p>除归属校验外，还校验私钥认证的登录用户名：SSH 地址未携带用户名时必须在凭据中配置用户名，
+     * 否则 JGit 会退回服务运行账号登录，导致难以理解的认证失败。</p>
+     *
+     * @param params  下载参数（{@code sshCredentialId} 非空时会被校验并归一化）
+     * @param creator 任务创建者 uid（凭据所有者必须是创建者本人）
+     * @throws SfcJsonException 凭据不存在、不属于当前创建者、下载类型不是 GIT，或私钥认证缺少用户名时抛出
+     */
+    private void resolveSshCredential(DownloadTaskParams params, long creator) {
+        if (params.sshCredentialId == null) {
+            return;
+        }
+        if (params.type != DownloadType.GIT) {
+            throw new SfcJsonException(400, "仅 Git SSH 克隆支持选择 SSH 凭据");
+        }
+        SshCredential credential = sshCredentialService.findOwned(params.sshCredentialId, creator);
+        params.sshCredentialId = credential.getId();
+        // 私钥认证：会话用户名来自仓库地址；地址与凭据都没有用户名时，JGit 会退回「服务运行账号」
+        // 去登录，几乎必然认证失败且原因难懂，这里提前给出可操作提示
+        if (credential.getAuthType() == SshCredentialAuthType.PRIVATE_KEY
+                && !SfcStringUtils.hasText(DownloadFileUtils.parseSshUsername(params.url))
+                && !SfcStringUtils.hasText(credential.getUsername())) {
+            throw new SfcJsonException(400, "SSH 地址未携带用户名，请在 SSH 凭据中配置用户名");
+        }
     }
 
     /**

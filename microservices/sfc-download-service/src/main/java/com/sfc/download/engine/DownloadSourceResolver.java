@@ -18,9 +18,9 @@ import java.util.regex.Pattern;
  * <p><b>类型推断不在这里：</b>「按下载地址推断类型」由各 {@link DownloadEngine#matchesSource(DownloadType, String)}
  * 声明、{@link DownloadEngineRegistry#detect(String)} 汇总；本类不再猜测类型，调用方必须传入具体类型。</p>
  *
- * <p><b>安全约束：</b>Git 只允许 {@code http/https/git://}，拒绝 {@code file://}（读取服务端本地文件）、
- * {@code ext::}（git 远程助手可执行任意命令）、以 {@code -} 开头的参数注入，以及本地绝对路径；
- * {@code ssh://} 与 {@code git@host:path} 在本期因缺少 SSH 传输实现而明确拒绝。</p>
+ * <p><b>安全约束：</b>Git 允许 {@code http/https}、{@code git://} 与 SSH（{@code ssh://}、
+ * {@code git@host:path}）；拒绝 {@code file://}（读取服务端本地文件）、{@code ext::}（git 远程助手
+ * 可执行任意命令）、以 {@code -} 开头的参数注入，以及本地绝对路径。</p>
  */
 @Component
 public class DownloadSourceResolver {
@@ -72,6 +72,10 @@ public class DownloadSourceResolver {
     /**
      * 校验 Git 仓库地址（协议白名单 + 命令注入防护）。
      *
+     * <p>SSH 形式（{@code ssh://} 与 SCP 风格 {@code git@host:path}）同样放行：其传输由
+     * JGit 的 ssh.apache 实现承载，认证凭据由任务参数 {@code sshCredentialId} 指定（在创建任务时
+     * 另行校验归属），本方法只校验地址语法。</p>
+     *
      * @param source 仓库地址
      * @throws SfcJsonException 地址为空、协议不受支持或格式非法时抛出
      */
@@ -91,7 +95,11 @@ public class DownloadSourceResolver {
             throw new SfcJsonException(400, "非法的 Git 仓库地址: " + value);
         }
         if (isSshGit(value)) {
-            throw new SfcJsonException(400, "本期不支持 SSH 协议，请使用 http/https/git:// 地址: " + value);
+            // SSH 形式：要求 host 与 path 均非空（SCP 风格由正则保证 path 非空）
+            if (!DownloadFileUtils.isSshGitUrl(value)) {
+                throw new SfcJsonException(400, "无效的 SSH Git 仓库地址: " + value);
+            }
+            return;
         }
         if (isLocalAbsolutePath(value)) {
             throw new SfcJsonException(400, "不支持本地路径: " + value);
@@ -145,7 +153,7 @@ public class DownloadSourceResolver {
     }
 
     /**
-     * 判断是否为本期不支持的 SSH 形式 Git 地址。
+     * 判断是否为 SSH 形式的 Git 地址。
      *
      * @param value 已去空白的地址
      * @return {@code ssh://} 或 SCP 风格（{@code git@host:path}）返回 {@code true}

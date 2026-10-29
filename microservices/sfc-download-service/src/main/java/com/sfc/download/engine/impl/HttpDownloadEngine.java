@@ -11,6 +11,7 @@ import com.sfc.download.engine.DownloadEngine;
 import com.sfc.download.engine.DownloadType;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.util.DownloadFileUtils;
+import com.sfc.download.util.DownloadProxyUtils;
 import com.sfc.download.util.IgnoreSSLHttpRequestFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ContentDisposition;
@@ -26,12 +27,10 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -81,16 +80,6 @@ public class HttpDownloadEngine implements DownloadEngine {
      * 参数未指定或非法时使用的默认读取超时（毫秒）。
      */
     private static final int DEFAULT_READ_TIMEOUT = 60000;
-
-    /**
-     * 代理端口合法范围下限。
-     */
-    private static final int MIN_PROXY_PORT = 1;
-
-    /**
-     * 代理端口合法范围上限。
-     */
-    private static final int MAX_PROXY_PORT = 65535;
 
     /**
      * {@inheritDoc}
@@ -263,48 +252,21 @@ public class HttpDownloadEngine implements DownloadEngine {
         /**
          * 根据创建任务时快照的代理信息组装 {@link Proxy}。
          *
-         * <p>未指定代理名称/地址时按直连处理；指定了代理但快照字段缺失或端口非法时按参数错误处理。</p>
+         * <p>未指定代理名称/地址时按直连处理；指定了代理但快照字段缺失或端口非法时按参数错误处理。
+         * 解析与校验统一委托 {@link DownloadProxyUtils}，与 Git 引擎保持同一套口径。</p>
          *
          * @throws SfcJsonException 代理配置不完整、端口非法或类型无法识别时抛出
          */
         private void initProxy() {
-            if (!SfcStringUtils.hasText(params.proxyAddress)) {
-                if (SfcStringUtils.hasText(params.proxy)) {
-                    throw new SfcJsonException(400, "无效的代理配置: 缺少代理地址快照（" + params.proxy + "）");
-                }
+            this.proxy = DownloadProxyUtils.toProxy(params);
+            if (proxy == null) {
                 context.log("未配置代理，下载请求使用直连");
                 log.info("{}未配置代理，下载请求使用直连: downloadId={}", LOG_PREFIX, downloadId);
                 return;
             }
-            if (params.proxyPort == null || params.proxyPort < MIN_PROXY_PORT || params.proxyPort > MAX_PROXY_PORT) {
-                throw new SfcJsonException(400, "无效的代理端口: " + params.proxyPort);
-            }
-            Proxy.Type proxyType = parseProxyType(params.proxyType);
-            this.proxy = new Proxy(proxyType, new InetSocketAddress(params.proxyAddress, params.proxyPort));
-            context.log("使用代理: " + (SfcStringUtils.hasText(params.proxy) ? params.proxy + " - " : "")
-                    + proxyType + "://" + params.proxyAddress + ":" + params.proxyPort);
-            log.info("{}使用代理: downloadId={}, 名称={}, 类型={}, 地址={}:{}",
-                    LOG_PREFIX, downloadId,
-                    SfcStringUtils.hasText(params.proxy) ? params.proxy : "-",
-                    proxyType, params.proxyAddress, params.proxyPort);
-        }
-
-        /**
-         * 解析代理协议类型。
-         *
-         * @param proxyType 代理类型字符串（来自 core 代理快照，取值 {@code HTTP}/{@code SOCKS}）
-         * @return {@link Proxy#type()} 对应的类型
-         * @throws SfcJsonException 类型无法识别时抛出
-         */
-        private Proxy.Type parseProxyType(String proxyType) {
-            if (!SfcStringUtils.hasText(proxyType)) {
-                return Proxy.Type.HTTP;
-            }
-            return switch (proxyType.trim().toUpperCase(Locale.ROOT)) {
-                case "SOCKS", "SOCKS5" -> Proxy.Type.SOCKS;
-                case "HTTP", "HTTPS" -> Proxy.Type.HTTP;
-                default -> throw new SfcJsonException(400, "无效的代理类型: " + proxyType);
-            };
+            String description = DownloadProxyUtils.describe(params, proxy);
+            context.log("使用代理: " + description);
+            log.info("{}使用代理: downloadId={}, 代理={}", LOG_PREFIX, downloadId, description);
         }
 
         /**

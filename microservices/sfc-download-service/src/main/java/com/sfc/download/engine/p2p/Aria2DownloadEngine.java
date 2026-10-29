@@ -18,17 +18,20 @@ import com.sfc.download.engine.DownloadType;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.property.Aria2Property;
 import com.sfc.download.util.DownloadFileUtils;
+import com.sfc.download.util.DownloadProxyUtils;
+import com.sfc.download.util.IgnoreSSLHttpRequestFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import java.net.http.HttpClient;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Proxy;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -170,6 +173,16 @@ public class Aria2DownloadEngine implements DownloadEngine {
     private static final int TORRENT_READ_TIMEOUT_MILLIS = 30000;
 
     /**
+     * 拉取 {@code .torrent} 文件时，从响应流写入本地临时文件的缓冲区大小（字节）。
+     */
+    private static final int TORRENT_COPY_BUFFER_SIZE = 8192;
+
+    /**
+     * 拉取 {@code .torrent} 文件时，写入任务临时目录的临时文件前缀（后缀复用 {@link #TORRENT_SUFFIX}）。
+     */
+    private static final String TORRENT_TEMP_FILE_PREFIX = "torrent-";
+
+    /**
      * 字节与兆字节的换算基数。
      */
     private static final long BYTES_PER_MB = 1024L * 1024L;
@@ -230,23 +243,21 @@ public class Aria2DownloadEngine implements DownloadEngine {
     private final AtomicReference<Probe> probeCache = new AtomicReference<>();
 
     /**
-     * 拉取 {@code .torrent} 文件用的 HTTP 客户端。
+     * 构建拉取 {@code .torrent} 文件用的 HTTP 客户端。
      *
-     * <p>与 aria2 的 RPC 客户端分开：种子文件可能来自公网，需要更长的读取超时。</p>
-     */
-    private final RestClient torrentClient = buildTorrentClient();
-
-    /**
-     * 构建拉取种子文件的 HTTP 客户端。
+     * <p>与 aria2 的 RPC 客户端分开：种子文件可能来自公网，需要更长的读取超时。客户端按任务快照的
+     * 代理构建，HTTP / SOCKS 代理均支持；未配置代理时直连。下载来源不可信，统一忽略证书校验。</p>
      *
-     * @return 配置了超时时间的 {@link RestClient}
+     * @param proxy 本次拉取使用的代理，{@code null} 表示直连
+     * @return 配置了超时、代理与忽略证书校验的 {@link RestClient}
      */
-    private static RestClient buildTorrentClient() {
-        HttpClient httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofMillis(TORRENT_CONNECT_TIMEOUT_MILLIS))
-                .build();
-        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-        requestFactory.setReadTimeout(Duration.ofMillis(TORRENT_READ_TIMEOUT_MILLIS));
+    private static RestClient buildTorrentClient(Proxy proxy) {
+        IgnoreSSLHttpRequestFactory requestFactory = new IgnoreSSLHttpRequestFactory();
+        requestFactory.setConnectTimeout(TORRENT_CONNECT_TIMEOUT_MILLIS);
+        requestFactory.setReadTimeout(TORRENT_READ_TIMEOUT_MILLIS);
+        if (proxy != null) {
+            requestFactory.setProxy(proxy);
+        }
         return RestClient.builder().requestFactory(requestFactory).build();
     }
 
@@ -480,36 +491,86 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 按 URL 拉取 {@code .torrent} 文件内容并编码为 Base64。
      *
+     * <p>响应体流式写入任务临时目录下的临时文件，写入过程中强制 {@code download.aria2.torrent-max-size}
+     * 上限；校验通过后读取文件内容并编码为 Base64，临时文件在方法返回前删除。代理取自任务参数的代理
+     * 快照（HTTP / SOCKS 均支持），未配置代理时直连。</p>
+     *
      * @param context 执行上下文
      * @param url     种子文件地址
      * @return 种子内容的 Base64 编码
-     * @throws SfcJsonException 地址为空、拉取失败、内容为空或超过体积上限时抛出
+     * @throws SfcJsonException 地址为空、拉取失败、内容为空、超过体积上限或临时文件读写失败时抛出
      */
     private String fetchTorrentBase64(DownloadContext context, String url) {
         if (!SfcStringUtils.hasText(url)) {
             throw new SfcJsonException(400, "种子下载需要 .torrent 文件地址或种子文件内容（torrentBase64）");
         }
+        DownloadTaskParams params = context.getParams();
+        Proxy proxy = DownloadProxyUtils.toProxy(params);
+        String proxyDescription = DownloadProxyUtils.describe(params, proxy);
         String target = url.trim();
-        context.log("开始获取种子文件: " + target);
+        context.log("开始获取种子文件: " + target + "，代理: " + proxyDescription);
         context.checkInterrupted();
 
-        byte[] content;
-        try {
-            content = torrentClient.get().uri(target).retrieve().body(byte[].class);
-        } catch (RestClientException | IllegalArgumentException e) {
-            throw new SfcJsonException(502, "获取种子文件失败: " + describe(e));
-        }
-        context.checkInterrupted();
-
-        if (content == null || content.length == 0) {
-            throw new SfcJsonException(502, "获取到的种子文件内容为空: " + target);
-        }
         long maxBytes = maxTorrentBytes(configService.getAria2());
-        if (content.length > maxBytes) {
-            throw new SfcJsonException(400, "种子文件超过上限 " + (maxBytes / BYTES_PER_MB) + " MB");
+        Path torrentFile;
+        try {
+            torrentFile = Files.createTempFile(context.getTempDir(), TORRENT_TEMP_FILE_PREFIX, TORRENT_SUFFIX);
+        } catch (IOException e) {
+            throw new SfcJsonException(500, "创建种子文件临时文件失败: " + describe(e));
         }
-        context.log("种子文件获取成功: " + content.length + " 字节");
-        return Base64.getEncoder().encodeToString(content);
+        try {
+            fetchTorrentFile(context, buildTorrentClient(proxy), target, torrentFile, maxBytes);
+            context.checkInterrupted();
+            byte[] content = Files.readAllBytes(torrentFile);
+            if (content.length == 0) {
+                throw new SfcJsonException(502, "获取到的种子文件内容为空: " + target);
+            }
+            context.log("种子文件获取成功: " + content.length + " 字节");
+            return Base64.getEncoder().encodeToString(content);
+        } catch (IOException e) {
+            throw new SfcJsonException(500, "读写种子文件临时文件失败: " + describe(e));
+        } catch (RestClientException | IllegalArgumentException e) {
+            throw new SfcJsonException(502, "获取种子文件失败（" + proxyDescription + "）: " + describe(e));
+        } finally {
+            DownloadFileUtils.deleteQuietly(torrentFile);
+        }
+    }
+
+    /**
+     * 流式拉取种子文件并写入本地临时文件，读取过程中强制体积上限。
+     *
+     * <p>状态码非 2xx 时按 HTTP 502 语义失败；超过上限时立即中止读取与写盘。响应对象由
+     * {@link RestClient.RequestHeadersSpec#exchange} 在回调结束后统一关闭。</p>
+     *
+     * @param context    执行上下文（用于响应中断）
+     * @param client     已按任务代理构建的 HTTP 客户端
+     * @param target     种子文件地址
+     * @param targetFile 写入的本地临时文件
+     * @param maxBytes   允许的最大字节数
+     * @throws SfcJsonException           状态码非 2xx 或内容超过上限时抛出
+     * @throws SfcTaskInterruptedException 拉取过程中任务被中断时抛出
+     */
+    private static void fetchTorrentFile(DownloadContext context, RestClient client, String target,
+                                         Path targetFile, long maxBytes) {
+        client.get().uri(target).exchange((request, response) -> {
+            if (!response.getStatusCode().is2xxSuccessful()) {
+                throw new SfcJsonException(502, "获取种子文件失败: HTTP " + response.getStatusCode().value());
+            }
+            long total = 0L;
+            byte[] buffer = new byte[TORRENT_COPY_BUFFER_SIZE];
+            try (InputStream in = response.getBody(); OutputStream out = Files.newOutputStream(targetFile)) {
+                int read;
+                while ((read = in.read(buffer)) != -1) {
+                    context.checkInterrupted();
+                    total += read;
+                    if (total > maxBytes) {
+                        throw new SfcJsonException(400, "种子文件超过上限 " + (maxBytes / BYTES_PER_MB) + " MB");
+                    }
+                    out.write(buffer, 0, read);
+                }
+            }
+            return null;
+        });
     }
 
     // ==================== 选项装配 ====================

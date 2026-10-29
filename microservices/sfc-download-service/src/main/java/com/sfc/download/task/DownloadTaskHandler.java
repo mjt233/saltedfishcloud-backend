@@ -20,6 +20,7 @@ import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.repo.DownloadTaskRepo;
 import com.sfc.download.stash.DownloadSaveService;
 import com.sfc.download.util.DownloadFileUtils;
+import com.sfc.download.util.DownloadLogUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -128,7 +129,7 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             log.info("{}开始执行离线下载任务: downloadId={}, taskId={}, uid={}, type={}, url={}, savePath={}",
                     LOG_PREFIX, downloadId, taskId, params.uid,
                     params.type == null ? "未指定" : params.type.getCode(),
-                    params.url, params.savePath);
+                    DownloadLogUtils.maskUrl(params.url), params.savePath);
             downloadTaskRepo.updateStatus(downloadId, DownloadTaskConstants.Status.RUNNING);
 
             // 先接线再检查：既覆盖「接线前就已收到取消」的情况，也让引擎在自身注册取消回调时能立即感知

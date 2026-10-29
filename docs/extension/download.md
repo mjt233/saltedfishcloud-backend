@@ -3,7 +3,7 @@
 ## 简介
 
 离线下载能力已从「宿主插件」改造为**独立微服务** `microservices/sfc-download-service`（原 `sfc-ext-download` 插件已从仓库删除）。
-服务把多种下载来源的产物保存到用户网盘的指定目录：HTTP/HTTPS 直链、Git 仓库克隆、磁力链与种子（经 aria2），
+服务把多种下载来源的产物保存到用户网盘的指定目录：HTTP/HTTPS 直链、Git 仓库克隆（支持 HTTP(S) 与 SSH）、磁力链与种子（经 aria2），
 同时提供代理节点、实时进度、任务中断与下载能力声明。
 
 下载执行与「下载类型」解耦：每种类型由一个 `DownloadEngine` 实现承载，新增下载方式只需实现一个引擎。
@@ -14,7 +14,8 @@
   下载类型在本服务内部按 `type` 路由到对应引擎
 - 访问入口：经 `sfc-gateway` 的默认动态路由 `/api/service/sfc-download-service/task/download/**`
 - 部署：`microservices/sfc-download-service/README.md`
-- 前端适配：`microservices/sfc-download-service/docs/frontend-adaptation-checklist.md`
+- 前端适配：`microservices/sfc-download-service/docs/frontend-adaptation-checklist.md`；
+  Git 代理 + SSH 克隆专项对接说明：`microservices/sfc-download-service/docs/git-proxy-ssh-clone-frontend-guide.md`
 - 微服务总览：`docs/develop/microservice/index.md`
 
 ## 下载类型
@@ -22,7 +23,7 @@
 | 类型 | 实现 | 外部依赖 | 说明 |
 |---|---|---|---|
 | `HTTP` | 内置流式 HTTP 下载 | 无 | 支持自定义请求头 / 请求方法 / 超时 / 代理，并忽略服务端证书校验 |
-| `GIT` | JGit `7.3.0.202506031305-r`（纯 Java） | 无 | 支持 `http` / `https` / `git://`；**不支持 `ssh://` 与 `git@host:path`** |
+| `GIT` | JGit `7.3.0.202506031305-r`（纯 Java；SSH 传输由 `org.eclipse.jgit.ssh.apache` 提供） | 无 | 支持 `http` / `https` / `git://` / `ssh`；SSH 克隆需提供用户 SSH 凭据，`git://` 不支持代理 |
 | `MAGNET` | aria2 JSON-RPC | 需同机运行 `aria2c` | 磁力链 |
 | `TORRENT` | aria2 JSON-RPC | 需同机运行 `aria2c` | `.torrent` 文件地址，或 Base64 种子内容 |
 | `ED2K` | 占位引擎 | — | 已登记类型但引擎未接入：能力声明中恒为不可用，创建任务直接返回 400 |
@@ -37,7 +38,7 @@
 |---|---|
 | `magnet:?xt=...` | `MAGNET` |
 | `ed2k://...` | `ED2K` |
-| `git://...`、`ssh://...`、`git@host:path`、http(s) 且路径以 `.git` 结尾 | `GIT`（其中 `ssh` 形式会在创建任务时以 400 拒绝） |
+| `git://...`、`ssh://...`、`git@host:path`、http(s) 且路径以 `.git` 结尾 | `GIT`（SSH 形式创建任务时必须同时提供 `sshCredentialId`） |
 | http(s) 且路径以 `.torrent` 结尾 | `TORRENT` |
 | 其余 http(s) | `HTTP` |
 | 空 / 无法判定 | `null`（接口不报错） |
@@ -47,14 +48,20 @@
 ## 主要功能
 
 - 五种下载类型（四种可用 + ed2k 占位），**类型必填**，并提供按下载地址推断类型的辅助接口
-- HTTP 代理：创建任务时按代理名称从 core 解析并快照地址/端口；**仅 `HTTP` / `MAGNET` / `TORRENT` 消费代理，
-  `GIT` / `ED2K` 会忽略并清空代理快照**
+- 代理节点：创建任务时按代理名称从 core 解析并快照地址/端口；`HTTP` / `MAGNET` / `TORRENT` 与 `GIT` 均消费代理
+  （Git 的 HTTP(S) 克隆与 SSH 克隆都支持 HTTP / SOCKS（SOCKS5）代理；`git://` 地址不支持代理，携带代理会返回 400），
+  `TORRENT` 经 URL 提交时 `.torrent` 文件由本服务拉取，走任务代理（HTTP / SOCKS 均支持，流式落盘并限制体积），
+  `ED2K` 会忽略并清空代理快照
+- SSH 克隆：`GIT` 类型支持 `ssh://host[:port]/path` 与 SCP 风格 `git@host:owner/repo.git`，认证方式为私钥 /
+  带口令私钥 / SSH 密码，凭据按用户管理（见「SSH 克隆与凭据」）
 - 实时进度（速度、已下载量、总大小）与任务状态，可中断等待中 / 运行中的任务
 - 按用户分页查询任务列表，并可按状态筛选（ALL / DOWNLOADING / FINISH / FAILED）
 - 落盘自动规避重名：单文件追加 `.1`、`.2`；目录树对顶层目录名同样做规避
 - 多文件 / 目录树产物（BT 多文件、Git 仓库）按原目录结构递归创建目录并逐文件上传
 - 下载能力声明接口：返回每种类型是否可用、不可用原因、承载引擎标识（`engineId`）以及可选项元数据
 - 业务配置由 sfc-core 统一管理，管理员在后台修改后无需重启本服务
+- 后台「插件配置 → 离线下载」新增「**SSH 凭据管理**」菜单：声明为 `inputType=template` 的组件
+  `download-ssh-credential-manager`（由前端实现），用于管理当前登录用户的 SSH 凭据与（仅管理员）主机信任记录
 - 前端插件资源（`index.umd.js` / `style.css`）随服务发布，仍由 `sfc-core` 的 `plugin/autoLoad.js` 合并加载
 
 ## 统一配置
@@ -64,6 +71,8 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
 - 管理员在 core 后台的「插件配置」面板（节点名「离线下载」）修改；
 - 本服务通过 `SfcCoreConfigFeignClient` 读取，快照缓存 5 秒，**修改后最长 5 秒生效，无需重启**；
 - aria2 的连通性探测另有 30 秒缓存（见 `sfc.download.capability.cache-seconds`），刚改完开关时可能需要等待其过期。
+- 「SSH 凭据管理」菜单不是配置项（`inputType=template`），不占用配置 key；其组件契约与接口说明见
+  `microservices/sfc-download-service/docs/git-proxy-ssh-clone-frontend-guide.md`。
 
 | 配置 key | 默认值 | 说明 |
 |---|---|---|
@@ -76,6 +85,9 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
 | `download.git.default-depth` | `0` | 默认克隆深度，`0` 表示全量克隆 |
 | `download.git.keep-git-dir` | `false` | 是否保留 `.git`；默认删除（网盘场景只需要工作区文件） |
 | `download.git.connect-timeout` | `30` | JGit 连接超时（秒） |
+
+SSH 克隆与 SSH 凭据管理**没有新增统一配置项**：凭据、主机信任记录都存放在本服务 `download.db`，
+Git 的克隆行为仍由 `download.git.*` 控制。
 
 `application.yml` 只保留部署期 / 内部调优参数：端口、数据源、`sfc.internal.key`、Worker 并发、注册中心，
 以及 `sfc.download.config.refresh-interval-millis`（默认 5000）与 `sfc.download.capability.cache-seconds`（默认 30）。
@@ -107,6 +119,82 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
 `split`、`max-connection-per-server`、`min-split-size`、`bt-tracker`、`max-download-limit`、
 `max-overall-download-limit`、`continue`、`user-agent`、`referer`。
 
+## SSH 克隆与凭据
+
+Git 类型除 `http` / `https` / `git://` 外还支持 SSH 克隆，依赖 `org.eclipse.jgit.ssh.apache`（Apache MINA sshd，
+纯 Java 实现），部署机**无需**安装 git / ssh 客户端。
+
+| 项 | 说明 |
+|---|---|
+| 放行来源 | `ssh://host[:port]/path`、SCP 风格 `git@host:owner/repo.git` |
+| 继续拒绝 | `file://`、`ext::`、以 `-` 开头的地址、本地绝对路径 |
+| 认证方式 | 私钥、带口令（加密）私钥、SSH 密码 |
+| 代理 | SSH 与 HTTP(S) 克隆都支持 HTTP 代理与 SOCKS（SOCKS5）代理；`git://` 地址不支持代理 |
+| 宿主机 `~/.ssh` | **不读取**（密钥、`known_hosts`、`config` 均不读取），SSH 认证完全由用户凭据驱动 |
+
+实现上按任务注入、不改 JVM 全局代理：HTTP(S) 克隆用 JGit `TransportHttp` 注入 `HttpConnectionFactory`；
+SSH 克隆通过 `SshdSessionFactory` 的 `ProxyDataFactory` 生效（HTTP CONNECT / SOCKS，即 SOCKS5）。
+
+### 用户级 SSH 凭据
+
+凭据存放在本服务 SQLite 新表 `ssh_credential`，按用户（`uid`）隔离，只有本人可以查看、使用与删除：
+
+- 字段：`name`、`authType`（`PRIVATE_KEY` / `PASSWORD`）、`username`、`privateKey`、`passphrase`、`password`、
+  `fingerprint`（私钥公钥指纹 `SHA256:...`）以及审计字段 `uid` / `createAt` / `updateAt`；
+- 私钥 / 口令 / 密码**明文存放于本服务 `download.db`**（与 core 现有 aria2 secret、第三方平台凭证做法一致），
+  接口**绝不回显**，日志打码；建议限制 `download.db` 的文件权限；
+- 保存时校验：私钥必须可解析（加密私钥用口令解密）并自动计算指纹；`PASSWORD` 方式必须提供 `username` + `password`；
+  校验失败返回 400。
+
+创建 `GIT` + SSH 地址的任务时，用**顶层字段** `sshCredentialId` 指定凭据（不是 `options` 里的键）：
+
+- SSH 地址必须提供，否则 400「SSH 地址必须选择 SSH 凭据（sshCredentialId）」；
+- 非 SSH 地址携带该字段 → 400「仅 SSH 地址支持选择 SSH 凭据」；
+- 服务端校验凭据存在且属于当前创建者，否则 400「无效的 SSH 凭据: {id}」；任务参数只保存凭据 id，不保存密钥内容；
+- 私钥认证时，SSH 地址未携带用户名（如 `ssh://host/owner/repo.git`）则必须在凭据中配置 `username`，
+  否则 400「SSH 地址未携带用户名，请在 SSH 凭据中配置用户名」；SCP 风格地址自带用户名，无需额外配置；
+- 执行时凭据已被删除 → 任务失败「SSH 凭据不存在或已被删除: {id}」。
+
+**子模块：** 开启 `gitSubmodules` 时，任务级代理与 SSH 凭据会传递给子模块；子模块地址同样受传输协议
+白名单约束（仅允许 `http` / `https` / `ssh` / `git`），`file://`、`ext::` 与本地路径会被拒绝，
+防止恶意仓库通过 `.gitmodules` 让服务端读取本地仓库或执行外部命令。
+
+### 主机密钥信任记录（TOFU）
+
+首次连接未知主机时自动接受，并把主机密钥写入本服务新表 `ssh_host_key`（字段 `connectAddress`、`keyType`、
+`publicKey`、`fingerprint`、首次信任用户 `uid`、`createAt`），`connectAddress` 形如 `github.com` 或
+`github.com:2222`。信任记录**全局共享**（不按用户隔离）；之后同一主机指纹发生变化时克隆失败并给出可读提示，
+管理员在信任记录中删除旧记录后重试即可。首次信任的记录**写入失败时拒绝本次连接**（fail-closed），
+避免「信任未记录却放行」导致每次连接都重新首次信任、TOFU 失效。
+
+### 接口
+
+| 方法 | 内部路径 | 权限 | 说明 |
+|---|---|---|---|
+| GET | `/api/task/download/ssh-credential` | 登录用户 | 当前用户 SSH 凭据列表（不含私钥/口令/密码；返回 `id/name/authType/username/fingerprint/createAt`） |
+| POST | `/api/task/download/ssh-credential` | 登录用户 | 新增凭据 |
+| DELETE | `/api/task/download/ssh-credential?id=` | 登录用户 | 删除本人凭据 |
+| GET | `/api/task/download/ssh-host-key?connectAddress=` | 管理员 | 信任记录列表（`connectAddress` 可选过滤） |
+| DELETE | `/api/task/download/ssh-host-key?id=` | 管理员 | 删除信任记录 |
+
+新增凭据请求体：
+
+```jsonc
+{
+  "name": "GitHub 部署密钥",
+  "authType": "PRIVATE_KEY",     // PRIVATE_KEY | PASSWORD
+  "username": "git",             // 可选（PASSWORD 方式必填）
+  "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+  "passphrase": "可选：加密私钥口令"
+}
+```
+
+密码方式：`{"name":"...","authType":"PASSWORD","username":"git","password":"..."}`。
+
+列表项示例：`{"id":"123","name":"GitHub 部署密钥","authType":"PRIVATE_KEY","username":"git","fingerprint":"SHA256:xxxx","createAt":"..."}`；
+主机信任记录示例：`{"id":"1","connectAddress":"github.com","keyType":"ssh-ed25519","publicKey":"ssh-ed25519 AAAA...","fingerprint":"SHA256:xxxx","uid":"1","createAt":"..."}`。
+经网关访问时，上述内部路径前缀为 `/api/service/sfc-download-service`。凭据管理不提供编辑（更新）接口，需要修改时请删除后重新新增。
+
 ## 对外接口（经网关默认动态路由）
 
 服务内部路径为 `/api/task/download/**`；经网关访问时前缀为 `/api/service/sfc-download-service`
@@ -120,6 +208,11 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
 | GET | `/api/service/sfc-download-service/task/download/proxy` | 当前用户可见的代理节点列表 |
 | GET | `/api/service/sfc-download-service/task/download/capabilities?refresh=` | 下载能力声明（需登录） |
 | GET | `/api/service/sfc-download-service/task/download/detect-type?url=` | 按下载地址推断类型（需登录）；无法识别时 `data=null` |
+| GET | `/api/service/sfc-download-service/task/download/ssh-credential` | 当前用户 SSH 凭据列表（需登录；不含私钥/口令/密码） |
+| POST | `/api/service/sfc-download-service/task/download/ssh-credential` | 新增 SSH 凭据（需登录；私钥 / 带口令私钥 / 密码） |
+| DELETE | `/api/service/sfc-download-service/task/download/ssh-credential?id=` | 删除本人 SSH 凭据（需登录） |
+| GET | `/api/service/sfc-download-service/task/download/ssh-host-key?connectAddress=` | SSH 主机信任记录列表（管理员；`connectAddress` 可选过滤） |
+| DELETE | `/api/service/sfc-download-service/task/download/ssh-host-key?id=` | 删除 SSH 主机信任记录（管理员） |
 
 创建任务的请求体：
 
@@ -129,7 +222,8 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
   "url": "https://host/repo.git",
   "uid": 1,
   "savePath": "/download",
-  "proxy": "香港节点",         // 可选，仅 HTTP/MAGNET/TORRENT 生效
+  "proxy": "香港节点",         // 可选，HTTP/MAGNET/TORRENT 生效，GIT 的 HTTP(S)/SSH 克隆也生效（git:// 除外）
+  "sshCredentialId": "1837465928374652928", // 可选，仅 type=GIT 且为 SSH 地址时必填（凭据 id）
   "headers": {},              // 可选，仅 HTTP
   "method": "GET",            // 可选，仅 HTTP
   "options": {                // 可选，类型专属参数
@@ -170,11 +264,18 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
 
 - **ed2k 未接入**：`ED2K` 只是登记了类型，引擎为占位实现，创建任务直接返回 400；后续接入点见
   `Ed2kDownloadEngine` 类注释（可接 mldonkey / aMule）。
-- **Git 不支持 SSH**：JGit 的 SSH 传输需要额外的 `org.eclipse.jgit.ssh.apache` 依赖，本期未引入，
-  因此仅支持 `http/https/git://`；`ssh://` 与 `git@host:path` 会在创建任务时被明确拒绝。
+- **主机密钥为 TOFU（首次信任）**：SSH 首次连接未知主机时自动接受并写入 `ssh_host_key`，记录全局共享；
+  主机指纹变化会导致克隆失败，需管理员删除旧信任记录后重试。首个用户可抢先写入错误的主机密钥造成他人
+  克隆失败（属 DoS，不是中间人攻击），管理员删除记录即可恢复。
+- **SSH 凭据明文存储**：私钥 / 口令 / 密码明文存放于本服务 `download.db`（与 core 现有 aria2 secret 等做法一致），
+  接口不回显、日志打码；建议限制 `download.db` 文件权限。本服务**不读取**宿主机 `~/.ssh`，认证完全由用户凭据驱动。
+- **Git 子模块边界**：任务级的代理与 SSH 凭据会传递给子模块；子模块地址仅允许 `http`/`https`/`ssh`/`git`
+  （`file://`、`ext::`、本地路径会被拒绝）；**HTTP(S) 父仓库 + SSH 子模块**不在支持范围。
+  开启子模块克隆且 `stripGitDir=true` 时，子模块内的 `.git`（目录或 gitlink 文件）也会一并清理。
+- **多实例部署**：本服务 SQLite 不共享，SSH 凭据与主机信任记录按实例隔离（与下载任务数据一致的既有架构限制）。
 - **Git 进度是近似值**：JGit 以「工作单元」而非字节汇报进度，进度条按工作单元累加，不能当作字节进度使用。
-- **aria2 必须同机**，且**不支持 SOCKS 代理**：任务上配置的 SOCKS 代理会被忽略并记录日志；HTTP 代理会转为
-  `all-proxy` 传给 aria2。
+- **aria2 必须同机，内容下载不支持 SOCKS 代理**：SOCKS 会被 aria2 忽略并记录日志，HTTP 代理会转为 `all-proxy`
+  传给 aria2；`TORRENT` 任务经 URL 提交时，`.torrent` 文件由本服务按任务代理快照拉取（HTTP / SOCKS 均支持）。
 - **任务不重试 / 不续传**：执行失败即失败（是否重新排队由异步任务框架的故障转移策略决定，重跑会从头下载）。
 - **落盘失败不回滚**：目录树落盘过程中若某个文件上传失败，已上传成功的文件不会删除，失败信息会提示已成功数量。
   空目录不会保留（上传只处理文件）。

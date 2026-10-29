@@ -1,6 +1,9 @@
 # 离线下载 · 多类型下载前端对接指南
 
-> 适用版本：`sfc-download-service` 多类型下载改造（HTTP / GIT / MAGNET / TORRENT 可用，ED2K 已登记但未接入引擎）。
+> 适用版本：`sfc-download-service` 多类型下载改造（HTTP / GIT / MAGNET / TORRENT 可用，ED2K 已登记但未接入引擎）；
+> GIT 已支持 SSH 克隆（用户级 SSH 凭据 + 主机密钥信任记录），凭据/信任记录管理接口见 §九。
+> **Git 代理 + SSH 克隆专项对接说明**（页面交互、配置面板 template 组件、联调用例）见
+> [`git-proxy-ssh-clone-frontend-guide.md`](./git-proxy-ssh-clone-frontend-guide.md)。
 > 本文档依据服务端代码静态整理，**未经端到端联调验证**；如与实测行为不一致，以实测为准并回馈后端。
 > 接口基址、鉴权、响应信封等基础约定见 [`frontend-adaptation-checklist.md`](./frontend-adaptation-checklist.md)。
 
@@ -17,6 +20,9 @@
 | 5 | 任务列表增加类型标签/图标（读取列表项的 `type`；历史记录该字段可能为 `null`） | 建议 |
 | 6 | 错误提示改为**按信封 `code` 判定成功/失败**并展示 `msg`（业务失败时 HTTP 常仍为 200） | 必须 |
 | 7 | 前端仓库重新构建，产物输出到本服务 `src/main/resources/static/`（本服务**没有**内置可用的新前端产物） | 必须 |
+| 8 | 用 SSH 地址做 Git 克隆时，先让用户选择**用户 SSH 凭据**，把凭据 id 放进请求体顶层 `sshCredentialId`（不是 `options`）；无凭据时引导新增（§九） | 用到 SSH 克隆时 |
+| 9 | 管理员端可增加「SSH 主机信任记录」管理（列表 + 删除），普通用户不可见（§九） | 建议 |
+| 10 | 实现后台配置面板 template 组件 `download-ssh-credential-manager`（「我的 SSH 凭据」+「SSH 主机信任记录」两个页签） | 使用后台管理面板时 |
 
 > ⚠️ **不再兼容「只传 `url` / `uid` / `savePath`」的旧请求体**：`type` 现为必填，缺失会被 Bean Validation 拒绝（HTTP 422 + 信封 `code=422`）。自动选型请改用 §4.5 的 `detect-type` 接口，由前端把结果放进请求体。
 
@@ -44,7 +50,9 @@
 ```
 
 - **业务结果只看信封 `code`，不要看 HTTP 状态码**。未登录、任务不存在、引擎未启用、链接非法等业务失败时，HTTP 状态通常仍是 **200**，错误码只体现在 `code` 里，`msg` 为可直接展示的中文提示；
-- 只有「请求体无法解析 / 参数类型不匹配」（HTTP 400）、「Bean Validation 失败」（HTTP 422）与「权限不足」（HTTP 403）会返回非 200，详见 §9.1；
+- 只有「请求体无法解析 / 参数类型不匹配」（HTTP 400）、「Bean Validation 失败」（HTTP 422）与
+  「携带 `SfcErrorInfo` 的资源级权限异常」（HTTP 403，如非创建者中断任务）会返回非 200，详见 §10.1；
+  其它权限问题（如非管理员访问 SSH 主机信任记录接口）只体现在信封 `code=403`，HTTP 仍为 200；
 - 业务失败（如下载执行失败）**不会**体现在创建接口上，而是记录在任务的 `status` 与 `message` 字段。
 
 ### 3.2 数值字段是字符串
@@ -63,7 +71,10 @@
 
 - 本服务没有 Spring Security，当前用户由网关注入的 `X-Sfc-Uid` 信任头决定；
 - **除网关转发外不要直连 8092**，否则可伪造身份；
-- 未登录（缺少该头）时，`createTask`、`capabilities` 与 `detect-type` 返回信封 `code=401 / msg="请先登录"`（**HTTP 状态仍是 200**）。
+- 未登录（缺少该头）时，`createTask`、`capabilities`、`detect-type` 与 SSH 凭据接口返回信封
+  `code=401 / msg="请先登录"`（**HTTP 状态仍是 200**）；
+- SSH 主机信任记录接口（`/ssh-host-key`）仅管理员可用：未登录 `code=401`，已登录但非管理员
+  `code=403 / msg="仅管理员可管理 SSH 主机信任记录"`（**HTTP 状态仍是 200**，管理员判定经 core 回源）。
 
 ---
 
@@ -175,6 +186,9 @@ GET /api/task/download/capabilities?refresh=false
 
 > ⚠️ `aria2Options` 的 `inputType` 是 `textarea`，取值为 JSON 对象**文本**（如 `"{\"split\":\"16\"}"`），
 > 服务端解析成键值对后再按白名单过滤；无法解析成 JSON 对象时返回 `code=400`。
+>
+> SSH 克隆与凭据管理**不改变能力声明**：`capabilities` 仍返回 5 个类型、`GIT` 的 `options` 不变
+> （SSH 凭据是创建任务的**顶层字段**，不在 `options` 中）；SSH 凭据与主机信任记录通过 §九 的独立接口管理。
 
 ### 4.4 数量与顺序
 
@@ -231,8 +245,8 @@ GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fexample%2Fproj
 > ⚠️ 推断是**语法猜测**：例如 `https://example.com/repo.git` 也可能只是一个普通文件下载。
 > 用户手动改选类型时以用户选择为准，服务端不会覆盖；推断结果只用于「自动选中」这一步。
 >
-> ⚠️ `ssh://` 与 `git@host:path` 会被推断为 `GIT`，但本服务**不支持 SSH 传输**，提交时会返回
-> `code=400`「本期不支持 SSH 协议…」。这是预期行为，前端直接展示 `msg` 即可。
+> ⚠️ `ssh://` 与 `git@host:path` 会被推断为 `GIT`，且本服务**支持 SSH 克隆**；但提交时必须在请求体
+> **顶层**提供 `sshCredentialId`（见 §5.1 与 §九），否则返回 `code=400`「SSH 地址必须选择 SSH 凭据（sshCredentialId）」。
 
 #### 调用时机建议
 
@@ -254,7 +268,8 @@ GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fexample%2Fproj
 | `savePath` | string | 是 | — | 保存目录，如 `/download`、`/`；不能为空（为空 → HTTP 422 + 信封 `code=422`） |
 | `options` | object | 否 | — | 类型专属参数，键名见 §5.4 |
 | `torrentBase64` | string | 否 | — | Base64 编码的 `.torrent` 内容（用于无法提供可访问地址的场景） |
-| `proxy` | string | 否 | 直连 | 代理**名称**（在 core 的代理管理中维护）。仅 `HTTP` / `MAGNET` / `TORRENT` 生效；`GIT` 会忽略并清空 |
+| `proxy` | string | 否 | 直连 | 代理**名称**（在 core 的代理管理中维护）。对 `HTTP` / `MAGNET` / `TORRENT` 与 `GIT`（HTTP(S) 与 SSH 克隆）生效；`git://` 地址不支持代理（带代理返回 `code=400`）；`ED2K` 忽略 |
+| `sshCredentialId` | string \| number | 视地址 | — | 用户 SSH 凭据 id（§九）。仅 `type=GIT` 且地址为 SSH（`ssh://...` 或 `user@host:path`）时使用且**必填**；非 SSH 地址不要传。JSON 中数字或字符串均可（本服务 Long 统一序列化为字符串），凭据必须是当前用户自己的 |
 | `headers` | object | 否 | — | 附加请求头，仅 HTTP 类型使用；同名时覆盖默认 User-Agent |
 | `method` | string | 否 | `GET` | 仅 HTTP 类型使用 |
 | `connectTimeout` | number | 否 | `10000` | 毫秒，仅 HTTP 类型使用 |
@@ -278,7 +293,7 @@ GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fexample%2Fproj
 - `type` 传了未定义的值（例如旧版的 `AUTO`、或拼错的 `FOO`）→ 请求体反序列化失败，HTTP **400**，
   信封 `code=400`，`msg` 形如 `请求体格式错误: 不支持的下载类型: FOO`；
 - `type` 合法但该类型没有可用引擎（如 ed2k 未接入、aria2 未启用）→ HTTP 200 + 信封 `code=400`，
-  `msg` 为可读原因（见 §9.2）。
+  `msg` 为可读原因（见 §10.2）。
 
 推荐的前端自动选型流程：
 
@@ -288,7 +303,7 @@ GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fexample%2Fproj
 4. 提交 `POST /api/task/download` 时把选中的类型放进 `type`。
 
 > 注意：`detect-type` 是纯语法猜测（规则见 §4.5），不保证该类型当前可用；提交时仍可能因为
-> 「引擎未启用」「链接格式非法」返回 `code=400`，按 §9.2 展示 `msg` 即可。
+> 「引擎未启用」「链接格式非法」返回 `code=400`，按 §10.2 展示 `msg` 即可。
 
 ### 5.4 `options` 键名（与服务端 `DownloadOptionKeys` 一致）
 
@@ -307,6 +322,10 @@ GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fexample%2Fproj
 | 键 | 类型 | 说明 |
 |---|---|---|
 | `aria2Options` | string | 透传给 aria2 的选项，取值为 JSON 对象**文本**，如 `"{\"split\":\"16\"}"`；对象内的键为 aria2 选项名、值统一按字符串处理。白名单：`split`、`max-connection-per-server`、`min-split-size`、`bt-tracker`、`max-download-limit`、`max-overall-download-limit`、`continue`、`user-agent`、`referer`；白名单外的键会被丢弃，`dir`/`out` 由服务端强制控制 |
+
+> ⚠️ SSH 凭据**不是** `options` 键：它是任务请求体的顶层字段 `sshCredentialId`（§5.1），`GIT` 的 `options`
+> 仍只有上表列出的 6 个键。`gitUsername` / `gitToken` 继续用于 HTTP(S) 私有仓库的 Basic Auth；
+> SSH 认证请使用用户 SSH 凭据。
 
 ### 5.5 示例
 
@@ -339,6 +358,37 @@ GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fexample%2Fproj
     "gitSubmodules": false,
     "stripGitDir": true
   }
+}
+```
+
+**Git 克隆（SSH + 用户 SSH 凭据）**
+
+```json
+{
+  "type": "GIT",
+  "uid": 1,
+  "savePath": "/download",
+  "url": "git@github.com:example/project.git",
+  "sshCredentialId": "1837465928374652928",
+  "options": {
+    "gitBranch": "main",
+    "gitDepth": 1
+  }
+}
+```
+
+> `ssh://git@git.example.com:2222/example/project.git` 等 `ssh://` 地址同样必须提供 `sshCredentialId`；
+> 凭据需先通过 §九 的接口新增或查询。任务参数只保存凭据 id，不会下发私钥/口令/密码。
+
+**Git 克隆（HTTP(S) + 代理）**
+
+```json
+{
+  "type": "GIT",
+  "uid": 1,
+  "savePath": "/download",
+  "url": "https://github.com/example/project.git",
+  "proxy": "香港节点"
 }
 ```
 
@@ -404,9 +454,13 @@ async function readTorrentAsBase64(file) {
 
 1. 校验 `type` 必填（缺失 → 422）与取值合法（未定义取值 → 400）；
 2. **统一校验**：类型是否有引擎 → 引擎当前是否可用（如 aria2 是否启用/可达）→ 来源协议/格式是否合法 → 引擎专属参数；
-3. 校验 `savePath` 是否存在且可访问（回源 core）；
-4. 解析 `proxy`（仅 HTTP / MAGNET / TORRENT）；
-5. 落库并向 core 提交异步任务。
+   `GIT` 的跨字段约束也在此处判定：SSH 地址必须携带 `sshCredentialId`、非 SSH 地址不得携带、`git://` 地址不得带代理；
+3. 校验 `sshCredentialId`（本地数据库查询，先于需要回源 core 的步骤）：已提供时，非 `GIT` 类型直接拒绝
+   （`仅 Git SSH 克隆支持选择 SSH 凭据`）；`GIT` 类型校验凭据存在且属于当前创建者，私钥认证还要求
+   SSH 地址或凭据中至少有一个用户名；
+4. 校验 `savePath` 是否存在且可访问（回源 core）；
+5. 解析 `proxy`（HTTP / GIT / MAGNET / TORRENT；`git://` 地址带代理 → 400）；
+6. 落库并向 core 提交异步任务。
 
 因此**类型相关的业务错误（`code=400`，HTTP 仍为 200）会先于「无效的保存路径」返回**，便于用户先修对类型/链接。
 
@@ -519,11 +573,170 @@ async function readTorrentAsBase64(file) {
 
 `createTask` 的 `proxy` 传的是这里的 **`name`**（不是 `id`）。未登录返回空数组。
 
+可见范围由 core 的代理管理服务决定：公共代理 + 本人代理；受保护的公共代理仅管理员可见。
+
+代理的生效范围：`HTTP`、`MAGNET`、`TORRENT` 以及 `GIT`（HTTP(S) 克隆与 SSH 克隆都支持 HTTP 代理与 SOCKS（SOCKS5）代理）；
+`git://` 地址不支持代理，带代理创建会返回 `code=400`「git:// 协议不支持代理，请改用 http(s) 或 ssh 地址」；
+`ED2K` 忽略代理。代理地址/端口在创建任务时快照，之后修改或删除 core 的代理配置不影响已创建任务。
+
 ---
 
-## 九、错误码与常见消息
+## 九、SSH 凭据与主机信任记录管理
 
-### 9.1 业务码（信封 `code`）与 HTTP 状态
+Git 的 SSH 克隆需要**用户级 SSH 凭据**；SSH 主机密钥采用 **TOFU（首次信任）** 策略，管理员可维护信任记录。
+凭据与信任记录都存放在本服务 SQLite（`ssh_credential` / `ssh_host_key`），本服务**不读取宿主机 `~/.ssh`**
+（密钥、`known_hosts`、`config` 均不读取），SSH 认证完全由用户凭据驱动。
+
+### 9.1 用户 SSH 凭据：`/ssh-credential`
+
+| 方法 | 路径（相对 `/api/task/download`） | 权限 | 说明 |
+|---|---|---|---|
+| GET | `/ssh-credential` | 登录用户 | 当前用户凭据列表（按 id 倒序） |
+| POST | `/ssh-credential` | 登录用户 | 新增凭据，返回新增后的凭据元信息 |
+| DELETE | `/ssh-credential?id=` | 登录用户 | 删除本人凭据 |
+
+#### 列表
+
+```
+GET /api/task/download/ssh-credential
+```
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "businessCode": 200,
+  "msg": null,
+  "data": [
+    {
+      "id": "123",
+      "name": "GitHub 部署密钥",
+      "authType": "PRIVATE_KEY",
+      "username": "git",
+      "fingerprint": "SHA256:xxxx",
+      "createAt": "2026-10-28 10:00:00"
+    },
+    {
+      "id": "124",
+      "name": "内网 GitLab 密码",
+      "authType": "PASSWORD",
+      "username": "git",
+      "fingerprint": null,
+      "createAt": "2026-10-28 10:05:00"
+    }
+  ]
+}
+```
+
+> 返回中**绝不包含** `privateKey` / `passphrase` / `password`；`fingerprint` 仅私钥方式有值。
+> 未登录时 HTTP 仍为 200，信封 `code=401`。
+
+#### 新增
+
+请求体字段：
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `name` | string | 是 | 凭据名称，≤128 字符 |
+| `authType` | string | 是 | `PRIVATE_KEY`（私钥）或 `PASSWORD`（密码） |
+| `username` | string | 视方式 | SSH 用户名；`PASSWORD` 方式必填。地址自带用户名（如 `git@host:path`）时一般无需再填；地址未带用户名（如 `ssh://host/path`）时用本字段补全 |
+| `privateKey` | string | 视方式 | OpenSSH / PEM 私钥文本；`PRIVATE_KEY` 方式必填 |
+| `passphrase` | string | 否 | 加密私钥的口令，仅 `PRIVATE_KEY` 方式使用 |
+| `password` | string | 视方式 | SSH 密码；`PASSWORD` 方式必填 |
+
+私钥方式示例：
+
+```json
+{
+  "name": "GitHub 部署密钥",
+  "authType": "PRIVATE_KEY",
+  "username": "git",
+  "privateKey": "-----BEGIN OPENSSH PRIVATE KEY-----\n...\n-----END OPENSSH PRIVATE KEY-----",
+  "passphrase": "可选：加密私钥口令"
+}
+```
+
+密码方式示例：
+
+```json
+{ "name": "内网 GitLab 密码", "authType": "PASSWORD", "username": "git", "password": "******" }
+```
+
+保存时校验：私钥必须可解析（加密私钥需提供正确口令）并自动计算公钥指纹 `SHA256:...`；`PASSWORD` 方式必须
+提供 `username` + `password`。失败返回 `code=400` 与可读 `msg`（如 `SSH 私钥解析失败: <原因>`、
+`SSH 密码认证需要提供用户名`）；`name` / `authType` 缺失等 Bean Validation 失败返回 HTTP 422。
+成功响应的 `data` 为新增后的凭据元信息（结构同列表项）。
+
+#### 删除
+
+```
+DELETE /api/task/download/ssh-credential?id=123
+```
+
+成功返回空信封（`data=null`）。凭据不存在或不属于当前用户时返回 `code=400`「无效的 SSH 凭据: 123」；
+`id` 缺失 → HTTP 422，类型不合法（如 `id=abc`）→ HTTP 400。
+
+> 凭据管理**没有更新（编辑）接口**：修改凭据请删除后重新新增。删除正在被任务使用的凭据后，
+> 该任务在执行时会失败并在 `message` 中提示「SSH 凭据不存在或已被删除: {id}」。
+
+### 9.2 主机信任记录（管理员）：`/ssh-host-key`
+
+SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记录（TOFU，**全局共享**，不按用户隔离）；
+之后同一主机指纹发生变化时克隆失败，管理员删除旧记录后重试即可重新信任。信任记录由克隆过程自动写入，
+本接口只提供人工维护能力。
+
+| 方法 | 路径（相对 `/api/task/download`） | 权限 | 说明 |
+|---|---|---|---|
+| GET | `/ssh-host-key?connectAddress=` | 管理员 | 信任记录列表；`connectAddress` 可选**精确**过滤（`host` 或 `host:port`） |
+| DELETE | `/ssh-host-key?id=` | 管理员 | 删除信任记录；记录不存在返回 `code=404` |
+
+响应示例：
+
+```json
+{
+  "code": 200,
+  "businessCode": 200,
+  "msg": null,
+  "data": [
+    {
+      "id": "1",
+      "connectAddress": "github.com",
+      "keyType": "ssh-ed25519",
+      "publicKey": "ssh-ed25519 AAAAC3Nza...",
+      "fingerprint": "SHA256:xxxx",
+      "uid": "1",
+      "createAt": "2026-10-28 10:10:00"
+    }
+  ]
+}
+```
+
+- `connectAddress`：标准端口为 `host`，非标准端口为 `host:port`（如 `git.example.com:2222`）；
+- `uid`：首次信任该主机密钥的用户 uid，用于审计；
+- 公钥本身不是机密信息，展示出来便于管理员人工核对指纹。
+
+权限与错误：未登录 `code=401`；非管理员 `code=403`、`msg="仅管理员可管理 SSH 主机信任记录"`
+（**HTTP 仍为 200**）。删除时 `id` 非法 → `code=400`，记录不存在 → `code=404`
+「SSH 主机信任记录不存在: {id}」。
+
+> ⚠️ 主机密钥变化**可能是主机轮换密钥，也可能是中间人攻击**。只有确认是前者时才删除旧记录并重新信任。
+
+### 9.3 前端交互建议
+
+- **创建页**：类型为 `GIT` 且 URL 以 `ssh://` 开头或匹配 `user@host:path`（含 `git@...`）时，展示「SSH 凭据」
+  下拉框（数据来自 `GET /ssh-credential`）；用户选中后把凭据 `id` 放进请求体**顶层** `sshCredentialId`；
+- URL 不是 SSH 形式时隐藏该下拉框，且**不要提交** `sshCredentialId`（否则 `code=400`）；
+- 无可用凭据时提供「新增凭据」入口：表单按 `authType` 切换字段（私钥方式：`privateKey` + 可选 `passphrase`；
+  密码方式：`username` + `password`），提交成功后刷新列表并自动选中新凭据；
+- 凭据列表只能展示 `name` / `authType` / `username` / `fingerprint` / `createAt`，私钥/口令/密码不会回显；
+  修改凭据 = 删除 + 新增（没有编辑接口）；
+- **管理员端**可提供主机信任记录页面：按 `connectAddress` 查询、删除（删除后提示「下次克隆将重新信任该主机」）；
+  普通用户不展示该入口（调用会得到信封 `code=403`）。
+
+## 十、错误码与常见消息
+
+### 10.1 业务码（信封 `code`）与 HTTP 状态
 
 > ⚠️ **判定业务结果请一律读信封 `code`，不要用 HTTP 状态码。**
 
@@ -531,9 +744,9 @@ async function readTorrentAsBase64(file) {
 |---|---|
 | 200 | 成功 |
 | 400 | 客户端参数/来源/能力问题（类型不支持、链接格式非法、引擎未启用等） |
-| 401 | 未登录（缺少 `X-Sfc-Uid`） |
-| 403 | 资源级权限不足（仅中断任务时出现） |
-| 404 | 任务不存在 |
+| 401 | 未登录（缺少 `X-Sfc-Uid`；含 SSH 凭据 / 主机信任记录接口） |
+| 403 | 权限不足：资源级校验（如非创建者中断任务）或非管理员访问 SSH 主机信任记录接口 |
+| 404 | 资源不存在（下载任务、SSH 主机信任记录） |
 | 422 | Bean Validation 失败（`type`/`savePath` 为空、`uid` 无权、`page`/`size` 越界） |
 | 500 | 服务端未预期异常（core 不可用、内部错误） |
 
@@ -546,16 +759,19 @@ async function readTorrentAsBase64(file) {
 | Bean Validation 失败（如缺 `type`、`savePath` 为空、`size=1`） | **422** | 422 |
 | 资源级权限不足（携带 `SfcErrorInfo` 的业务异常，如非创建者中断） | **403** | 403 |
 
-> 其余业务失败（未登录、任务不存在、引擎未启用、链接非法……）**HTTP 状态均为 200**，只改信封 `code`。
+> 其余业务失败（未登录、任务不存在、引擎未启用、链接非法、非管理员访问 SSH 主机信任记录……）
+> **HTTP 状态均为 200**，只改信封 `code`。
 >
 > 实测示例：
 > - `GET /capabilities`、`GET /detect-type` 不带 `X-Sfc-Uid` → **HTTP 200**，信封 `code=401`、`msg="请先登录"`；
+> - `GET /api/task/download/ssh-credential` 不带 `X-Sfc-Uid` → **HTTP 200**，信封 `code=401`；
+> - 普通用户 `GET /api/task/download/ssh-host-key` → **HTTP 200**，信封 `code=403`、`msg="仅管理员可管理 SSH 主机信任记录"`；
 > - `DELETE /api/task/download?taskId=999999999` → **HTTP 200**，信封 `code=404`；
 > - 创建 ed2k 任务、或 aria2 未启用时创建磁力链 → **HTTP 200**，信封 `code=400` + 可读 `msg`；
 > - 创建任务传 `"type":"FOO"` 或 `"type":"AUTO"` → **HTTP 400**（请求体无法反序列化）；
 > - 创建任务不传 `type` → **HTTP 422**，信封 `code=422`。
 
-### 9.2 常见文案（可直接展示给用户）
+### 10.2 常见文案（可直接展示给用户）
 
 | 场景 | 信封 `code` | 典型 `msg` |
 |---|---|---|
@@ -572,9 +788,21 @@ async function readTorrentAsBase64(file) {
 | 磁力链格式错 | 400 | `无效的磁力链: <原文>` |
 | ed2k 链接格式错 | 400 | `无效的 ed2k 链接: <原文>` |
 | HTTP 地址非法 | 400 | `无效的下载URL: <原文>` |
-| Git 用 SSH | 400 | `本期不支持 SSH 协议，请使用 http/https/git:// 地址: <原文>` |
+| SSH 地址未选择凭据 | 400 | `SSH 地址必须选择 SSH 凭据（sshCredentialId）` |
+| 非 SSH 地址传了 `sshCredentialId` | 400 | `仅 SSH 地址支持选择 SSH 凭据` |
+| 非 `GIT` 类型传了 `sshCredentialId` | 400 | `仅 Git SSH 克隆支持选择 SSH 凭据` |
+| SSH 凭据不存在 / 非本人 / 无效 | 400 | `无效的 SSH 凭据: 123` |
+| 私钥认证且 SSH 地址未带用户名、凭据也未配置 `username` | 400 | `SSH 地址未携带用户名，请在 SSH 凭据中配置用户名` |
+| `git://` 地址带代理 | 400 | `git:// 协议不支持代理，请改用 http(s) 或 ssh 地址` |
+| 新增凭据缺 `name` / `authType` | 422（HTTP 422） | `name: SSH 凭据名称不能为空` / `authType: SSH 认证方式不能为空` |
+| SSH 私钥无法解析 | 400 | `SSH 私钥解析失败: <原因>` |
+| 密码方式缺用户名 / 密码 | 400 | `SSH 密码认证需要提供用户名` / `SSH 密码不能为空` |
+| SSH 凭据接口未登录 | 401（HTTP 200） | `请先登录` |
+| 非管理员访问主机信任记录 | 403（HTTP 200） | `仅管理员可管理 SSH 主机信任记录` |
+| 删除不存在的信任记录 | 404（HTTP 200） | `SSH 主机信任记录不存在: 1` |
 | Git 用本地协议 | 400 | `不支持本地文件协议: <原文>` |
 | Git 地址非法 | 400 | `无效的 Git 仓库地址: <原文>` |
+| SSH Git 地址非法 | 400 | `无效的 SSH Git 仓库地址: <原文>` |
 | 种子缺来源 | 400 | `种子下载需要 .torrent 文件地址或种子文件内容（torrentBase64），当前来源: <原文>` |
 | 种子超限 | 400 | `种子文件超过上限 N MB` |
 | Git 凭证不成对 | 400 | `参数 用户名(gitUsername) 与 访问令牌(gitToken) 必须成对提供` |
@@ -584,21 +812,23 @@ async function readTorrentAsBase64(file) {
 | 列表筛选参数非法 | 400（HTTP 400） | `参数 type 的取值非法: FOO` |
 | 任务不存在 | 404（HTTP 200） | `下载任务不存在: 123` |
 
-### 9.3 执行期失败（不在创建接口体现）
+### 10.3 执行期失败（不在创建接口体现）
 
 任务执行失败时，`status=3`，`message` 里是执行引擎的原始原因，例如：
 
 - `Git 克隆失败: <原因>`
+- `SSH 凭据不存在或已被删除: {id}`（创建任务后、执行前凭据被删除）
 - `aria2 RPC 调用失败: <原因>` / `aria2 下载失败: <原因>`
 - `aria2 下载超时: N 秒无进度（可能没有可用节点）`
 - `下载失败: HTTP 404 Not Found`
 - `Git 克隆完成但未采集到任何文件: <repo>`
+- SSH 主机密钥与信任记录不一致时，克隆失败并给出可读提示（管理员在信任记录中删除旧记录后可重新信任）
 
 前端展示时建议限制 `message` 展示长度并提供「查看详情」（core 的异步任务日志里有完整过程）。
 
 ---
 
-## 十、迁移与兼容
+## 十一、迁移与兼容
 
 1. **旧请求体不再兼容**：`{url, uid, savePath, headers?, method?, proxy?, connectTimeout?, readTimeout?}`（不带 `type`）会被拒绝（HTTP 422）。前端必须补上 `type`，需要自动选型时调用 §4.5 的 `detect-type`。
 2. **列表的 `type` 字段**：创建时提交什么就返回什么；升级前的历史记录该字段为 `null`；分页结构仍是 `SfcPageInfo{content, totalCount, totalPage}`。
@@ -608,11 +838,15 @@ async function readTorrentAsBase64(file) {
    ```
    然后重启本服务（core 会通过注册中心 metadata `sfc.plugin.autoload` 重新拉取 `/static/index.umd.js`）。
 4. **本服务未提供插件配置面板**（离线下载的 aria2/Git 参数由管理员在 core 后台的「插件配置 → 离线下载」里维护）。
-5. **不要用 HTTP 状态码判断业务失败**：业务异常默认返回 **HTTP 200 + 信封 `code`**，只有请求体解析失败（400）、参数校验失败（422）与权限不足（403）会改写 HTTP 状态。请统一按 `body.code === 200` 判断成功、失败时展示 `body.msg`；这与宿主 `sfc-core` 的既有行为一致。
+5. **不要用 HTTP 状态码判断业务失败**：业务异常默认返回 **HTTP 200 + 信封 `code`**，只有请求体解析失败（HTTP 400）、参数校验失败（HTTP 422）与携带 `SfcErrorInfo` 的资源级权限异常（HTTP 403，如非创建者中断任务）会改写 HTTP 状态。请统一按 `body.code === 200` 判断成功、失败时展示 `body.msg`；这与宿主 `sfc-core` 的既有行为一致。
+6. **SSH 克隆与 GIT 代理为新增能力 / 行为变化**：
+   - 新增顶层字段 `sshCredentialId`（仅 `GIT` + SSH 地址使用），不影响其它请求体；SSH 地址不提交该字段会被 `code=400` 拒绝；
+   - `proxy` 对 `GIT` 由「忽略」改为「生效」：旧前端若对 GIT 任务传了代理，现在会真正走代理；需要直连时不要传 `proxy`；
+   - `GET /ssh-credential`、`POST /ssh-credential`、`DELETE /ssh-credential` 为用户接口；`/ssh-host-key` 的查询与删除为管理员接口。
 
 ---
 
-## 十一、联调前置
+## 十二、联调前置
 
 | 依赖 | 要求 |
 |---|---|
@@ -623,7 +857,7 @@ async function readTorrentAsBase64(file) {
 | 登录态 | 需要 `X-Sfc-Uid`（由网关注入） |
 | aria2（可选） | 未部署时 `MAGNET` / `TORRENT` 在 `/capabilities` 中显示不可用，**这是正常状态，不是缺陷** |
 
-### 11.1 用 aria2 打开 P2P 能力
+### 12.1 用 aria2 打开 P2P 能力
 
 管理员在 core 后台「插件配置 → 离线下载」中配置：
 
@@ -643,7 +877,7 @@ aria2c --enable-rpc --rpc-listen-all=false --rpc-listen-port=6800 --rpc-secret=<
 
 ---
 
-## 十二、常见问题
+## 十三、常见问题
 
 **Q：创建任务返回 422「type: 下载类型不能为空」？**
 A：`type` 已改为必填，服务端不再按链接自动识别。前端需在 URL 变化时调用 `GET /detect-type?url=` 自动选型（§4.5），或让用户手动选择，然后随请求提交 `type`。
@@ -652,7 +886,7 @@ A：`type` 已改为必填，服务端不再按链接自动识别。前端需在
 A：说明本实例没有任何下载引擎注册成功（通常意味着启动异常），需要看服务端日志，不是前端问题。
 
 **Q：创建磁力链返回 `code=400`「aria2 未启用」？**
-A：P2P 下载依赖外部 aria2 进程，需管理员按 §11.1 配置；前端直接把 `msg` 展示给用户即可。
+A：P2P 下载依赖外部 aria2 进程，需管理员按 §12.1 配置；前端直接把 `msg` 展示给用户即可。
 
 **Q：Git 克隆进度条看起来不准？**
 A：Git 任务的进度单位是 JGit 的「工作单元」而不是字节，进度比例准确但总量与文件大小无关；完成后的 `size` 才是真实字节数。
@@ -663,7 +897,23 @@ A：见 §6.4，`name` 可能是目录，需要按目录处理。
 **Q：为什么 ed2k 一直不可用？**
 A：本期只登记了类型和预留扩展点，未接入真实 ed2k 引擎（计划接入 mldonkey / aMule），提交会明确返回 `code=400`。
 
+**Q：Git 可以用 SSH 地址克隆吗？**
+A：可以。`ssh://host[:port]/path` 与 SCP 风格 `git@host:owner/repo.git` 都支持，但必须在请求体**顶层**提供
+`sshCredentialId`（先通过 `GET /ssh-credential` 选择或 `POST` 新增凭据），否则返回 `code=400`
+「SSH 地址必须选择 SSH 凭据（sshCredentialId）」。`file://` / `ext::` / 本地路径等仍按原有规则拒绝。
+
+**Q：SSH 克隆失败，提示主机密钥不一致？**
+A：本服务对 SSH 主机密钥采用 TOFU（首次连接自动信任并记录）。若确认主机确实更换了密钥，管理员在
+`GET/DELETE /ssh-host-key` 中删除该主机的旧记录后重试即可重新信任；若无法确认，请不要直接删除
+（也可能是中间人攻击）。
+
+**Q：Git 任务传了 `proxy` 为什么没生效 / 现在反而生效了？**
+A：`proxy` 对 `GIT` 已生效（HTTP(S) 克隆与 SSH 克隆均支持 HTTP 代理与 SOCKS（SOCKS5）代理，地址在创建时快照）；
+`git://` 地址不支持代理，带代理创建会返回 `code=400`。
+
 **Q：接口返回 HTTP 200，但前端提示失败了 / 该怎么判断成功？**
 A：本服务的业务失败默认返回 **HTTP 200 + 信封 `code`**（如 `code=400/401/404`），错误码不在 HTTP 状态里。
 **请判断 `body.code === 200`，不要写 `if (response.status === 400)`**；失败时展示 `body.msg`。
-只有请求体无法解析（HTTP 400）、参数校验失败（HTTP 422）与权限不足（HTTP 403）会返回非 200——这也意味着**不能用 HTTP 状态是否会抛出异常来区分业务失败**，需要按响应体判定。该行为与宿主 `sfc-core` 一致。
+只有请求体无法解析（HTTP 400）、参数校验失败（HTTP 422）与携带 `SfcErrorInfo` 的资源级权限异常（HTTP 403，
+如非创建者中断任务）会返回非 200——这也意味着**不能用 HTTP 状态是否会抛出异常来区分业务失败**，需要按响应体判定。
+该行为与宿主 `sfc-core` 一致。

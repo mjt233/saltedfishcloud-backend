@@ -29,6 +29,11 @@
     <properties>
         <!-- 共享库版本：本 pom 不继承根 pom，故不能引用根 pom 的 sfc.common.version -->
         <sfc.common.version>1.0.0</sfc.common.version>
+        <!--
+            JGit 版本：主包与 SSH 传输包（org.eclipse.jgit.ssh.apache）由同一版本发布，
+            必须严格同版本，否则 SSH 传输与 JGit 内部 API 可能不兼容。
+        -->
+        <jgit.version>7.3.0.202506031305-r</jgit.version>
     </properties>
 
     <dependencies>
@@ -99,10 +104,21 @@
             <groupId>org.hibernate.orm</groupId>
             <artifactId>hibernate-community-dialects</artifactId>
         </dependency>
+        <!-- Git 克隆核心（纯 Java，部署机无需安装 git 命令行） -->
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
             <artifactId>org.eclipse.jgit</artifactId>
-            <version>7.3.0.202506031305-r</version>
+            <version>${jgit.version}</version>
+        </dependency>
+        <!--
+            Git SSH 传输（Apache MINA sshd）：JGit 主包不含 SSH 传输实现，缺少本依赖时
+            ssh:// 与 SCP 风格（git@host:path）地址无法克隆。该包传递引入 sshd-osgi（shade 包，
+            内含 sshd-common/core）与 sshd-sftp，全部为纯 Java 实现。
+        -->
+        <dependency>
+            <groupId>org.eclipse.jgit</groupId>
+            <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
+            <version>${jgit.version}</version>
         </dependency>
     </dependencies>
 

@@ -3,6 +3,7 @@ package com.sfc.download.util;
 import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.download.constant.DownloadTaskConstants;
 import lombok.extern.slf4j.Slf4j;
+import org.eclipse.jgit.transport.URIish;
 import org.springframework.http.HttpMethod;
 
 import java.io.IOException;
@@ -76,7 +77,8 @@ public final class DownloadFileUtils {
     /**
      * SCP 风格的 Git 地址，例如 {@code git@github.com:owner/repo.git}。
      *
-     * <p>仅用于来源语法识别与校验提示，不代表本服务支持 SSH 传输。</p>
+     * <p>用于来源语法识别与校验：SCP 风格地址没有 scheme，JGit 的 {@code URIish} 可直接解析，
+     * 走 SSH 传输（由 {@link #isSshGitUrl(String)} 统一判定）。</p>
      */
     private static final Pattern SCP_LIKE_GIT = Pattern.compile("^[\\w.\\-]+@[\\w.\\-]+:.+$");
 
@@ -217,11 +219,11 @@ public final class DownloadFileUtils {
     }
 
     /**
-     * 判断是否为本期可用的 Git 仓库地址。
+     * 判断是否为合法的 Git 仓库地址。
      *
-     * <p>只接受 {@code http}/{@code https} 与 {@code git://}：SSH 形式（含 {@code ssh://} 与
-     * {@code git@host:path}）因缺少传输实现而不算合法；{@code file://}、{@code ext::} 等本地协议
-     * 同样返回 {@code false}，由调用方给出更具体的错误提示。</p>
+     * <p>接受三类协议：{@code http/https}、{@code git://} 与 SSH（{@code ssh://} 或 SCP 风格
+     * {@code user@host:path}）；{@code file://}、{@code ext::} 等本地协议一律返回 {@code false}，
+     * 由调用方给出更具体的错误提示。</p>
      *
      * @param url 待校验的仓库地址，允许为 {@code null}
      * @return 合法返回 {@code true}，否则返回 {@code false}
@@ -231,10 +233,127 @@ public final class DownloadFileUtils {
             return false;
         }
         String value = url.trim();
-        if (value.toLowerCase(Locale.ROOT).startsWith("git://")) {
+        if (startsWithGitProtocol(value)) {
             return hasAuthority(value);
         }
+        if (isSshGitUrl(value)) {
+            return true;
+        }
         return isHttpUrl(value);
+    }
+
+    /**
+     * 判断是否为 SSH 形式的 Git 仓库地址。
+     *
+     * <p>两种形式：</p>
+     * <ul>
+     *   <li>{@code ssh://[user@]host[:port]/path}：要求 scheme 为 {@code ssh}、解析出主机且路径非空；</li>
+     *   <li>SCP 风格 {@code user@host:path}：按 {@link #isScpLikeGit(String)} 的语法特征匹配。</li>
+     * </ul>
+     *
+     * <p>本方法只做语法判断，不发起网络请求；地址合法性由创建任务阶段的来源校验使用。</p>
+     *
+     * @param url 仓库地址，允许为 {@code null}
+     * @return 是 SSH 形式返回 {@code true}
+     */
+    public static boolean isSshGitUrl(String url) {
+        if (!SfcStringUtils.hasText(url)) {
+            return false;
+        }
+        String value = url.trim();
+        if (value.toLowerCase(Locale.ROOT).startsWith("ssh://")) {
+            try {
+                URI uri = new URI(value);
+                String path = uri.getPath();
+                return "ssh".equalsIgnoreCase(uri.getScheme())
+                        && uri.getHost() != null
+                        && SfcStringUtils.hasText(path)
+                        && !"/".equals(path);
+            } catch (URISyntaxException e) {
+                return false;
+            }
+        }
+        return isScpLikeGit(value);
+    }
+
+    /**
+     * 判断地址是否以 {@code git://} 协议开头（大小写不敏感）。
+     *
+     * <p>用于创建任务阶段判断「该地址是否支持代理」：{@code git://} 是裸 TCP 协议，
+     * JGit 不提供代理支持，因此带代理的任务会被明确拒绝而不是静默失效。</p>
+     *
+     * @param url 地址，允许为 {@code null}
+     * @return 以 {@code git://} 开头返回 {@code true}
+     */
+    public static boolean startsWithGitProtocol(String url) {
+        return SfcStringUtils.hasText(url) && url.trim().toLowerCase(Locale.ROOT).startsWith("git://");
+    }
+
+    /**
+     * 解析 SSH 地址中的用户名。
+     *
+     * <p>支持两种形式：{@code ssh://user@host/path} 取 URI 的 user 段；SCP 风格
+     * {@code user@host:path} 取 {@code @} 之前的部分。非 SSH 地址返回 {@code null}。</p>
+     *
+     * @param url 仓库地址，允许为 {@code null}
+     * @return 用户名；地址未携带用户名或不是 SSH 地址时返回 {@code null}
+     */
+    public static String parseSshUsername(String url) {
+        if (!SfcStringUtils.hasText(url)) {
+            return null;
+        }
+        String value = url.trim();
+        if (value.toLowerCase(Locale.ROOT).startsWith("ssh://")) {
+            try {
+                String userInfo = new URI(value).getUserInfo();
+                if (!SfcStringUtils.hasText(userInfo)) {
+                    return null;
+                }
+                int colon = userInfo.indexOf(':');
+                String user = colon >= 0 ? userInfo.substring(0, colon) : userInfo;
+                return SfcStringUtils.hasText(user) ? user : null;
+            } catch (URISyntaxException e) {
+                return null;
+            }
+        }
+        if (isScpLikeGit(value)) {
+            String user = value.substring(0, value.indexOf('@'));
+            return SfcStringUtils.hasText(user) ? user : null;
+        }
+        return null;
+    }
+
+    /**
+     * 判断 JGit transport 的地址是否属于允许的 Git 传输协议。
+     *
+     * <p>用于<b>子模块</b>的安全校验：子模块地址来自仓库内的 {@code .gitmodules}，不受创建任务时的
+     * 来源校验约束，必须在每次建立 transport 时再校验一次，避免通过恶意子模块地址让服务端访问
+     * {@code file://} 本地路径（读取服务器本地仓库）或执行 {@code ext::} 远程助手命令。</p>
+     *
+     * <p>允许：{@code http}/{@code https}/{@code ssh}/{@code git}，以及带用户名的 SCP 风格
+     * {@code user@host:path}（JGit 解析后 scheme 为空）；其余（{@code file:}、{@code ext::}、
+     * 本地绝对路径、未知协议）一律拒绝。</p>
+     *
+     * @param uri JGit 解析后的地址，允许为 {@code null}
+     * @return 允许返回 {@code true}
+     */
+    public static boolean isAllowedGitTransportUri(URIish uri) {
+        if (uri == null) {
+            return false;
+        }
+        String scheme = uri.getScheme();
+        if (!SfcStringUtils.hasText(scheme)) {
+            // SCP 风格（git@host:path）没有 scheme：要求有用户名、主机与非空相对路径
+            String path = uri.getPath();
+            return uri.getUser() != null
+                    && uri.getHost() != null
+                    && SfcStringUtils.hasText(path)
+                    && !path.startsWith("/");
+        }
+        return switch (scheme.toLowerCase(Locale.ROOT)) {
+            case "http", "https", "ssh", "git" -> uri.getHost() != null;
+            default -> false;
+        };
     }
 
     /**
@@ -310,7 +429,9 @@ public final class DownloadFileUtils {
     /**
      * 判断是否为 SCP 风格的 Git 地址，例如 {@code git@github.com:owner/repo.git}。
      *
-     * <p>本服务不支持 SSH 传输，这里只用于识别「看起来是 Git 仓库」的来源并给出明确提示。</p>
+     * <p>SCP 风格地址没有 scheme，JGit 的 {@code URIish} 可直接解析并走 SSH 传输；
+     * 本方法只做语法识别，真正的协议校验由 {@link #isSshGitUrl(String)} 与
+     * {@link com.sfc.download.engine.DownloadSourceResolver} 完成。</p>
      *
      * @param source 下载来源，允许为 {@code null}
      * @return 是 SCP 风格地址返回 {@code true}

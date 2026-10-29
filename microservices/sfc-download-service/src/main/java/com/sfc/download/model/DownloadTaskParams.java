@@ -18,10 +18,12 @@ import java.util.Map;
  *   <li><b>任务执行</b>：序列化后作为异步任务参数提交给 core，由本服务的任务处理器反序列化执行。</li>
  * </ul>
  *
- * <p>其中 {@code downloadId}、{@code uid}、{@code proxyType}/{@code proxyAddress}/{@code proxyPort}
+ * <p>其中 {@code downloadId}、{@code uid}、{@code creatorUid}、
+ * {@code proxyType}/{@code proxyAddress}/{@code proxyPort}
  * 的部分取值由服务端在创建任务时回填/快照，客户端无需（也不应）传入：</p>
  * <ul>
  *   <li>{@code downloadId}：下载任务主键，用于任务执行时回写进度与状态；</li>
+ *   <li>{@code creatorUid}：任务创建者 uid 快照（用于 SSH 主机密钥首次信任的审计记录）；</li>
  *   <li>{@code proxyType}/{@code proxyAddress}/{@code proxyPort}：按 {@code proxy} 名称从 core
  *       解析出的代理地址快照，避免执行时 core 侧代理配置已被删除。</li>
  * </ul>
@@ -76,6 +78,25 @@ public class DownloadTaskParams {
      * 即可在无法提供可访问地址时创建种子下载任务。大小上限由配置项控制。</p>
      */
     public String torrentBase64;
+
+    /**
+     * 使用的 SSH 凭据 id（仅 {@link DownloadType#GIT} 且地址为 SSH 形式时使用）。
+     *
+     * <p>凭据由本服务的「用户 SSH 凭据」模块管理（按用户隔离），创建任务时服务端会校验：
+     * 凭据存在且属于当前创建者；SSH 地址必须提供本字段，非 SSH 地址不得携带本字段。</p>
+     *
+     * <p><b>安全：</b>任务参数中只保存凭据 id，<b>不保存私钥/口令/密码</b>；执行时按 id 从本服务
+     * 数据库读取。凭据在执行前被删除时任务会失败并给出明确提示。</p>
+     */
+    public Long sshCredentialId;
+
+    /**
+     * 任务创建者 uid 快照（服务端创建任务时回填，客户端传入无效）。
+     *
+     * <p>与 {@link #uid} 的区别：{@code uid} 是资源归属人（文件保存到谁的网盘），管理员可代他人创建
+     * 任务；{@code creatorUid} 是实际发起请求的用户，用于 SSH 主机密钥「首次信任」记录的审计。</p>
+     */
+    public Long creatorUid;
 
     /**
      * 下载任务主键（服务端创建任务后回填，客户端传入无效）。
@@ -148,12 +169,14 @@ public class DownloadTaskParams {
     public String toString() {
         return "DownloadTaskParams{" +
                 "type=" + (type == null ? "未指定" : type.getCode()) +
-                ", url='" + url + '\'' +
+                ", url='" + com.sfc.download.util.DownloadLogUtils.maskUrl(url) + '\'' +
                 ", downloadId=" + downloadId +
                 ", uid=" + uid +
+                ", creatorUid=" + creatorUid +
                 ", headers=" + (headers == null ? 0 : headers.size()) + " entries" +
                 ", options=" + (options == null ? 0 : options.size()) + " entries" +
                 ", torrentBase64=" + (torrentBase64 == null || torrentBase64.isEmpty() ? "无" : "已提供") +
+                ", sshCredentialId=" + sshCredentialId +
                 ", method='" + method + '\'' +
                 ", proxy='" + proxy + '\'' +
                 ", savePath='" + savePath + '\'' +
