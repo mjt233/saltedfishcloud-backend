@@ -13,6 +13,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * 下载引擎的执行上下文。
@@ -23,6 +25,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <p><b>中断语义：</b>任务处理器把 Worker SDK 的中断指令转发到 {@link #cancel()}；已注册的取消回调
  * （关闭下载流、终止外部进程任务等）会被立即执行，且 {@link #isCancelled()} 变为 {@code true}。
  * 引擎在阻塞操作之外应周期性调用 {@link #checkInterrupted()}，以便及时以「取消」语义退出。</p>
+ *
+ * <p><b>任务展示名：</b>引擎在能确定下载文件名时（HTTP 响应头 / 地址、aria2 文件清单），可通过
+ * {@link #updateTaskName(String)} 上报任务展示名，使用户在任务运行期间即可在列表中看到名称；
+ * 重复上报相同名称会被忽略，上报失败不影响下载本身。</p>
  *
  * <p><b>线程安全性：</b>取消回调集合与取消标记均为并发安全实现，取消指令可能来自 Worker 的中断线程。</p>
  */
@@ -49,18 +55,40 @@ public class DownloadContext {
     private final AtomicBoolean cancelled = new AtomicBoolean(false);
 
     /**
+     * 任务展示名上报回调（由任务处理器在创建上下文时注入，用于把引擎解析出的名称回写下载任务记录）。
+     */
+    private final Consumer<String> taskNameReporter;
+
+    /**
+     * 最近一次已上报的任务展示名，用于去重（避免轮询期间重复写库）。
+     */
+    private final AtomicReference<String> reportedTaskName = new AtomicReference<>();
+
+    /**
      * 本次任务的临时目录（懒创建）。
      */
     private volatile Path tempDir;
 
     /**
-     * 构造执行上下文。
+     * 构造执行上下文（不上报任务展示名）。
      *
      * @param execution Worker 的任务执行上下文，不能为 {@code null}
      * @param params    下载任务参数，不能为 {@code null}
      * @throws IllegalArgumentException 入参为 {@code null} 时抛出
      */
     public DownloadContext(SfcTaskExecution execution, DownloadTaskParams params) {
+        this(execution, params, null);
+    }
+
+    /**
+     * 构造执行上下文。
+     *
+     * @param execution        Worker 的任务执行上下文，不能为 {@code null}
+     * @param params           下载任务参数，不能为 {@code null}
+     * @param taskNameReporter 任务展示名上报回调，为 {@code null} 表示不上报
+     * @throws IllegalArgumentException 任务执行上下文或下载参数为 {@code null} 时抛出
+     */
+    public DownloadContext(SfcTaskExecution execution, DownloadTaskParams params, Consumer<String> taskNameReporter) {
         if (execution == null) {
             throw new IllegalArgumentException("任务执行上下文不能为空");
         }
@@ -69,6 +97,7 @@ public class DownloadContext {
         }
         this.execution = execution;
         this.params = params;
+        this.taskNameReporter = taskNameReporter;
     }
 
     /**
@@ -137,6 +166,38 @@ public class DownloadContext {
             return;
         }
         execution.log(DownloadTaskConstants.LOG_PREFIX + message);
+    }
+
+    /**
+     * 上报任务展示名（可选能力）。
+     *
+     * <p>引擎在解析出下载文件名后调用，使任务在运行中即可展示名称。空白名称会被忽略；与上一次上报值
+     * 相同时直接跳过（aria2 轮询会周期性拿到同一份文件清单）；回调异常只记任务日志，不影响下载本身。</p>
+     *
+     * @param name 任务展示名，允许为 {@code null} 或空白
+     */
+    public void updateTaskName(String name) {
+        if (!SfcStringUtils.hasText(name)) {
+            return;
+        }
+        Consumer<String> reporter = taskNameReporter;
+        if (reporter == null) {
+            return;
+        }
+        String normalized = name.trim();
+        String previous = reportedTaskName.get();
+        if (normalized.equals(previous)) {
+            return;
+        }
+        if (!reportedTaskName.compareAndSet(previous, normalized)) {
+            // 并发上报时以先写入的调用为准，避免重复写库
+            return;
+        }
+        try {
+            reporter.accept(normalized);
+        } catch (RuntimeException e) {
+            execution.log(DownloadTaskConstants.LOG_PREFIX + "回写任务名称失败: " + describe(e));
+        }
     }
 
     /**

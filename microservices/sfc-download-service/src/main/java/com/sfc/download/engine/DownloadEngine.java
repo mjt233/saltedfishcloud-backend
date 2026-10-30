@@ -28,6 +28,9 @@ import java.util.Set;
  *       {@link DownloadContext#checkInterrupted()} 响应中断；</li>
  *   <li>中断时抛 {@code SfcTaskInterruptedException}（由 Worker SDK 上报为取消），其余失败直接抛运行时异常。</li>
  * </ul>
+ *
+ * <p><b>任务展示名：</b>引擎在能确定下载文件名时（HTTP 响应头 / 地址、aria2 文件清单），可通过
+ * {@link DownloadContext#updateTaskName(String)} 上报任务展示名，使用户在任务运行期间即可在列表中看到名称。</p>
  */
 public interface DownloadEngine {
 

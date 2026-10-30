@@ -21,12 +21,14 @@ import com.sfc.download.repo.DownloadTaskRepo;
 import com.sfc.download.stash.DownloadSaveService;
 import com.sfc.download.util.DownloadFileUtils;
 import com.sfc.download.util.DownloadLogUtils;
+import com.sfc.download.util.DownloadTaskNameUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -42,7 +44,8 @@ import java.util.concurrent.TimeUnit;
  *     <li>通过 {@link SfcCoreFileClient#list(long, String)} 校验保存目录是否存在；</li>
  *     <li>按参数类型经 {@link DownloadEngineRegistry} 路由到具体下载引擎（HTTP / Git / 磁力链 / 种子…）；</li>
  *     <li>引擎执行完毕后，由 {@link DownloadSaveService} 统一把产物写入 core 网盘；</li>
- *     <li>回写完成状态；异常时按「取消 / 失败」两种语义回写，并在 {@code finally} 中清理临时目录。</li>
+ *     <li>回写任务展示名（P2P 下载取下载文件名摘要）与完成状态；异常时按「取消 / 失败」两种语义回写，
+ *         并在 {@code finally} 中清理临时目录。</li>
  * </ol>
  *
  * <p><b>扩展方式：</b>新增一种下载方式只需要实现 {@link DownloadEngine} 并注册为 Spring Bean，
@@ -123,7 +126,9 @@ public class DownloadTaskHandler implements SfcTaskHandler {
         Long downloadId = params.downloadId;
         Long taskId = execution.getTaskId();
         long startNanos = System.nanoTime();
-        DownloadContext context = new DownloadContext(execution, params);
+        // 引擎解析出名称后（HTTP 响应文件名 / aria2 文件清单）立即回写，使任务在运行中即可展示名称
+        DownloadContext context = new DownloadContext(execution, params,
+                name -> updateTaskNameQuietly(downloadId, name));
         try {
             execution.log(LOG_PREFIX + "开始执行离线下载任务: " + params);
             log.info("{}开始执行离线下载任务: downloadId={}, taskId={}, uid={}, type={}, url={}, savePath={}",
@@ -155,13 +160,21 @@ public class DownloadTaskHandler implements SfcTaskHandler {
 
             // 落盘前再检查一次，避免把已被取消的内容写入网盘
             context.checkInterrupted();
+            // 完成前先把展示名落库：上传可能耗时较长，期间列表也能看到名称；上传失败时名称同样保留
+            String taskDisplayName = resolveTaskDisplayName(type, artifacts);
+            if (SfcStringUtils.hasText(taskDisplayName)) {
+                updateTaskNameQuietly(downloadId, taskDisplayName);
+                context.log("任务名称: " + taskDisplayName);
+            }
             DownloadSaveService.StashResult result = stash(context, artifacts);
 
+            // P2P 下载使用文件名摘要作为任务名称；其它类型沿用落盘结果的保存名
+            String finishName = SfcStringUtils.hasText(taskDisplayName) ? taskDisplayName : result.savedName();
             downloadTaskRepo.updateFinish(downloadId, DownloadTaskConstants.Status.FINISH,
-                    result.totalBytes(), result.totalBytes(), result.savedName(), new Date());
-            log.info("{}离线下载任务执行完成: downloadId={}, taskId={}, type={}, 保存名={}, 大小={}字节, 总耗时={}ms",
-                    LOG_PREFIX, downloadId, taskId, type.getCode(), result.savedName(), result.totalBytes(),
-                    elapsedMillis(startNanos));
+                    result.totalBytes(), result.totalBytes(), finishName, new Date());
+            log.info("{}离线下载任务执行完成: downloadId={}, taskId={}, type={}, 保存名={}, 任务名称={}, 大小={}字节, 总耗时={}ms",
+                    LOG_PREFIX, downloadId, taskId, type.getCode(), result.savedName(), finishName,
+                    result.totalBytes(), elapsedMillis(startNanos));
         } catch (SfcTaskInterruptedException e) {
             execution.log(LOG_PREFIX + "任务已被取消: " + describe(e));
             log.info("{}离线下载任务已取消: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
@@ -276,6 +289,57 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                 LOG_PREFIX, context.getDownloadId(), params.uid, params.savePath,
                 result.savedName(), result.totalBytes(), elapsedMillis(uploadStartNanos));
         return result;
+    }
+
+    /**
+     * 解析任务完成后的展示名称。
+     *
+     * <p>仅 P2P 下载（{@link DownloadType#MAGNET} / {@link DownloadType#TORRENT}）使用「下载文件名摘要」：
+     * 单个文件直接使用文件名；两到三个文件完整拼接；超过三个文件只列前三个并在末尾追加「等...」。
+     * 规则实现见 {@link DownloadTaskNameUtils}。</p>
+     *
+     * <p>其它类型（HTTP / GIT / ed2k）返回 {@code null}，由调用方继续使用落盘结果中的保存名；
+     * 没有有效文件名时同样返回 {@code null}，避免用空名称覆盖已有名称。</p>
+     *
+     * @param type      下载类型，允许为 {@code null}
+     * @param artifacts 下载产物列表，允许为 {@code null}
+     * @return 任务展示名称；非 P2P 类型或没有有效文件名时返回 {@code null}
+     */
+    private static String resolveTaskDisplayName(DownloadType type, List<DownloadArtifact> artifacts) {
+        if (type != DownloadType.MAGNET && type != DownloadType.TORRENT) {
+            return null;
+        }
+        if (artifacts == null || artifacts.isEmpty()) {
+            return null;
+        }
+        List<String> fileNames = new ArrayList<>(artifacts.size());
+        for (DownloadArtifact artifact : artifacts) {
+            if (artifact != null) {
+                fileNames.add(artifact.relativePath());
+            }
+        }
+        return DownloadTaskNameUtils.buildDisplayName(fileNames);
+    }
+
+    /**
+     * 静默回写任务展示名称。
+     *
+     * <p>名称只是列表展示用的镜像字段：回写失败只记 WARN，不影响下载、落盘与任务状态；
+     * 成功完成时 {@code updateFinish} 还会再写入一次最终名称。</p>
+     *
+     * @param downloadId 下载任务 id
+     * @param name       任务展示名称，允许为 {@code null} 或空白
+     */
+    private void updateTaskNameQuietly(Long downloadId, String name) {
+        if (!SfcStringUtils.hasText(name)) {
+            return;
+        }
+        try {
+            downloadTaskRepo.updateName(downloadId, name);
+        } catch (RuntimeException e) {
+            log.warn("{}回写下载任务名称失败: downloadId={}, name={}, cause={}",
+                    LOG_PREFIX, downloadId, name, e.toString());
+        }
     }
 
     /**

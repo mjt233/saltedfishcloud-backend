@@ -347,6 +347,8 @@ public class HttpDownloadEngine implements DownloadEngine {
             progress.setLoaded(0L);
             context.log("响应已到达: 文件名=" + fileName
                     + ", 大小=" + (totalSize >= 0 ? totalSize + " 字节" : "未知"));
+            // 供列表实时展示：响应到达即可确定最终文件名（响应头优先，其次 URL）
+            context.updateTaskName(fileName);
             log.info("{}下载响应到达: downloadId={}, 状态码={}, 文件名={}, 声明大小={}",
                     LOG_PREFIX, downloadId, response.getStatusCode().value(), fileName,
                     totalSize >= 0 ? totalSize + "字节" : "未知");

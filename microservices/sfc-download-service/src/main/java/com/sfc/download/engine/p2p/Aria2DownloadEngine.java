@@ -19,6 +19,7 @@ import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.property.Aria2Property;
 import com.sfc.download.util.DownloadFileUtils;
 import com.sfc.download.util.DownloadProxyUtils;
+import com.sfc.download.util.DownloadTaskNameUtils;
 import com.sfc.download.util.IgnoreSSLHttpRequestFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -715,11 +716,15 @@ public class Aria2DownloadEngine implements DownloadEngine {
         Set<String> targets = new LinkedHashSet<>();
         targets.add(session.primaryGid());
 
+        // 任务展示名只需上报一次：aria2 返回的文件清单是完整的（磁力链元数据阶段的伪文件会被过滤）
+        boolean taskNameReported = false;
+
         while (true) {
             context.checkInterrupted();
 
             Set<String> nextTargets = new LinkedHashSet<>();
             List<String> followed = new ArrayList<>();
+            List<String> fileNames = new ArrayList<>();
             Map<String, Object> finishedStatus = null;
             long loadedSum = 0L;
             long totalSum = 0L;
@@ -737,6 +742,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
                             LOG_PREFIX, context.getDownloadId(), gid, describe(e));
                     continue;
                 }
+                fileNames.addAll(extractFileNames(status));
 
                 String state = text(status.get("status"));
                 if (STATUS_ERROR.equals(state)) {
@@ -763,6 +769,16 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 nextTargets.add(gid);
                 loadedSum += number(status.get("completedLength"), 0L);
                 totalSum += number(status.get("totalLength"), 0L);
+            }
+
+            if (!taskNameReported) {
+                // 文件清单一旦可用即可确定任务展示名：种子提交后的首轮状态就能拿到，
+                // 磁力链则要等元数据阶段结束、转入内容 gid 后才有真实文件
+                String taskName = DownloadTaskNameUtils.buildDisplayName(fileNames);
+                if (SfcStringUtils.hasText(taskName)) {
+                    context.updateTaskName(taskName);
+                    taskNameReported = true;
+                }
             }
 
             if (!followed.isEmpty()) {
@@ -832,6 +848,51 @@ public class Aria2DownloadEngine implements DownloadEngine {
             }
         }
         return gids;
+    }
+
+    /**
+     * 从 aria2 状态快照中提取本次任务的文件名列表。
+     *
+     * <p>只取 {@code files[].path} 的文件名部分（落盘前保存在任务临时目录的绝对路径），并跳过：
+     * 空路径、磁力链元数据阶段的 {@code [METADATA]} 伪文件、以及明确标记为未选中的文件。
+     * 返回顺序即 aria2（种子内）的文件顺序，供任务展示名按「最多前三个」拼接。</p>
+     *
+     * @param status aria2 的状态快照，允许为 {@code null}
+     * @return 文件名列表；没有可用文件时返回空列表
+     */
+    private static List<String> extractFileNames(Map<String, Object> status) {
+        if (status == null || !(status.get("files") instanceof List<?> files) || files.isEmpty()) {
+            return List.of();
+        }
+        List<String> fileNames = new ArrayList<>(files.size());
+        for (Object item : files) {
+            if (!(item instanceof Map<?, ?> fileInfo)) {
+                continue;
+            }
+            String path = text(fileInfo.get("path"));
+            if (!SfcStringUtils.hasText(path) || path.contains(METADATA_MARKER)) {
+                continue;
+            }
+            if (!isSelectedFile(fileInfo)) {
+                continue;
+            }
+            fileNames.add(path.trim());
+        }
+        return fileNames;
+    }
+
+    /**
+     * 判断 aria2 文件条目是否被选中下载。
+     *
+     * <p>aria2 未返回 {@code selected} 字段时按选中处理；只有明确为 {@code false} 才跳过，
+     * 避免因不同 aria2 版本的字段差异漏掉真实文件。</p>
+     *
+     * @param fileInfo aria2 状态快照中的单个文件条目
+     * @return 参与下载（应计入任务名）时返回 {@code true}
+     */
+    private static boolean isSelectedFile(Map<?, ?> fileInfo) {
+        String selected = text(fileInfo.get("selected"));
+        return !SfcStringUtils.hasText(selected) || !"false".equalsIgnoreCase(selected.trim());
     }
 
     /**

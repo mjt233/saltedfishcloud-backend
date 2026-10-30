@@ -48,6 +48,21 @@ public interface DownloadTaskRepo extends SfcBaseRepo<DownloadTaskInfo> {
     void updateStatus(@Param("id") Long id, @Param("status") Integer status);
 
     /**
+     * 回写任务展示名称。
+     *
+     * <p>执行期由下载引擎解析出名称后立即调用，使任务在运行中即可在列表中展示名称：
+     * HTTP 为响应头 / 地址中的文件名，磁力链与种子为下载文件名摘要（规则见
+     * {@link com.sfc.download.util.DownloadTaskNameUtils}）。</p>
+     *
+     * @param id   下载任务 id
+     * @param name 任务展示名称
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE DownloadTaskInfo t SET t.name = :name WHERE t.id = :id")
+    void updateName(@Param("id") Long id, @Param("name") String name);
+
+    /**
      * 回写下载文件的大小与文件名（开始接收响应后即可获知）。
      *
      * @param id   下载任务 id
