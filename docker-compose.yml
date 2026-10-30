@@ -15,6 +15,10 @@ services:
       DB_HOST: mysql
       REDIS_HOST: redis
       JDBC_PARAMETER: useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      # 必填，无缺省值：JWT 会话密钥，恰好 32 个字符（例如 openssl rand -hex 16）。网关 sfc-gateway 必须注入同一值
+      SFC_JWT_SECRET: ${SFC_JWT_SECRET:?未设置 SFC_JWT_SECRET：请在 .env 或部署环境中配置恰好 32 字符的 JWT 会话密钥}
+      # 必填，无缺省值：服务间内部接口共享密钥，不少于 32 个字符
+      SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
     expose:
       - 8087
     ports:

@@ -9,6 +9,30 @@ git clone https://github.com/mjt233/saltedfishcloud-backend.git
 cd saltedfishcloud-backend
 ```
 
+## 必做：先创建 `.env` 并配置两个密钥
+
+`docker-compose.yml` 中的 `SFC_JWT_SECRET`（JWT 会话密钥，恰好 32 字符）与 `SFC_INTERNAL_KEY`
+（服务间内部接口共享密钥，不少于 32 字符）是**必填项且不提供缺省值**：未配置时
+`docker compose up` / `docker compose config` 会直接报错退出，不会以空密钥启动。
+
+在项目根目录创建 `.env`：
+
+```properties
+APP_TAG=latest
+# Maven 镜像（网络受限时使用，如阿里云）
+MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
+# 数据库
+MYSQL_ROOT_PASSWORD=your-password
+MYSQL_DATABASE=xyy
+# 必填：JWT 会话密钥，必须恰好 32 个字符（可用 `openssl rand -hex 16` 生成）
+SFC_JWT_SECRET=0123456789abcdef0123456789abcdef
+# 必填：服务间内部接口共享密钥，不少于 32 个字符（可用 `openssl rand -hex 16` 生成）
+SFC_INTERNAL_KEY=0123456789abcdef0123456789abcdef
+```
+
+> 若部署微服务模式，独立网关 `sfc-gateway` 必须注入**完全相同**的 `SFC_JWT_SECRET`，否则
+> `/api/ext/**` 会出现"登录正常但全量 403/7005"的密钥漂移症状。
+
 ## 快速启动
 
 ```bash
@@ -27,7 +51,8 @@ Docker Compose 会自动构建镜像、创建网络和存储卷，并按依赖�
 
 ## 使用 .env 自定义配置
 
-在项目根目录创建 `.env` 文件可覆盖默认配置。一个完整的示例：
+在项目根目录创建 `.env` 文件可覆盖默认配置（其中 `SFC_JWT_SECRET` 与 `SFC_INTERNAL_KEY` 为**必填项，
+没有缺省值**，见上一节）。一个完整的示例：
 
 ```properties
 # 镜像版本
@@ -37,6 +62,10 @@ MAVEN_MIRROR_URL=https://maven.aliyun.com/repository/public
 # 数据库
 MYSQL_ROOT_PASSWORD=your-password
 MYSQL_DATABASE=xyy
+# JWT 会话密钥（必填，恰好 32 字符；与网关 sfc-gateway 的 SFC_JWT_SECRET 必须一致）
+SFC_JWT_SECRET=<32 字符随机值，例如 openssl rand -hex 16 的输出>
+# 服务间内部接口共享密钥（必填，不少于 32 字符）
+SFC_INTERNAL_KEY=<不少于 32 字符的随机值>
 ```
 
 修改 `.env` 后重新构建并启动：

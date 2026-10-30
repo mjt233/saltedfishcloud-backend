@@ -73,6 +73,25 @@ sys:
 
 完整配置见 [附录1: config.yml](#1configyml)
 
+### JWT 会话密钥（必须配置）
+
+用户登录凭证与文件直链的签名/验签密钥来自配置项 `sys.jwt-secret`（环境变量 `SFC_JWT_SECRET`），
+**不再保存在数据库配置表中，也不再首次启动时随机生成**。要求：
+
+- 必须**恰好 32 个字符**（例如 `openssl rand -hex 16`）；
+- 未配置或长度不符时 **core 启动失败（fail-fast）**，并在日志中提示 `SFC_JWT_SECRET`；
+- 启用微服务模式时，独立网关 `sfc-gateway` 必须注入**完全相同**的 `SFC_JWT_SECRET`，
+  否则 `/api/ext/**` 会出现"登录正常但全量 403/7005"的密钥漂移症状。
+
+```yaml
+sys:
+  jwt-secret: ${SFC_JWT_SECRET:}
+```
+
+> **升级提示**：旧版本把密钥保存在数据库配置项 `sys.safe.token`（管理后台【系统设置 → 常规 → 系统安全密钥】），
+> 该配置项已废弃并被忽略，管理后台不再展示。升级后请自行生成一个 32 字符密钥，同时注入 core 与网关；
+> 更换密钥会使所有已签发的登录凭证与文件直链失效（用户需重新登录）。
+
 ### 内部接口密钥（单机部署也必须配置）
 
 `/api/internal/**` 是服务间内部接口，调用凭证由 `sfc.internal.key`（环境变量 `SFC_INTERNAL_KEY`）签发与校验，
@@ -133,6 +152,9 @@ spring:
         graceful-shutdown-wait-time: 0
 
 sys:
+  # JWT 会话密钥（用户登录凭证与文件直链的签名/验签）。必须恰好 32 个字符，例如 `openssl rand -hex 16`。
+  # ⚠️ 网关 sfc-gateway 必须注入完全相同的 SFC_JWT_SECRET；缺失或长度不符时 core 启动失败（fail-fast）。
+  jwt-secret: ${SFC_JWT_SECRET:}
   redis:
     # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
     # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider需设置为local）、RPC等功能

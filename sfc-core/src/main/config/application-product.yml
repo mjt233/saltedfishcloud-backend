@@ -24,6 +24,10 @@ spring:
         graceful-shutdown-wait-time: 0
 
 sys:
+  # JWT 会话密钥：用于用户登录凭证与文件直链的签名/验签，必须恰好 32 个字符。
+  # 生产环境必须通过环境变量 SFC_JWT_SECRET 注入（例如 `openssl rand -hex 16`），网关 sfc-gateway 必须使用同一值；
+  # 未配置或长度不符时应用启动失败（fail-fast）。
+  jwt-secret: ${SFC_JWT_SECRET:}
   redis:
     # Redis 是否启用，默认为 true。设置为 false 可以��不启动 Redis 的情况下运行系统
     # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider设置为local）、RPC等功能

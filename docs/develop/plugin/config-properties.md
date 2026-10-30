@@ -39,9 +39,9 @@
                     },
                     // 配置项2
                     {
-                        "name": "sys.safe.token",
-                        "title": "系统安全密钥",
-                        "describe": "系统的安全密钥，修改后会导致所有用户登录失效、直链失效",
+                        "name": "example.hidden_text_item",
+                        "title": "示例隐藏文本配置项",
+                        "describe": "inputType为text的普通文本配置项示例；hide为true时不在配置页展示",
                         "defaultValue": "",
                         "inputType": "text",
                         "hide": true

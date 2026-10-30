@@ -28,6 +28,12 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 > 项目首次启动后会自动初始化数据库
 
+!!! warning "首次启动前必须配置 JWT 会话密钥"
+
+    用户登录凭证与文件直链的签名密钥来自 `sys.jwt-secret`（环境变量 `SFC_JWT_SECRET`），
+    必须**恰好 32 个字符**（例如 `openssl rand -hex 16`）；未配置或长度不符时 **core 启动失败（fail-fast）**。
+    可在 `config.yml` 中写入 `sys.jwt-secret: ${SFC_JWT_SECRET:}` 后注入环境变量，详见[参数配置](./config.md)。
+
 ---
 
 !!! info
@@ -58,9 +64,10 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 ```powershell
 # 前置：Nacos 已启动，且 sfc-core 与目标微服务已注册（group=SFC / namespace=public）
-# ⚠️ 必须先把 core 的会话密钥注入环境变量，否则网关启动即失败（fail-fast）
-#    取法：管理端【系统设置 → 常规 → 系统安全密钥】，或 GET /api/admin/sys/config/config/sys.safe.token
-$env:SFC_JWT_SECRET = '<core 的 sys.safe.token 值>'
+# ⚠️ 必须先把 JWT 会话密钥注入环境变量，否则 core 与网关启动即失败（fail-fast）
+#    该密钥由部署者自行生成并同时注入 core 与网关（每个部署独立，不落代码库）：
+#    openssl rand -hex 16  # 生成恰好 32 个字符
+$env:SFC_JWT_SECRET = '<32 字符的 JWT 会话密钥，core 与网关必须完全一致>'
 java -Xmx512m -jar microservices/sfc-gateway/target/sfc-gateway-1.0.0.jar
 # 浏览器访问 http://127.0.0.1:8081/（网关），而不是直连 core 的 8087
 ```
@@ -69,7 +76,7 @@ java -Xmx512m -jar microservices/sfc-gateway/target/sfc-gateway-1.0.0.jar
 |---|---|
 | 端口 | 网关默认 **8081**，core 仍是 8087（网关在本机时会避让 Nacos 控制台的 8080） |
 | 构建命令 | **独立构建**：`mvn -f microservices/pom.xml clean package -DskipTests`（聚合器一次构建共享库 `sfc-common` 与网关；只构建网关用 `-pl :sfc-gateway -am`）。本目录的工程都不继承 root pom。⚠️ 它当前也在 root `<modules>` 中，因此根目录 `mvn package` 会一并构建；但它的产物**不打进 `release/` 目录**，是独立发布的进程 |
-| ⚠️ 密钥（必做） | 网关用**环境变量 `SFC_JWT_SECRET`** 验签，取值必须与 core 的 `sys.safe.token` **一致**：漂移的症状是"登录正常，但 `/api/ext/**` 全量 403/7005"；core 在线改密钥后**必须重启网关**并重新注入 |
+| ⚠️ 密钥（必做） | core 与网关用**同一环境变量 `SFC_JWT_SECRET`**（core 侧配置项为 `sys.jwt-secret`），取值必须**完全一致**且恰好 32 字符：漂移的症状是"登录正常，但 `/api/ext/**` 全量 403/7005" |
 | 回退路径 | 不启动网关时，直连 `http://127.0.0.1:8087/` 一切照旧（网关只是入口，不是必需品） |
 | ⚠️ 部署约束 | 微服务与 core 的内部接口**只允许内网可达**：框架期采用**信任模式**（网关本地验签后注入明文头 `X-Sfc-Uid`，微服务不校验），且**凭证原值会透传给微服务**（微服务不得打印凭证）；**上公网前必须先完成服务间鉴权**。已落地一层兜底：`/api/internal/**` 只允许微服务间调用——各服务用共享密钥 `SFC_INTERNAL_KEY`（`sfc.internal.key`）自签 HS256 JWT，core 侧校验签名/有效期，网关侧直接拒绝该前缀；该兜底不区分服务身份、**不做防重放**，替代不了服务间鉴权 |
 | 配置 | 网关自己的配置在 `microservices/sfc-gateway/src/main/resources/application.yml`（不使用 `sys.` 前缀）；**core 侧没有任何代理配置**——`sys.service.gateway.*` 与 `POST /api/gateway/resolve` 已随"网关独立验签"一并删除（见[参数配置](./config.md)） |

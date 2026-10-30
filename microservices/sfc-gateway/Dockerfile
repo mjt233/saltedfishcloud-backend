@@ -13,12 +13,13 @@
 #
 # 运行（服务发现/注册参数全部走环境变量，无需修改 application.yml）：
 #   docker run -d --name sfc-gateway -p 9090:9090 \
-#     -e SFC_JWT_SECRET=<core 的 sys.safe.token，必须恰好 32 字符> \
+#     -e SFC_JWT_SECRET=<与 core 的 sys.jwt-secret 完全相同，必须恰好 32 字符> \
 #     -e SFC_LOCAL_REGISTRY_ADDR=host.docker.internal:8087 \
 #     -e SFC_LOCAL_REGISTRY_PASSWORD=<与 core 的 sys.service.local-registry.password 一致> \
 #     saltedfishcloud/sfc-gateway:latest
-#   ⚠️ SFC_JWT_SECRET 缺失或长度不是 32 时网关【启动即失败】（fail-fast）；它与 SFC_INTERNAL_KEY
-#      是两把不同的密钥，不要混用。
+#   ⚠️ SFC_JWT_SECRET 缺失或长度不是 32 时网关【启动即失败】（fail-fast）；core 侧同名配置项为
+#      sys.jwt-secret（同一个环境变量 SFC_JWT_SECRET 同时注入 core 与网关，两侧取值必须完全一致）；
+#      它与 SFC_INTERNAL_KEY 是两把不同的密钥，不要混用。
 #   改用 Nacos 注册中心：
 #     -e SFC_LOCAL_ENABLED=false -e NACOS_ENABLED=true -e NACOS_SERVER_ADDR=<nacos 地址>:8848
 

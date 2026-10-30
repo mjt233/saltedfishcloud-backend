@@ -45,7 +45,7 @@
 
 > **网关与微服务的区别**：微服务是"被发现的业务进程"，网关是"入口"。两者都放在本目录，是因为它们**共享同一条构建与版本约定**：独立 POM 边界（不继承 root pom）、零宿主依赖，且使用同一套 Spring Boot / Spring Cloud / SCA 版本矩阵（由本目录的 `pom.xml` 单点声明）。
 >
-> ⚠️ **框架期的信任模式（2026-10-11 起：网关本地验签）**：网关是**唯一身份来源**——它用**环境变量 `SFC_JWT_SECRET`**（＝ core 的 `sys.safe.token`）**本地验签**用户凭证，把 uid 注入 `X-Sfc-Uid`，并把**凭证原值透传**给下游；微服务直接信任该头、不做校验，如需"登出即失效"级别判定则用透传的凭证自行完整校验。头名常量统一取自 `sfc-common` 的 `com.sfc.cloud.trust.SfcTrustHeaders`（网关注入、微服务读取，两侧都不写字面量）。因此：**微服务只允许内网 / 本机暴露**、**不得打印凭证**，上公网前必须先完成服务间鉴权（见[路线图阶段 5](../docs/plan/microservice/microservice-roadmap.md) 与[技术债务清单](../docs/plan/todo.md)）。
+> ⚠️ **框架期的信任模式（2026-10-11 起：网关本地验签）**：网关是**唯一身份来源**——它用**环境变量 `SFC_JWT_SECRET`**（＝ core 的 `sys.jwt-secret`，两侧由部署注入同一个值）**本地验签**用户凭证，把 uid 注入 `X-Sfc-Uid`，并把**凭证原值透传**给下游；微服务直接信任该头、不做校验，如需"登出即失效"级别判定则用透传的凭证自行完整校验。头名常量统一取自 `sfc-common` 的 `com.sfc.cloud.trust.SfcTrustHeaders`（网关注入、微服务读取，两侧都不写字面量）。因此：**微服务只允许内网 / 本机暴露**、**不得打印凭证**，上公网前必须先完成服务间鉴权（见[路线图阶段 5](../docs/plan/microservice/microservice-roadmap.md) 与[技术债务清单](../docs/plan/todo.md)）。
 >
 > 🔒 **内部接口的一层兜底（2026-10-15，同日改为 SDK + 自签 JWT）**：core 的 `/api/internal/**`（当前即 `sfc-remote-client` 访问的网盘文件 V2 接口）**只允许微服务间调用**——各服务用同一份共享密钥 **`SFC_INTERNAL_KEY`**（配置项 `sfc.internal.key`）**为每次调用自签 HS256 JWT**，放在请求头 **`X-Sfc-Internal-Token`** 里（密钥本身不上线传输）；core 侧校验「签名 + 有效期（含时钟偏移）+ 必需声明」，未配置密钥时 fail-closed 全部拒绝；网关（`sfc-gateway`）对该前缀**直接拒绝**，服务间调用走 `lb://sfc-core` 直连、不经网关。签发/校验与两端适配全部由独立 SDK **[`sfc-auth`](../sfc-auth/README.md)**（仓库根目录）实现。注意：仍是**共享密钥**模型——不区分服务身份、**不做防重放**（调小 `token-ttl` 是唯一缓解手段）、轮换需全部重启，属于框架期兜底，**不能替代**阶段 5 的服务间鉴权。
 >
@@ -78,9 +78,9 @@ mvn package -DskipTests -pl :sfc-demo-service -am
 # ⚠️ 也不要用 `-rf` 从中途恢复根 reactor 构建：跳过的模块会退化为从本地仓库解析共享库。
 
 # 运行
-#   网关必须先注入验签密钥：用 core 的会话密钥（DB 配置项 sys.safe.token）覆盖 SFC_JWT_SECRET，
-#   否则网关【启动即失败】（fail-fast）。取法与管理端配置页见网关 README §二。
-$env:SFC_JWT_SECRET = '<core 的 sys.safe.token 值>'
+#   网关与 core 共用同一个 JWT 会话密钥：core 侧为配置项 sys.jwt-secret，网关为环境变量 SFC_JWT_SECRET。
+#   两者必须注入完全相同、恰好 32 字符的值，否则 core / 网关【启动即失败】（fail-fast）。
+$env:SFC_JWT_SECRET = '<32 字符的 JWT 会话密钥，core 与网关完全一致，例如 openssl rand -hex 16 的输出>'
 java -jar microservices/sfc-demo-service/target/sfc-demo-service-1.0.0.jar
 java -Xmx512m -jar microservices/sfc-gateway/target/sfc-gateway-1.0.0.jar
 

@@ -61,7 +61,7 @@ plugin:
 #    - sfc-ext/sfc-ext-music
 #    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-ftp-store
-    - sfc-ext/sfc-ext-video-enhance
+#    - sfc-ext/sfc-ext-video-enhance
 #    - sfc-ext/sfc-ext-oss-store
 #    - sfc-ext/sfc-ext-network-tools
 #    - sfc-ext/sfc-ext-web-shell
@@ -71,20 +71,23 @@ plugin:
 #    - sfc-ext/sfc-ext-webrtc
 #    - sfc-ext/sfc-ext-webdav
 #    - sfc-ext/sfc-ext-webdav-store
-    - sfc-ext/sfc-ext-local-mq
-    - sfc-ext/sfc-ext-mcp
-    - sfc-ext/sfc-ext-pxe-boot
-    - sfc-ext/sfc-ext-data-manager
+#    - sfc-ext/sfc-ext-local-mq
+#    - sfc-ext/sfc-ext-mcp
+#    - sfc-ext/sfc-ext-pxe-boot
+#    - sfc-ext/sfc-ext-data-manager
 
   # 开发模式下可设置为false 关闭插件前端资源的自动加载
   use-auto-load-resource: true
 
 
 sys:
+  # JWT 会话密钥：用于用户登录凭证与文件直链的签名/验签，必须恰好 32 个字符。
+  # 开发环境默认值仅供本地调试；生产环境必须通过环境变量 SFC_JWT_SECRET 注入，网关 sfc-gateway 必须使用同一值。
+  jwt-secret: ${SFC_JWT_SECRET:dev-only-jwt-secret-0123456789ab}
   redis:
     # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
     # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider设置为local）、RPC等功能
-    enabled: false
+    enabled: true
   service:
     # 缓存provider，默认 redis，可选 local（程序内缓存）
     cache-provider: local
@@ -92,7 +95,7 @@ sys:
     lock-provider: local
     # MQ provider，默认 redis
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
-    mq-provider: local
+    mq-provider: redis
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: mq
     # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（使用 spring.cloud.nacos.discovery 配置）

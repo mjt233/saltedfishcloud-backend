@@ -164,7 +164,7 @@ curl http://127.0.0.1:9090/api/service/sfc-demo-service/demo/testInternal
 网关是**唯一身份来源**：
 
 1. 网关从请求中取出用户凭证——依次尝试请求头 `Token`、查询参数 `Token`、Cookie `token`；
-2. 用环境变量 `SFC_JWT_SECRET` **本地验签**，取值必须与 core 的配置项 `sys.safe.token` 一致；
+2. 用环境变量 `SFC_JWT_SECRET` **本地验签**，取值必须与 core 的配置项 `sys.jwt-secret` 完全一致（两侧由部署注入同一个值）；
 3. 验签通过则注入 `X-Sfc-Uid = 用户ID`，否则注入 `X-Sfc-Uid = 0`（匿名），同时注入 `X-From-Gateway: sfc-gateway`；
 4. 用户凭证**原值透传**给下游，微服务如需"登出即失效"级别的判定，可自行完整校验。
 

@@ -65,7 +65,8 @@ docker build \
 
 ## 5. 运行镜像
 
-构建完成后，可使用以下命令启动容器：
+构建完成后，可使用以下命令启动容器（`SFC_JWT_SECRET` 与 `SFC_INTERNAL_KEY` 为**必填**，
+未注入时 core 启动会因密钥校验失败而退出）：
 
 ```shell
 docker run -d \
@@ -73,8 +74,12 @@ docker run -d \
     -p 8087:8087 \
     -v /path/to/store:/saltedfish/store \
     -v /path/to/config.yml:/saltedfish/config.yml \
+    -e SFC_JWT_SECRET=<恰好 32 字符的 JWT 会话密钥，例如 openssl rand -hex 16 的输出> \
+    -e SFC_INTERNAL_KEY=<不少于 32 字符的内部接口共享密钥> \
     saltedfishcloud:latest
 ```
+
+> 若部署微服务模式，独立网关 `sfc-gateway` 必须注入**完全相同**的 `SFC_JWT_SECRET`。
 
 ## 6. 运行时约定
 
@@ -85,6 +90,7 @@ docker run -d \
 - 数据卷目录：`/saltedfish/store`
 - 默认配置文件：`/saltedfish/config.yml`
 - 启动命令：`java -jar sfc-core.jar --spring.config.import=file:config.yml`
+- 必填环境变量：`SFC_JWT_SECRET`（JWT 会话密钥，恰好 32 字符）、`SFC_INTERNAL_KEY`（内部接口共享密钥，不少于 32 字符）
 
 如果需要覆盖默认配置，请将宿主机上的配置文件挂载到容器中的 `/saltedfish/config.yml`。
 

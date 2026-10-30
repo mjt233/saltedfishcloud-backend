@@ -83,7 +83,9 @@ mvn package
 
 ### 3) 启动服务
 
-先根据实际环境修改配置文件（可参考 `conf/config.yml`），重点确认 MySQL 和 Redis 连接信息。
+先根据实际环境修改配置文件（可参考 `conf/config.yml`），重点确认 MySQL 和 Redis 连接信息，
+并配置 JWT 会话密钥 `sys.jwt-secret`（环境变量 `SFC_JWT_SECRET`，**必须恰好 32 个字符**，未配置时服务启动失败；
+启用微服务网关时两侧必须注入同一值），详见[参数配置](docs/quick-start/config.md)。
 
 ```bash
 java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
