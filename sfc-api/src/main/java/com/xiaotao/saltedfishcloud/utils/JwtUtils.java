@@ -15,14 +15,14 @@ import java.util.Map;
 
 public class JwtUtils {
     private final static int EXPIRATION_TIME = 60*60*24*31;
-    private static String SECRET = "1145141919810";
+    private static String SECRET;
     public static final String AUTHORIZATION = "Token";
 
     /**
      * 设置JWT签名密钥。
-     * <p>jjwt 0.12+ 要求 HS256 密钥至少为 32 字节（256 bit）。
-     * 默认值 "1145141919810"（14 字节）不足以满足该要求，
-     * 必须在运行时通过本方法设置一个长度不少于 32 字节的密钥。</p>
+     * <p>jjwt 0.12+ 要求 HS256 密钥至少为 32 字节（256 bit），
+     * 应用启动时会由配置项 {@code sys.jwt-secret}（环境变量 {@code SFC_JWT_SECRET}）注入一个
+     * 恰好 32 个字符的密钥；未设置密钥时调用签发/验签方法会抛出 {@link IllegalStateException}。</p>
      * @param secret 用于JWT签名的密钥字符串
      */
     public static void setSecret(String secret) {
@@ -34,8 +34,13 @@ public class JwtUtils {
      * <p>使用 {@link Keys#hmacShaKeyFor(byte[])} 根据密钥字节长度自动选择 HMAC-SHA 算法；
      * 当 {@code SECRET} 的 UTF-8 字节数不少于 32 时采用 HS256。</p>
      * @return 由当前 SECRET 派生的 HMAC-SHA 密钥
+     * @throws IllegalStateException 密钥尚未初始化时抛出（避免静默使用弱密钥）
      */
     private static SecretKey getKey() {
+        if (SECRET == null) {
+            throw new IllegalStateException("JWT 密钥未初始化：请配置 sys.jwt-secret（环境变量 SFC_JWT_SECRET），"
+                    + "必须恰好 32 个字符");
+        }
         return Keys.hmacShaKeyFor(SECRET.getBytes(StandardCharsets.UTF_8));
     }
 

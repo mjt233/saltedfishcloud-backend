@@ -30,6 +30,14 @@ public class SysProperties implements InitializingBean {
     @Value("${app.build-date}")
     private String buildDate;
 
+    /**
+     * JWT 会话密钥（配置项 {@code sys.jwt-secret}，推荐通过环境变量 {@code SFC_JWT_SECRET} 注入）。
+     * <p>用于用户登录凭证与文件直链的签名/验签，必须恰好 32 个字符；未配置或长度不符时应用启动失败，
+     * 避免与网关（sfc-gateway）使用不同密钥导致验签漂移。密钥原文不允许打印到日志。</p>
+     */
+    @ToString.Exclude
+    private String JWT_SECRET;
+
     private Store store;
     /**
      * 系统服务相关配置。
