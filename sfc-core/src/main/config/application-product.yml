@@ -29,21 +29,21 @@ sys:
   # 未配置或长度不符时应用启动失败（fail-fast）。
   jwt-secret: ${SFC_JWT_SECRET:}
   redis:
-    # Redis 是否启用，默认为 true。设置为 false 可以��不启动 Redis 的情况下运行系统
+    # Redis 是否启用，默认为 true。设置为 false 允许在不启动 Redis 的情况下运行系统
     # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider设置为local）、RPC等功能
     enabled: true
   service:
-    # 缓存provider，默认 redis，可选 local（程序内缓存）
-    cache-provider: redis
-    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）
-    lock-provider: redisson
-    # MQ provider，默认 redis
+    # 缓存provider，默认 redis，可选 local（程序内缓存）。可通过环境变量 CACHE_PROVIDER 覆盖
+    cache-provider: ${CACHE_PROVIDER:redis}
+    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）。可通过环境变量 LOCK_PROVIDER 覆盖
+    lock-provider: ${LOCK_PROVIDER:redisson}
+    # MQ provider，默认 redis。可通过环境变量 MQ_PROVIDER 覆盖
     # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
-    mq-provider: redis
-    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
-    rpc-provider: redis
-    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（使用 spring.cloud.nacos.discovery 配置）
-    registry-provider: local
+    mq-provider: ${MQ_PROVIDER:redis}
+    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）。可通过环境变量 RPC_PROVIDER 覆盖
+    rpc-provider: ${RPC_PROVIDER:redis}
+    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。可选 nacos（使用 spring.cloud.nacos.discovery 配置）。可通过环境变量 REGISTRY_PROVIDER 覆盖
+    registry-provider: ${REGISTRY_PROVIDER:local}
     # 本地注册中心外部注册配置（registry-provider=local 时生效）
     local-registry:
       # 外部服务注册密码。留空表示禁用外部注册接口
