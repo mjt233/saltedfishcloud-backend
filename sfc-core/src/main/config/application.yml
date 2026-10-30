@@ -46,8 +46,8 @@ spring:
       enabled: true
       force: false
     multipart:
-      max-file-size: 8192MB
-      max-request-size: 8192MB
+      max-file-size: 32768MB
+      max-request-size: 33792MB
   profiles:
     active: ^spring-profile^
   web:
