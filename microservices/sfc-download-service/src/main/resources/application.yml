@@ -23,13 +23,20 @@ spring:
     # 前端插件静态资源（index.umd.js / style.css）经该前缀暴露，core 的 /api/plugin/autoLoad.js 会按
     # 注册中心 metadata 中的 sfc.plugin.autoload 拼接出这些 URL
     static-path-pattern: "/static/**"
+  # 服务发现/注册参数：全部可用环境变量覆盖，容器部署无需修改本文件
+  #   模式选择：SFC_LOCAL_ENABLED=true（默认）走 local 注册中心，与 sfc-core 内置注册中心对接；
+  #            改走 Nacos 时置 SFC_LOCAL_ENABLED=false 且 NACOS_ENABLED=true。
+  #   常用变量：SFC_LOCAL_REGISTRY_ADDR / SFC_LOCAL_REGISTRY_PASSWORD / SFC_LOCAL_REGISTRY_HOST /
+  #            NACOS_SERVER_ADDR / NACOS_GROUP / NACOS_NAMESPACE / NACOS_USERNAME / NACOS_PASSWORD
   cloud:
-    # local 注册中心：未启用 Nacos 时与 core 的内置注册中心对接（服务端地址/密码与 core 的
+    # local 注册中心：与 core 的内置注册中心对接（服务端地址/密码与 core 的
     # sys.service.local-registry 配置对应）
     sfc-local:
-      enabled: true
-      server-addr: "localhost:8087"
-      password: 114514
+      enabled: ${SFC_LOCAL_ENABLED:true}
+      server-addr: "${SFC_LOCAL_REGISTRY_ADDR:localhost:8087}"
+      password: "${SFC_LOCAL_REGISTRY_PASSWORD:114514}"
+      # 注册到注册中心的 host；留空 = 自动探测（容器内即容器 IP，与 core 同网络时可直接访问）
+      host: "${SFC_LOCAL_REGISTRY_HOST:}"
       metadata:
         # 配置面板入口：core 的 ConfigController#listServicesPluginConfig 发现该 metadata 后会
         # 请求本服务的 /api/meta/pluginInfo，在管理员后台渲染「插件配置」面板
@@ -37,13 +44,16 @@ spring:
         sfc.plugin.autoload: /static/index.umd.js,/static/style.css
     nacos:
       discovery:
-        # 默认走 local 注册中心；切换 Nacos 时把 enabled 置为 true 并关闭 sfc-local
-        enabled: false
-        server-addr: 127.0.0.1:8848
+        # 默认走 local 注册中心；切换 Nacos 时把 NACOS_ENABLED 置为 true 并把 SFC_LOCAL_ENABLED 置为 false
+        enabled: ${NACOS_ENABLED:false}
+        server-addr: "${NACOS_SERVER_ADDR:127.0.0.1:8848}"
         # ⚠️ 收敛约定：必须与 core / 网关的 group 一致（同为 SFC），否则"注册成功但互相看不见"
-        group: SFC
+        group: ${NACOS_GROUP:SFC}
         # 命名空间 public 的 ID 是【空串】，不要写 public
-        namespace: ""
+        namespace: "${NACOS_NAMESPACE:}"
+        # 服务端未开启鉴权时留空
+        username: "${NACOS_USERNAME:}"
+        password: "${NACOS_PASSWORD:}"
         # 临时实例：客户端心跳续约，停服后实例自动消失
         ephemeral: true
         metadata:
@@ -60,7 +70,8 @@ spring:
     #      · busy_timeout=5000 —— 写锁被占用时最多等待 5 秒再报错，覆盖多个任务同时落盘/收尾的瞬间。
     #    仍建议生产环境按实际并发量调低 sfc.task.worker.max-concurrent-tasks，或改用更高并发的数据库；
     #    本服务当前只支持 SQLite（无需额外数据库部署，适合轻量部署场景）。
-    url: "jdbc:sqlite:./download.db?journal_mode=WAL&busy_timeout=5000"
+    #    容器部署：镜像 ENV SFC_DOWNLOAD_DB_URL 已把数据文件指向 /data/download.db（配合数据卷持久化）
+    url: "${SFC_DOWNLOAD_DB_URL:jdbc:sqlite:./download.db?journal_mode=WAL&busy_timeout=5000}"
     # ⚠️ SQLite 单写者：固定单连接，让所有并发写事务在连接池排队后串行执行（T9 §7-9 收口）。
     #    背景：8 个请求同时创建任务时，Hibernate merge 会「先 SELECT 再 UPDATE」——若期间存在另一个
     #    写连接，WAL 下该事务的读快照会失效，抛 SQLITE_BUSY_SNAPSHOT；这类快照冲突不受 busy_timeout

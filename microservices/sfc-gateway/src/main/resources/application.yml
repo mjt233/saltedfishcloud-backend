@@ -8,18 +8,28 @@ sfc:
 spring:
   application:
     name: sfc-gateway
+  # 服务发现/注册参数：全部可用环境变量覆盖，容器部署无需修改本文件
+  #   模式选择：SFC_LOCAL_ENABLED=true（默认）走 local 注册中心，与 sfc-core 内置注册中心对接；
+  #            改走 Nacos 时置 SFC_LOCAL_ENABLED=false 且 NACOS_ENABLED=true。
+  #   常用变量：SFC_LOCAL_REGISTRY_ADDR / SFC_LOCAL_REGISTRY_PASSWORD / SFC_LOCAL_REGISTRY_HOST /
+  #            NACOS_SERVER_ADDR / NACOS_GROUP / NACOS_NAMESPACE / NACOS_USERNAME / NACOS_PASSWORD
   cloud:
     sfc-local:
-      server-addr: localhost:8087
-      password: 114514
-      enabled: true
+      enabled: ${SFC_LOCAL_ENABLED:true}
+      server-addr: "${SFC_LOCAL_REGISTRY_ADDR:localhost:8087}"
+      password: "${SFC_LOCAL_REGISTRY_PASSWORD:114514}"
+      # 注册到注册中心的 host；留空 = 自动探测（容器内即容器 IP，与 core 同网络时可直接访问）
+      host: "${SFC_LOCAL_REGISTRY_HOST:}"
     nacos:
       discovery:
-        enabled: false
-        server-addr: 127.0.0.1:8848
+        enabled: ${NACOS_ENABLED:false}
+        server-addr: "${NACOS_SERVER_ADDR:127.0.0.1:8848}"
         # 与 sfc-core / sfc-demo-service 收敛为同一 group 与 namespace（public 的 ID 是空串，不要写 public）
-        group: SFC
-        namespace: ""
+        group: ${NACOS_GROUP:SFC}
+        namespace: "${NACOS_NAMESPACE:}"
+        # 服务端未开启鉴权时留空
+        username: "${NACOS_USERNAME:}"
+        password: "${NACOS_PASSWORD:}"
         # 临时实例：停服即从注册中心消失，避免入口继续把流量打向已死进程
         ephemeral: true
     gateway:
