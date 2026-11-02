@@ -117,8 +117,9 @@ public class DownloadController {
     /**
      * 查询本服务支持的下载类型与当前可用性。
      *
-     * <p>未登录返回 401。{@code refresh=true} 时先强制刷新统一配置快照（用于管理员刚在 core 后台
-     * 打开 aria2 后立即验证）；aria2 的连通性探测另有约 30 秒缓存，可能仍需等待其自然过期。</p>
+     * <p>未登录返回 401。{@code refresh=true} 时先强制刷新 Git 统一配置快照（用于管理员刚在 core 后台
+     * 改完 Git 配置后立即验证）；aria2 为部署期配置（{@code sfc.download.aria2.*}），修改后需重启本服务，
+     * 且其连通性探测另有约 30 秒缓存，可能仍需等待其自然过期。</p>
      *
      * @param refresh 是否先强制刷新统一配置快照，默认 false
      * @return 能力列表，每项含 type/name/engineId/available/reason/options

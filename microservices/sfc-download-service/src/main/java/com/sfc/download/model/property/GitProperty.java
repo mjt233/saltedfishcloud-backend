@@ -8,9 +8,13 @@ import lombok.Data;
 /**
  * Git 克隆（GIT 下载类型）运行期配置实体。
  *
- * <p>与 {@link Aria2Property} 一样，配置值统一存放在 {@code sfc-core} 的系统配置表中，
- * 由管理员在 core 后台维护，本服务经
- * {@link com.sfc.download.config.SfcDownloadConfigService} 读取。</p>
+ * <p>配置值统一存放在 {@code sfc-core} 的系统配置表中，由管理员在 core 后台「插件配置」面板维护，
+ * 本服务经 {@link com.sfc.download.config.SfcDownloadConfigService} 读取；修改后按配置缓存 TTL
+ * （默认 5 秒）生效，无需重启本服务。</p>
+ *
+ * <p><b>与 aria2 配置的区别：</b>aria2 的全部参数属于部署期配置
+ * （{@link com.sfc.download.config.Aria2Properties}，来自 {@code application.yml} / 环境变量），
+ * 不在 core 配置表中维护，修改后需重启本服务。</p>
  *
  * <p><b>配置项命名：</b>前缀 {@code download.git} + KEBAB_CASE 字段名，
  * 最终 key 形如 {@code download.git.keep-git-dir}。</p>
@@ -18,7 +22,7 @@ import lombok.Data;
  * <p>这里的取值是<b>单次任务的默认值</b>：创建任务时仍可通过任务参数 {@code options}
  * （如 {@code gitDepth}、{@code stripGitDir}）逐次覆盖。</p>
  *
- * @see Aria2Property
+ * @see com.sfc.download.config.SfcDownloadConfigService
  */
 @Data
 @ConfigPropertyEntity(prefix = "download.git", groups = {

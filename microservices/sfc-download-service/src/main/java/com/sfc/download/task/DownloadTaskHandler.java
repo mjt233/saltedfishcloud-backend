@@ -15,7 +15,9 @@ import com.sfc.download.engine.DownloadArtifact;
 import com.sfc.download.engine.DownloadContext;
 import com.sfc.download.engine.DownloadEngine;
 import com.sfc.download.engine.DownloadEngineRegistry;
+import com.sfc.download.engine.DownloadTempDirCreator;
 import com.sfc.download.engine.DownloadType;
+import com.sfc.download.engine.p2p.Aria2Workspace;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.repo.DownloadTaskRepo;
 import com.sfc.download.stash.DownloadSaveService;
@@ -90,6 +92,11 @@ public class DownloadTaskHandler implements SfcTaskHandler {
     private final DownloadSaveService downloadSaveService;
 
     /**
+     * aria2 共享工作区：为磁力链 / 种子任务提供跨容器共享目录中的任务目录创建能力。
+     */
+    private final Aria2Workspace aria2Workspace;
+
+    /**
      * 本处理器支持的任务类型。
      *
      * @return {@link DownloadTaskConstants#TASK_TYPE}
@@ -126,9 +133,14 @@ public class DownloadTaskHandler implements SfcTaskHandler {
         Long downloadId = params.downloadId;
         Long taskId = execution.getTaskId();
         long startNanos = System.nanoTime();
+        // 临时目录策略按下载类型选择（必须在创建上下文之前确定）：
+        // 磁力链 / 种子由 aria2 写盘，可能跨容器部署，任务目录需落在共享工作区，产物本服务才可见；
+        // 其它类型在本服务进程内下载，沿用默认的 JVM 临时目录策略。
+        DownloadType type = params.type;
+        boolean isAria2Task = type == DownloadType.MAGNET || type == DownloadType.TORRENT;
+        DownloadTempDirCreator tempDirCreator = isAria2Task ? aria2Workspace::createTaskDir : null;
         // 引擎解析出名称后（HTTP 响应文件名 / aria2 文件清单）立即回写，使任务在运行中即可展示名称
-        DownloadContext context = new DownloadContext(execution, params,
-                name -> updateTaskNameQuietly(downloadId, name));
+        DownloadContext context = new DownloadContext(execution, params, name -> updateTaskNameQuietly(downloadId, name), tempDirCreator);
         try {
             execution.log(LOG_PREFIX + "开始执行离线下载任务: " + params);
             log.info("{}开始执行离线下载任务: downloadId={}, taskId={}, uid={}, type={}, url={}, savePath={}",
@@ -142,7 +154,6 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             context.checkInterrupted();
 
             // 类型只取创建任务时显式指定并落库的值：执行期不做任何推导或降级
-            DownloadType type = params.type;
             if (type == null) {
                 throw new SfcJsonException(400, "离线下载任务参数缺少下载类型（type），拒绝执行");
             }

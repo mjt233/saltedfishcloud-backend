@@ -30,6 +30,32 @@ services:
       # Nacos 单机启动通常需要 20~60s，此期间探针失败不计入 retries
       start_period: 30s
 
+  # aria2（P2P 下载引擎，供 sfc-download-service 通过 JSON-RPC 调用）
+  # ⚠️ 生产环境必须用 ARIA2_RPC_SECRET 覆盖默认令牌，并与 sfc-download-service 的
+  #    SFC_DOWNLOAD_ARIA2_SECRET 保持一致（两处都取同一个 ${ARIA2_RPC_SECRET}）。
+  # ⚠️ PUID/PGID=0 与下载服务镜像（以 root 运行）对齐，保证共享卷可互相读写；UMASK_SET 建议 022。
+  #    下载服务侧共享路径为 /shared/download，aria2 侧为 /downloads（见下载服务的 remote-dir 映射）。
+  # ⚠️ 首次启动会从 GitHub 拉取默认 aria2.conf（需要外网）；RPC_SECRET 只在该次初始化时写入
+  #    ./data/download/aria2-config/aria2.conf，之后修改环境变量不会自动生效——需同步修改该文件或清空配置目录。
+  #    生产也可替换为其它 aria2 镜像（要求：开启 RPC、令牌与下载服务一致、挂载同一共享卷）。
+  aria2:
+    image: p3terx/aria2-pro
+    container_name: sfc-aria2
+    networks:
+      # 与下载服务同网络，下载服务通过 http://aria2:6800/jsonrpc 访问；无需对外暴露端口
+      - nacos
+    volumes:
+      # 与 sfc-download-service 的 ./data/download/shared:/shared/download 指向同一宿主目录
+      - ./data/download/shared:/downloads
+      - ./data/download/aria2-config:/config
+    environment:
+      RPC_SECRET: ${ARIA2_RPC_SECRET:-sfc-aria2-dev-secret}
+      PUID: 0
+      PGID: 0
+      UMASK_SET: "022"
+      TZ: Asia/Shanghai
+    restart: unless-stopped
+
   # 离线下载服务
   sfc-download-service:
     image: sfc/sfc-download-service:latest
@@ -48,6 +74,8 @@ services:
       - nacos
     volumes:
       - ./data/download:/data
+      # 与 aria2 容器共享的下载目录（本服务容器内路径，对应 SFC_DOWNLOAD_ARIA2_SHARED_DIR）
+      - ./data/download/shared:/shared/download
     environment:
       # 启用 Nacos
       SFC_LOCAL_ENABLED: false
@@ -58,6 +86,13 @@ services:
       NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
       NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
       SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+      # RPC 地址使用 compose 服务名 aria2；shared-dir/remote-dir 对应同一宿主目录：
+      #   宿主机 ./data/download/shared → 本服务 /shared/download、aria2 容器 /downloads。
+      SFC_DOWNLOAD_ARIA2_ENABLED: "true"
+      SFC_DOWNLOAD_ARIA2_RPC_URL: http://aria2:6800/jsonrpc
+      SFC_DOWNLOAD_ARIA2_SECRET: ${ARIA2_RPC_SECRET:-sfc-aria2-dev-secret}
+      SFC_DOWNLOAD_ARIA2_SHARED_DIR: /shared/download
+      SFC_DOWNLOAD_ARIA2_REMOTE_DIR: /downloads
 
   # AI 助手服务
   sfc-ai-service:
@@ -152,8 +187,8 @@ services:
       NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
       NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
     networks:
-      - xyy-backend-net
       - nacos
+      - xyy-backend-net
     volumes:
       - ./data/core/store:/saltedfish/store
 

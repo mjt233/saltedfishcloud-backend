@@ -24,8 +24,8 @@
 |---|---|---|---|
 | `HTTP` | 内置流式 HTTP 下载 | 无 | 支持自定义请求头 / 请求方法 / 超时 / 代理，并忽略服务端证书校验 |
 | `GIT` | JGit `7.3.0.202506031305-r`（纯 Java；SSH 传输由 `org.eclipse.jgit.ssh.apache` 提供） | 无 | 支持 `http` / `https` / `git://` / `ssh`；SSH 克隆需提供用户 SSH 凭据，`git://` 不支持代理 |
-| `MAGNET` | aria2 JSON-RPC | 需同机运行 `aria2c` | 磁力链 |
-| `TORRENT` | aria2 JSON-RPC | 需同机运行 `aria2c` | `.torrent` 文件地址，或 Base64 种子内容 |
+| `MAGNET` | aria2 JSON-RPC | 需可访问 aria2 JSON-RPC，并与下载服务共享下载目录 | 磁力链 |
+| `TORRENT` | aria2 JSON-RPC | 需可访问 aria2 JSON-RPC，并与下载服务共享下载目录 | `.torrent` 文件地址，或 Base64 种子内容 |
 | `ED2K` | 占位引擎 | — | 已登记类型但引擎未接入：能力声明中恒为不可用，创建任务直接返回 400 |
 
 **类型必填**。创建任务时必须显式提交 `type`，服务端不在提交或执行阶段推导、也不降级到其它类型
@@ -59,29 +59,45 @@
 - 落盘自动规避重名：单文件追加 `.1`、`.2`；目录树对顶层目录名同样做规避
 - 多文件 / 目录树产物（BT 多文件、Git 仓库）按原目录结构递归创建目录并逐文件上传
 - 下载能力声明接口：返回每种类型是否可用、不可用原因、承载引擎标识（`engineId`）以及可选项元数据
-- 业务配置由 sfc-core 统一管理，管理员在后台修改后无需重启本服务
-- 后台「插件配置 → 离线下载」新增「**SSH 凭据管理**」菜单：声明为 `inputType=template` 的组件
+- Git 参数仍由 sfc-core 统一配置管理（后台修改后无需重启本服务）；aria2 全部参数为**部署期配置**
+  （本服务 `application.yml` / 环境变量，修改后需重启），支持 aria2 同机或跨容器共享目录部署
+- 后台「插件配置 → 离线下载」提供「**SSH 凭据管理**」菜单：声明为 `inputType=template` 的组件
   `download-ssh-credential-manager`（由前端实现），用于管理当前登录用户的 SSH 凭据与（仅管理员）主机信任记录
 - 前端插件资源（`index.umd.js` / `style.css`）随服务发布，仍由 `sfc-core` 的 `plugin/autoLoad.js` 合并加载
 
-## 统一配置
+## 配置
 
-aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统一存放在 `sfc-core` 的系统配置表：
+Git 与 aria2 的配置来源不同：Git 参数仍由 sfc-core 统一配置，aria2 参数全部是部署期配置。
 
-- 管理员在 core 后台的「插件配置」面板（节点名「离线下载」）修改；
+### 部署配置：aria2（改后需重启）
+
+aria2 的全部参数在**本服务的 `application.yml`**（`sfc.download.aria2.*`）中，可用环境变量覆盖；
+修改后需**重启本服务**才生效，不再读取 core 配置表。
+
+| 配置项 | 环境变量 | 默认值 | 说明 |
+|---|---|---|---|
+| `sfc.download.aria2.enabled` | `SFC_DOWNLOAD_ARIA2_ENABLED` | `false` | P2P 总开关；关闭时磁力链与种子在创建任务阶段即被 400 拒绝 |
+| `sfc.download.aria2.rpc-url` | `SFC_DOWNLOAD_ARIA2_RPC_URL` | `http://127.0.0.1:6800/jsonrpc` | aria2 JSON-RPC 地址；跨容器部署填容器网络地址（如 `http://aria2:6800/jsonrpc`） |
+| `sfc.download.aria2.secret` | `SFC_DOWNLOAD_ARIA2_SECRET` | 空 | 与 `aria2c --rpc-secret` 一致；只从部署配置读取，日志与接口不回显，建议用环境变量 / docker secrets，禁止提交明文 |
+| `sfc.download.aria2.poll-interval` | `SFC_DOWNLOAD_ARIA2_POLL_INTERVAL` | `1000` | 进度轮询间隔（毫秒） |
+| `sfc.download.aria2.stall-timeout` | `SFC_DOWNLOAD_ARIA2_STALL_TIMEOUT` | `300` | 无进度超时（秒）：连续该时长已下载字节无增长即判定失败 |
+| `sfc.download.aria2.torrent-max-size` | `SFC_DOWNLOAD_ARIA2_TORRENT_MAX_SIZE` | `2` | Base64 种子内容上限（MB） |
+| `sfc.download.aria2.shared-dir` | `SFC_DOWNLOAD_ARIA2_SHARED_DIR` | 空（不启用） | 下载服务容器内共享根目录（已挂载的绝对路径）；仅 MAGNET / TORRENT 使用，留空时行为与改造前一致 |
+| `sfc.download.aria2.remote-dir` | `SFC_DOWNLOAD_ARIA2_REMOTE_DIR` | 空（= `shared-dir`） | aria2 容器内同一共享根目录的 POSIX 绝对路径；留空表示两容器挂载点路径一致 |
+
+> 旧 core 配置表中的 `download.aria2.*` 已不再读取（数据保留无害），请把原值迁移到上表的部署配置后重启本服务。
+
+### core 统一配置：Git（改后最长 5 秒生效）
+
+Git 的运行期参数存放在 `sfc-core` 的系统配置表：
+
+- 管理员在 core 后台的「插件配置」面板（节点名「离线下载」→「Git 克隆」）修改；
 - 本服务通过 `SfcCoreConfigFeignClient` 读取，快照缓存 5 秒，**修改后最长 5 秒生效，无需重启**；
-- aria2 的连通性探测另有 30 秒缓存（见 `sfc.download.capability.cache-seconds`），刚改完开关时可能需要等待其过期。
-- 「SSH 凭据管理」菜单不是配置项（`inputType=template`），不占用配置 key；其组件契约与接口说明见
+- 配置面板还保留「SSH 凭据管理」template 菜单（不是配置项，不占用配置 key），其组件契约与接口说明见
   `microservices/sfc-download-service/docs/git-proxy-ssh-clone-frontend-guide.md`。
 
 | 配置 key | 默认值 | 说明 |
 |---|---|---|
-| `download.aria2.enabled` | `false` | P2P 总开关；关闭时磁力链与种子在创建任务阶段即被 400 拒绝 |
-| `download.aria2.rpc-url` | `http://127.0.0.1:6800/jsonrpc` | aria2 JSON-RPC 地址 |
-| `download.aria2.secret` | 空 | 与 `aria2c --rpc-secret` 一致；后台掩码显示，日志与接口不回显 |
-| `download.aria2.poll-interval` | `1000` | 进度轮询间隔（毫秒） |
-| `download.aria2.stall-timeout` | `300` | 无进度超时（秒）：连续该时长已下载字节无增长即判定失败 |
-| `download.aria2.torrent-max-size` | `2` | Base64 种子内容上限（MB） |
 | `download.git.default-depth` | `0` | 默认克隆深度，`0` 表示全量克隆 |
 | `download.git.keep-git-dir` | `false` | 是否保留 `.git`；默认删除（网盘场景只需要工作区文件） |
 | `download.git.connect-timeout` | `30` | JGit 连接超时（秒） |
@@ -89,30 +105,55 @@ aria2 / Git 的运行期参数**不在**本服务的 `application.yml` 中，统
 SSH 克隆与 SSH 凭据管理**没有新增统一配置项**：凭据、主机信任记录都存放在本服务 `download.db`，
 Git 的克隆行为仍由 `download.git.*` 控制。
 
-`application.yml` 只保留部署期 / 内部调优参数：端口、数据源、`sfc.internal.key`、Worker 并发、注册中心，
-以及 `sfc.download.config.refresh-interval-millis`（默认 5000）与 `sfc.download.capability.cache-seconds`（默认 30）。
+`application.yml` 保留部署期 / 内部调优参数：端口、数据源、`sfc.internal.key`、Worker 并发、注册中心，
+`sfc.download.config.refresh-interval-millis`（Git 配置快照缓存，默认 5000）、
+`sfc.download.capability.cache-seconds`（能力探测缓存，默认 30）以及上述 `sfc.download.aria2.*`。
 
-> 刻意不做「yml 覆盖统一配置」：业务参数只有一处数据源，避免排障时无法判断哪份配置生效。
-
-**降级行为**：core 不可用时，配置读取回落为配置实体上的注解默认值（即上表默认值），
-并只打一条 WARN；不会阻塞服务启动，也不影响不依赖这些参数的 HTTP / Git 下载。
+**降级行为**：core 不可用时，Git 配置读取回落为配置实体上的注解默认值（全量克隆、删除 `.git`），
+并只打一条 WARN；不会阻塞服务启动，也不影响 HTTP / Git 下载。aria2 配置来自本服务部署配置，不依赖 core。
 
 ## aria2 部署要求
 
-磁力链与种子依赖外部 aria2 进程，部署前需确认以下三点：
+磁力链与种子依赖外部 aria2 进程（JSON-RPC），支持两种部署方式：
 
-1. **必须与下载服务同机**。服务在下载完成后直接通过文件系统读取 aria2 的下载目录来上传产物，
-   跨机部署（aria2 在另一台机器）不支持。
-2. 启动示例（令牌需与 `download.aria2.secret` 一致）：
+1. **同机部署**（最简单）：aria2 与下载服务运行在同一台机器 / 同一文件系统上，**不配置共享目录**，
+   行为与改造前一致。`rpc-url` 填本机地址（默认 `http://127.0.0.1:6800/jsonrpc`）。
+2. **跨容器 / 跨机部署（共享卷 + 双路径映射）**：两个容器挂载**同一份共享存储**，并在两侧分别配置路径：
+   - `shared-dir`：下载服务容器内共享根目录（已挂载）的绝对路径，任务目录为
+     `<shared-dir>/offline-download/<任务id>-<UUID>`；
+   - `remote-dir`：aria2 容器内同一共享根目录的 POSIX 绝对路径；留空表示两容器挂载点路径一致；
+   - `rpc-url` 填从下载服务可达的 aria2 地址（跨容器用容器网络地址，如 `http://aria2:6800/jsonrpc`）。
 
-   ```shell
-   aria2c --enable-rpc --rpc-listen-all=false --rpc-listen-port=6800 \
-          --rpc-secret=<与配置一致的令牌> --dir=<任意可写目录>
+   映射示例（宿主机 `/host/shared`，两容器路径不同时必须显式配置 `remote-dir`）：
+
+   ```text
+   下载服务:  -v /host/shared:/shared/download   shared-dir=/shared/download
+   aria2:     -v /host/shared:/downloads        remote-dir=/downloads
+   任务目录在 aria2 侧: /downloads/offline-download/<任务id>-<UUID>
    ```
 
-   命令行里的 `--dir` 只是兜底：**每次任务的下载目录由服务端通过 RPC 选项强制指定**为该任务的本地临时目录。
-3. 服务端会强制覆盖以下选项，用户传入同名项会被丢弃：`dir`、`seed-time=0`（下载完成即停止做种）、
+   共享目录只用于 MAGNET / TORRENT（HTTP / GIT 仍用本服务 JVM 临时目录）。未配置 `shared-dir` 时要求
+   aria2 与下载服务同机 / 同文件系统；配置后漏挂共享卷时，能力探测会报共享目录不存在（不会自动创建本地根目录）。
+3. **权限对齐**：下载服务镜像以 root 运行；aria2 容器需使用可读写共享卷的用户（compose 示例为
+   `PUID=0` / `PGID=0`，`UMASK` 建议 `022`），否则会出现产物读取 / 清理失败。
+4. 启动示例（令牌需与 `sfc.download.aria2.secret` 一致）：
+
+   ```shell
+   # 同机部署（RPC 仅本机可达）
+   aria2c --enable-rpc --rpc-listen-all=false --rpc-listen-port=6800 \
+          --rpc-secret=<与配置一致的令牌> --dir=<任意可写目录>
+
+   # 跨容器 / 跨机部署（RPC 需容器网络可达，仅暴露在内网）
+   aria2c --enable-rpc --rpc-listen-all=true --rpc-listen-port=6800 \
+          --rpc-secret=<与配置一致的令牌> --dir=<共享卷内的兜底目录>
+   ```
+
+   命令行里的 `--dir` 只是兜底：**每次任务的下载目录由服务端通过 RPC 选项强制指定**（配置共享目录时为映射后的
+   aria2 侧路径）。
+5. 服务端会强制覆盖以下选项，用户传入同名项会被丢弃：`dir`、`seed-time=0`（下载完成即停止做种）、
    `bt-save-metadata=false`、`follow-torrent=false`。
+6. **改配置需重启**：`sfc.download.aria2.*` 是部署期配置，修改后需重启本服务；`GET /capabilities?refresh=true`
+   只刷新 Git 配置，aria2 连通性探测缓存 30 秒。
 
 用户可通过任务的 `options.aria2Options` 透传选项，取值为 JSON 对象文本（键为 aria2 选项名、值统一按字符串），
 例如 `{"split":"16","max-connection-per-server":"16"}`；服务端仅放行白名单：
@@ -141,7 +182,7 @@ SSH 克隆通过 `SshdSessionFactory` 的 `ProxyDataFactory` 生效（HTTP CONNE
 
 - 字段：`name`、`authType`（`PRIVATE_KEY` / `PASSWORD`）、`username`、`privateKey`、`passphrase`、`password`、
   `fingerprint`（私钥公钥指纹 `SHA256:...`）以及审计字段 `uid` / `createAt` / `updateAt`；
-- 私钥 / 口令 / 密码**明文存放于本服务 `download.db`**（与 core 现有 aria2 secret、第三方平台凭证做法一致），
+- 私钥 / 口令 / 密码**明文存放于本服务 `download.db`**（与第三方平台凭证做法一致），
   接口**绝不回显**，日志打码；建议限制 `download.db` 的文件权限；
 - 保存时校验：私钥必须可解析（加密私钥用口令解密）并自动计算指纹；`PASSWORD` 方式必须提供 `username` + `password`；
   校验失败返回 400。
@@ -242,7 +283,8 @@ SSH 克隆通过 `SshdSessionFactory` 的 `ProxyDataFactory` 生效（HTTP CONNE
 `name` 为选项键（提交时放进请求体的 `options`）、`title` 为展示名、`inputType` 决定输入控件
 （`text` / `textarea` / `switch`）、`defaultValue` 为字符串形式的默认值、`describe` 为说明文案、
 `mask` 表示凭证类选项需打码、`sort` 决定展示顺序。
-`refresh=true` 会先强制刷新统一配置快照，用于管理员刚改完 aria2 开关后立即验证。
+`refresh=true` 会先强制刷新 core 统一配置（Git 参数）快照；aria2 连通性探测另有 30 秒缓存，且 aria2 参数为
+部署期配置，修改后需重启服务，`refresh=true` 无法让其立即生效。
 
 列表项的 `type` 为创建时提交的类型编码；历史记录（升级前创建、该列为空）原样返回 `null`。
 
@@ -267,22 +309,28 @@ SSH 克隆通过 `SshdSessionFactory` 的 `ProxyDataFactory` 生效（HTTP CONNE
 - **主机密钥为 TOFU（首次信任）**：SSH 首次连接未知主机时自动接受并写入 `ssh_host_key`，记录全局共享；
   主机指纹变化会导致克隆失败，需管理员删除旧信任记录后重试。首个用户可抢先写入错误的主机密钥造成他人
   克隆失败（属 DoS，不是中间人攻击），管理员删除记录即可恢复。
-- **SSH 凭据明文存储**：私钥 / 口令 / 密码明文存放于本服务 `download.db`（与 core 现有 aria2 secret 等做法一致），
+- **SSH 凭据明文存储**：私钥 / 口令 / 密码明文存放于本服务 `download.db`（与第三方平台凭证做法一致），
   接口不回显、日志打码；建议限制 `download.db` 文件权限。本服务**不读取**宿主机 `~/.ssh`，认证完全由用户凭据驱动。
 - **Git 子模块边界**：任务级的代理与 SSH 凭据会传递给子模块；子模块地址仅允许 `http`/`https`/`ssh`/`git`
   （`file://`、`ext::`、本地路径会被拒绝）；**HTTP(S) 父仓库 + SSH 子模块**不在支持范围。
   开启子模块克隆且 `stripGitDir=true` 时，子模块内的 `.git`（目录或 gitlink 文件）也会一并清理。
 - **多实例部署**：本服务 SQLite 不共享，SSH 凭据与主机信任记录按实例隔离（与下载任务数据一致的既有架构限制）。
 - **Git 进度是近似值**：JGit 以「工作单元」而非字节汇报进度，进度条按工作单元累加，不能当作字节进度使用。
-- **aria2 必须同机，内容下载不支持 SOCKS 代理**：SOCKS 会被 aria2 忽略并记录日志，HTTP 代理会转为 `all-proxy`
+- **aria2 内容下载不支持 SOCKS 代理**：SOCKS 会被 aria2 忽略并记录日志，HTTP 代理会转为 `all-proxy`
   传给 aria2；`TORRENT` 任务经 URL 提交时，`.torrent` 文件由本服务按任务代理快照拉取（HTTP / SOCKS 均支持）。
+  跨容器部署需挂载共享目录并配置 `shared-dir` / `remote-dir`（见「aria2 部署要求」）；未配置 `shared-dir` 时
+  要求 aria2 与下载服务同机 / 同文件系统。
+- **aria2 secret 管理**：`sfc.download.aria2.secret` 只从部署配置（环境变量 / docker secrets）读取，日志与接口
+  不回显；但环境变量在 `docker inspect`、compose 文件与 shell 历史中可能可见，生产环境应使用 docker secrets
+  或受控的部署配置，禁止把明文提交到仓库。
 - **任务不重试 / 不续传**：执行失败即失败（是否重新排队由异步任务框架的故障转移策略决定，重跑会从头下载）。
 - **落盘失败不回滚**：目录树落盘过程中若某个文件上传失败，已上传成功的文件不会删除，失败信息会提示已成功数量。
   空目录不会保留（上传只处理文件）。
 - **单文件大小受限**：仍受 core 的 `spring.servlet.multipart.max-file-size`（默认 32GiB）约束，超限会以
   `413 Content Too Large` 失败，需要调大 core 该配置。
-- **配置降级**：core 不可用时统一配置回落为注解默认值（aria2 关闭、Git 全量克隆、删除 `.git`），
-  因此 core 故障期间磁力链/种子任务会被拒绝；HTTP 与 Git 下载本身不受影响。
+- **Git 配置降级**：core 不可用时 Git 配置回落为注解默认值（全量克隆、删除 `.git`），只 WARN 一次；
+  HTTP 与 Git 下载本身不受影响。aria2 配置来自本服务部署配置、不依赖 core，core 故障期间磁力链/种子任务能否
+  创建只取决于 aria2 是否配置并可达。
 - **代理契约**：旧版前端提交的是代理「名称」，服务端按名称解析并快照地址/端口；之后修改/删除 core 的代理配置
   不影响已创建任务。
 - **历史数据不迁移**：插件期下载记录在宿主 `xyy.db`，微服务使用独立 `download.db`，不会自动出现。

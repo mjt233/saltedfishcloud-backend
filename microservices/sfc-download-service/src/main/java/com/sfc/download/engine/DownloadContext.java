@@ -20,7 +20,8 @@ import java.util.function.Consumer;
  * 下载引擎的执行上下文。
  *
  * <p>一次任务执行对应一个实例（由任务处理器创建后传给引擎，引擎只读取/使用，不得跨任务复用），
- * 向引擎暴露：任务参数、进度与日志输出、任务临时目录，以及中断协作能力。</p>
+ * 向引擎暴露：任务参数、进度与日志输出、任务临时目录（创建策略由任务处理器按下载类型注入，见
+ * {@link DownloadTempDirCreator}），以及中断协作能力。</p>
  *
  * <p><b>中断语义：</b>任务处理器把 Worker SDK 的中断指令转发到 {@link #cancel()}；已注册的取消回调
  * （关闭下载流、终止外部进程任务等）会被立即执行，且 {@link #isCancelled()} 变为 {@code true}。
@@ -60,6 +61,14 @@ public class DownloadContext {
     private final Consumer<String> taskNameReporter;
 
     /**
+     * 任务临时目录创建策略（由任务处理器按下载类型选择；为 {@code null} 时使用默认策略）。
+     *
+     * <p>HTTP / Git 等类型使用默认策略（本服务 JVM 临时目录）；磁力链 / 种子可注入 aria2 共享工作区
+     * 策略，使 aria2 容器写入的任务目录对本服务可见。</p>
+     */
+    private final DownloadTempDirCreator tempDirCreator;
+
+    /**
      * 最近一次已上报的任务展示名，用于去重（避免轮询期间重复写库）。
      */
     private final AtomicReference<String> reportedTaskName = new AtomicReference<>();
@@ -70,18 +79,18 @@ public class DownloadContext {
     private volatile Path tempDir;
 
     /**
-     * 构造执行上下文（不上报任务展示名）。
+     * 构造执行上下文（不上报任务展示名，使用默认的临时目录策略）。
      *
      * @param execution Worker 的任务执行上下文，不能为 {@code null}
      * @param params    下载任务参数，不能为 {@code null}
      * @throws IllegalArgumentException 入参为 {@code null} 时抛出
      */
     public DownloadContext(SfcTaskExecution execution, DownloadTaskParams params) {
-        this(execution, params, null);
+        this(execution, params, null, null);
     }
 
     /**
-     * 构造执行上下文。
+     * 构造执行上下文（使用默认的临时目录策略）。
      *
      * @param execution        Worker 的任务执行上下文，不能为 {@code null}
      * @param params           下载任务参数，不能为 {@code null}
@@ -89,6 +98,21 @@ public class DownloadContext {
      * @throws IllegalArgumentException 任务执行上下文或下载参数为 {@code null} 时抛出
      */
     public DownloadContext(SfcTaskExecution execution, DownloadTaskParams params, Consumer<String> taskNameReporter) {
+        this(execution, params, taskNameReporter, null);
+    }
+
+    /**
+     * 构造执行上下文（可指定任务展示名上报回调与临时目录策略）。
+     *
+     * @param execution        Worker 的任务执行上下文，不能为 {@code null}
+     * @param params           下载任务参数，不能为 {@code null}
+     * @param taskNameReporter 任务展示名上报回调，为 {@code null} 表示不上报
+     * @param tempDirCreator   任务临时目录创建策略；为 {@code null} 时使用
+     *                         {@link DownloadFileUtils#createTaskTempDir(String)} 作为默认策略
+     * @throws IllegalArgumentException 任务执行上下文或下载参数为 {@code null} 时抛出
+     */
+    public DownloadContext(SfcTaskExecution execution, DownloadTaskParams params, Consumer<String> taskNameReporter,
+                           DownloadTempDirCreator tempDirCreator) {
         if (execution == null) {
             throw new IllegalArgumentException("任务执行上下文不能为空");
         }
@@ -98,6 +122,7 @@ public class DownloadContext {
         this.execution = execution;
         this.params = params;
         this.taskNameReporter = taskNameReporter;
+        this.tempDirCreator = tempDirCreator == null ? DownloadFileUtils::createTaskTempDir : tempDirCreator;
     }
 
     /**
@@ -128,10 +153,12 @@ public class DownloadContext {
     }
 
     /**
-     * 获取本次任务的本地临时目录（首次调用时创建）。
+     * 获取本次任务的本地临时目录（首次调用时按注入的策略创建）。
      *
-     * <p>目录位于 {@code ${java.io.tmpdir}/offline-download/<下载任务id>-<UUID>}，任务结束时由
-     * 任务处理器递归删除；同一次执行内多次调用返回同一目录。</p>
+     * <p>未注入自定义策略时，目录位于
+     * {@code ${java.io.tmpdir}/offline-download/<下载任务id>-<UUID>}；磁力链 / 种子任务可注入 aria2
+     * 共享工作区策略，此时目录位于 {@code <sharedDir>/offline-download/<下载任务id>-<UUID>}。
+     * 任务结束时由任务处理器递归删除；同一次执行内多次调用返回同一目录。</p>
      *
      * @return 已创建的任务临时目录
      * @throws SfcJsonException 目录创建失败时抛出（HTTP 500 语义）
@@ -144,7 +171,7 @@ public class DownloadContext {
         synchronized (this) {
             if (tempDir == null) {
                 try {
-                    tempDir = DownloadFileUtils.createTaskTempDir(taskFlag());
+                    tempDir = tempDirCreator.create(taskFlag());
                 } catch (IOException e) {
                     throw new SfcJsonException(500, "创建下载临时目录失败: " + e.getMessage());
                 }

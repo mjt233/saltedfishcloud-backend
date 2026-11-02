@@ -105,7 +105,7 @@ public class DownloadServiceImpl implements DownloadService {
     /** 下载引擎注册表（类型解析、创建期统一校验、能力声明） */
     private final DownloadEngineRegistry engineRegistry;
 
-    /** 统一配置访问入口（能力接口的 refresh 参数用于强制刷新其缓存） */
+    /** Git 统一配置访问入口（能力接口的 refresh 参数用于强制刷新其缓存；aria2 为部署期配置） */
     private final SfcDownloadConfigService configService;
 
     /**
@@ -279,19 +279,24 @@ public class DownloadServiceImpl implements DownloadService {
      *
      * <p><b>两个参数语义：</b></p>
      * <ul>
-     *   <li>{@code refresh=false}：直接读取引擎注册表汇总出的能力，走统一配置的本地缓存（默认 5 秒 TTL）；</li>
-     *   <li>{@code refresh=true}：先强制刷新统一配置快照，再汇总能力，用于「管理员刚在 core 后台打开 aria2，
-     *       需要立刻验证」的场景。</li>
+     *   <li>{@code refresh=false}：直接读取引擎注册表汇总出的能力，走 Git 统一配置的本地缓存（默认 5 秒 TTL）；</li>
+     *   <li>{@code refresh=true}：先强制刷新 Git 统一配置快照，再汇总能力，用于「管理员刚在 core 后台改完
+     *       Git 配置，需要立刻验证」的场景。</li>
      * </ul>
      *
-     * <p><b>注意：</b>强制刷新只作用于统一配置，不会顺带清空引擎自身的外部依赖探活缓存
+     * <p><b>aria2 配置说明：</b>aria2 的全部参数（开关、RPC 地址、令牌、轮询间隔、共享目录等）属于
+     * <b>部署期配置</b>（{@code sfc.download.aria2.*}，可用 {@code SFC_DOWNLOAD_ARIA2_*} 环境变量覆盖），
+     * 在本服务启动时绑定，修改后需重启本服务；因此 {@code refresh} 参数不会刷新 aria2 配置。</p>
+     *
+     * <p><b>注意：</b>强制刷新只作用于 Git 统一配置，不会顺带清空引擎自身的外部依赖探活缓存
      * （aria2 RPC 探活结果按 {@code sfc.download.capability.cache-seconds} 缓存，最多 30 秒自然更新）。
      * 因此 {@code refresh=true} 后立即看到的结果，若探活缓存仍处于「上一次失败」的有效期内，可能仍是不可用状态。</p>
      */
     @Override
     public List<DownloadCapability> listCapabilities(boolean refresh) {
         if (refresh) {
-            log.info("{}收到刷新下载能力请求，先强制刷新统一配置快照", LOG_PREFIX);
+            log.info("{}收到刷新下载能力请求，先强制刷新 Git 统一配置快照"
+                    + "（aria2 为部署期配置，修改后需重启本服务）", LOG_PREFIX);
             configService.refresh();
         }
         return engineRegistry.capabilities();

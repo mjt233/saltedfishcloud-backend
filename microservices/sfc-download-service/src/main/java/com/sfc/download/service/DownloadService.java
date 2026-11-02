@@ -96,9 +96,11 @@ public interface DownloadService {
      * <p>数据来源是容器中已注册的 {@link com.sfc.download.engine.DownloadEngine}，<b>不访问 core</b>：
      * 即使 core 不可用，前端也应当能拿到类型清单并据此渲染表单。</p>
      *
-     * @param refresh 是否在返回前强制刷新统一配置快照；{@code true} 用于「管理员刚在 core 后台改完配置、
-     *                需要立即验证」的场景，{@code false} 时走配置缓存（默认最多 5 秒自动生效）。
-     *                无论取值如何，引擎自身的外部依赖探活结果另有 30 秒缓存，最多 30 秒后自然更新
+     * @param refresh 是否在返回前强制刷新<b>Git 统一配置</b>快照；{@code true} 用于「管理员刚在 core
+     *                后台改完 Git 配置、需要立即验证」的场景，{@code false} 时走配置缓存（默认最多
+     *                5 秒自动生效）。aria2 为部署期配置（{@code sfc.download.aria2.*}），修改后需重启
+     *                本服务，本参数对其无效；无论取值如何，引擎自身的外部依赖探活结果另有 30 秒缓存，
+     *                最多 30 秒后自然更新
      * @return 能力声明列表；无任何引擎被装配时返回空列表
      */
     List<DownloadCapability> listCapabilities(boolean refresh);

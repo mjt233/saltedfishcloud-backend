@@ -9,6 +9,11 @@
 > （`ssh://` 与 `git@host:path`，需用户级 SSH 凭据与主机密钥信任记录），因此表中 **T7「本期不支持 SSH 协议」的结论已失效**；
 > 最新能力与接口契约见 [`docs/extension/download.md`](../../../docs/extension/download.md) 与
 > [`README.md`](../README.md)。
+>
+> **配置方式说明（历史记录）**：本报告执行时 aria2 配置存于 core 统一配置表（后台「插件配置」面板，热生效）。
+> 现行机制已迁至**部署配置** `sfc.download.aria2.*`（环境变量 `SFC_DOWNLOAD_ARIA2_*`，修改后需重启），
+> 后台面板仅保留 Git 参数与「SSH 凭据管理」；因此 T12 / T13 / T14 及环境快照、环境恢复中的「统一配置」
+> 记录均为历史证据，不再代表当前配置方式。
 
 ---
 

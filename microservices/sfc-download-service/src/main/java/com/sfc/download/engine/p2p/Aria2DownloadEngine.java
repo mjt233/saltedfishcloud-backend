@@ -7,7 +7,7 @@ import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.model.ConfigNode;
 import com.sfc.common.utils.SfcMapperHolder;
 import com.sfc.common.utils.SfcStringUtils;
-import com.sfc.download.config.SfcDownloadConfigService;
+import com.sfc.download.config.Aria2Properties;
 import com.sfc.download.config.SfcDownloadInternalProperties;
 import com.sfc.download.constant.DownloadOptionKeys;
 import com.sfc.download.constant.DownloadTaskConstants;
@@ -16,7 +16,6 @@ import com.sfc.download.engine.DownloadContext;
 import com.sfc.download.engine.DownloadEngine;
 import com.sfc.download.engine.DownloadType;
 import com.sfc.download.model.DownloadTaskParams;
-import com.sfc.download.model.property.Aria2Property;
 import com.sfc.download.util.DownloadFileUtils;
 import com.sfc.download.util.DownloadProxyUtils;
 import com.sfc.download.util.DownloadTaskNameUtils;
@@ -52,9 +51,16 @@ import java.util.concurrent.atomic.AtomicReference;
  * {@code DownloadTaskParams#type} 区分本次任务的具体形态——该字段由调用方在创建任务时显式指定，
  * 引擎不做任何猜测。</p>
  *
- * <p><b>部署前提：</b>aria2c 必须与下载服务<b>同机</b>运行，且允许本服务通过 JSON-RPC 指定每个任务的
- * 下载目录（{@code dir} 选项）。本服务把每个任务的产物放在自己的临时目录下，下载完成后直接读取该目录
- * 并上传网盘，因此跨机部署的 aria2 无法使用（读取不到文件）。</p>
+ * <p><b>部署前提：</b>aria2c 需通过 JSON-RPC 可达，且允许本服务通过 JSON-RPC 指定每个任务的下载目录
+ * （{@code dir} 选项）。产物读取有两种部署方式：</p>
+ * <ul>
+ *   <li><b>同机部署</b>：aria2 与下载服务在同一文件系统下运行，直接使用本服务的任务临时目录；</li>
+ *   <li><b>跨容器部署</b>：把同一个宿主目录分别挂载到两个容器，并配置部署参数 {@code shared-dir}
+ *       （本服务侧路径）与 {@code remote-dir}（aria2 侧路径）。此时任务目录落在共享工作区
+ *       {@code <shared-dir>/offline-download} 下，提交 aria2 时 {@code dir} 使用映射后的 aria2 侧
+ *       路径，采集产物时再反向映射回本服务可见路径（见 {@link Aria2Workspace}）。</li>
+ * </ul>
+ * <p>两者都要求 aria2 实际写入的目录能被本服务读到，否则会因产物采集为空而失败。</p>
  *
  * <p><b>选项安全：</b>用户只能通过 {@link DownloadOptionKeys#ARIA2_OPTIONS} 传入白名单内的 aria2 选项；
  * 涉及本地路径的 {@code dir}、{@code out} 等由服务端强制设置，用户传入会被丢弃，避免越权写盘。</p>
@@ -224,14 +230,32 @@ public class Aria2DownloadEngine implements DownloadEngine {
     private static final int MAX_DIAGNOSTIC_PATH_LENGTH = 160;
 
     /**
+     * 跨容器共享目录模式下，等待 aria2 产物对本服务可见的最大重试次数。
+     *
+     * <p>aria2 报「完成」与本服务通过另一容器挂载看到文件之间可能短暂不一致（挂载缓存、写回延迟），
+     * 因此对暂时不存在的产物做有界重试，避免误判为空产物。</p>
+     */
+    private static final int ARTIFACT_VISIBILITY_RETRIES = 10;
+
+    /**
+     * 跨容器共享目录模式下，等待 aria2 产物可见的重试间隔（毫秒）；10 次 × 200ms ≈ 2 秒。
+     */
+    private static final long ARTIFACT_VISIBILITY_INTERVAL_MILLIS = 200L;
+
+    /**
      * aria2 JSON-RPC 客户端。
      */
     private final Aria2Client aria2Client;
 
     /**
-     * 统一配置访问入口（aria2 的开关、RPC 地址、轮询间隔等）。
+     * aria2 部署期配置（开关、RPC 地址、轮询间隔、共享目录等；启动时绑定，修改后需重启）。
      */
-    private final SfcDownloadConfigService configService;
+    private final Aria2Properties aria2Properties;
+
+    /**
+     * aria2 共享工作区：负责任务目录创建与「本服务 ↔ aria2」双向路径映射。
+     */
+    private final Aria2Workspace aria2Workspace;
 
     /**
      * 本服务的内部调优配置（能力探测缓存时长）。
@@ -346,20 +370,21 @@ public class Aria2DownloadEngine implements DownloadEngine {
      *
      * <p>判定顺序：</p>
      * <ol>
-     *   <li>统一配置中的 {@code download.aria2.enabled} 为 false → 明确提示去 core 后台开启；</li>
+     *   <li>部署配置中的 {@code sfc.download.aria2.enabled} 为 false → 明确提示通过部署配置开启；</li>
+     *   <li>共享目录配置非法 → 返回「共享目录不可用 + 原因」；</li>
      *   <li>调用 {@code aria2.getVersion} 探活，失败 → 返回「RPC 不可达 + 地址 + 原因」。</li>
      * </ol>
      *
      * <p>探活结果按 {@code sfc.download.capability.cache-seconds} 缓存，避免每次创建任务与查询能力
      * 都打一次 RPC。</p>
      *
-     * @return 不可用原因；aria2 已启用且 RPC 可达时返回 {@code null}
+     * @return 不可用原因；aria2 已启用且共享目录与 RPC 均正常时返回 {@code null}
      */
     @Override
     public String unavailableReason() {
-        Aria2Property config = configService.getAria2();
-        if (!Boolean.TRUE.equals(config.getEnabled())) {
-            return "aria2 未启用：请在 core 后台「离线下载」配置中开启，并填写 aria2c 的 RPC 地址与令牌";
+        if (!Boolean.TRUE.equals(aria2Properties.getEnabled())) {
+            return "aria2 未启用：请通过部署配置 sfc.download.aria2.enabled=true"
+                    + "（环境变量 SFC_DOWNLOAD_ARIA2_ENABLED）开启，并配置 RPC 地址与令牌";
         }
 
         long now = System.currentTimeMillis();
@@ -368,7 +393,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
             return cached.reason();
         }
 
-        String reason = probe(config);
+        String reason = probe();
         long cacheSeconds = Math.max(1L, internalProperties.getCapability().getCacheSeconds());
         probeCache.set(new Probe(reason, System.currentTimeMillis() + cacheSeconds * 1000L));
         return reason;
@@ -380,7 +405,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * <p>只做「提交前即可判定」的校验，不发起网络请求：</p>
      * <ul>
      *   <li>{@link DownloadOptionKeys#ARIA2_OPTIONS} 必须是合法的 JSON 对象文本；</li>
-     *   <li>Base64 种子内容不得超过 {@code download.aria2.torrent-max-size}（MB）。</li>
+     *   <li>Base64 种子内容不得超过 {@code sfc.download.aria2.torrent-max-size}（MB）。</li>
      * </ul>
      *
      * @param params 下载任务参数
@@ -397,7 +422,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
         if (!SfcStringUtils.hasText(params.torrentBase64)) {
             return;
         }
-        long maxBytes = maxTorrentBytes(configService.getAria2());
+        long maxBytes = maxTorrentBytes(aria2Properties);
         long actualBytes = estimateBase64Bytes(params.torrentBase64);
         if (actualBytes > maxBytes) {
             throw new SfcJsonException(400, "种子文件超过上限 " + (maxBytes / BYTES_PER_MB) + " MB");
@@ -430,20 +455,22 @@ public class Aria2DownloadEngine implements DownloadEngine {
     @Override
     public List<DownloadArtifact> execute(DownloadContext context) {
         DownloadTaskParams params = context.getParams();
-        Aria2Property config = configService.getAria2();
         Path tempDir = context.getTempDir();
-        Map<String, String> options = buildAria2Options(context, config, tempDir);
+        Map<String, String> options = buildAria2Options(context, tempDir);
+        String aria2Dir = options.get("dir");
+        // 跨容器部署时排障最关键的信息就是这层映射，执行开始即输出一次到任务日志
+        context.log("aria2 下载目录映射: " + aria2Workspace.describeMapping());
 
         Aria2Session session = new Aria2Session(submit(context, params, options));
         context.log("已提交 aria2 下载任务: gid=" + session.primaryGid());
-        log.info("{}aria2 任务已提交: downloadId={}, gid={}, type={}, dir={}",
-                LOG_PREFIX, context.getDownloadId(), session.primaryGid(), params.type, tempDir);
+        log.info("{}aria2 任务已提交: downloadId={}, gid={}, type={}, aria2Dir={}, localDir={}",
+                LOG_PREFIX, context.getDownloadId(), session.primaryGid(), params.type, aria2Dir, tempDir);
         // 中断时可能已经跟随出内容 gid，因此这里遍历「当下」的全部 gid（并发安全集合），
         // 而不是只移除最初提交的那个元数据 gid
         context.registerCanceller(() -> session.gids().forEach(aria2Client::forceRemove));
 
         try {
-            Map<String, Object> status = awaitCompletion(context, config, session);
+            Map<String, Object> status = awaitCompletion(context, session);
             List<DownloadArtifact> artifacts = collectArtifacts(context, tempDir, status);
             context.log("aria2 下载完成，文件数 " + artifacts.size());
             log.info("{}aria2 下载完成: downloadId={}, gid={}, 文件数={}",
@@ -492,9 +519,9 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 按 URL 拉取 {@code .torrent} 文件内容并编码为 Base64。
      *
-     * <p>响应体流式写入任务临时目录下的临时文件，写入过程中强制 {@code download.aria2.torrent-max-size}
-     * 上限；校验通过后读取文件内容并编码为 Base64，临时文件在方法返回前删除。代理取自任务参数的代理
-     * 快照（HTTP / SOCKS 均支持），未配置代理时直连。</p>
+     * <p>响应体流式写入任务临时目录下的临时文件，写入过程中强制
+     * {@code sfc.download.aria2.torrent-max-size} 上限；校验通过后读取文件内容并编码为 Base64，
+     * 临时文件在方法返回前删除。代理取自任务参数的代理快照（HTTP / SOCKS 均支持），未配置代理时直连。</p>
      *
      * @param context 执行上下文
      * @param url     种子文件地址
@@ -512,7 +539,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
         context.log("开始获取种子文件: " + target + "，代理: " + proxyDescription);
         context.checkInterrupted();
 
-        long maxBytes = maxTorrentBytes(configService.getAria2());
+        long maxBytes = maxTorrentBytes(aria2Properties);
         Path torrentFile;
         try {
             torrentFile = Files.createTempFile(context.getTempDir(), TORRENT_TEMP_FILE_PREFIX, TORRENT_SUFFIX);
@@ -579,22 +606,21 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 装配本次任务提交给 aria2 的选项。
      *
-     * <p>服务端强制项：{@code dir}（任务临时目录）、{@code seed-time=0}（下载完成即停止做种，
-     * 避免占用进程与文件句柄）、{@code bt-save-metadata=false}；
+     * <p>服务端强制项：{@code dir}（任务临时目录映射后的 aria2 侧目录）、{@code seed-time=0}
+     * （下载完成即停止做种，避免占用进程与文件句柄）、{@code bt-save-metadata=false}；
      * 用户选项仅白名单键生效；代理仅在 HTTP 类型代理下透传。</p>
      *
      * <p><b>刻意不设置 {@code follow-torrent}：</b>磁力链依赖 aria2 的「元数据 → 内容」自动跟进，
      * 把它设为 {@code false} 会导致任务在拿到元数据后就 complete 但零产物，详见方法内注释。</p>
      *
      * @param context 执行上下文
-     * @param config  aria2 配置
      * @param tempDir 任务临时目录
      * @return aria2 选项键值对
      */
-    private Map<String, String> buildAria2Options(DownloadContext context, Aria2Property config, Path tempDir) {
+    private Map<String, String> buildAria2Options(DownloadContext context, Path tempDir) {
         Map<String, String> options = new LinkedHashMap<>();
-        // 强制项：下载目录必须落在本服务可读的任务临时目录内
-        options.put("dir", tempDir.toAbsolutePath().normalize().toString());
+        // 强制项：下载目录按共享目录映射换算成 aria2 侧路径；未启用共享目录时即本服务任务临时目录
+        options.put("dir", aria2Workspace.toAria2Dir(tempDir));
         options.put("seed-time", "0");
         options.put("bt-save-metadata", "false");
         // 刻意不设置 follow-torrent：磁力链的流程是「先通过 DHT 拿到元数据（本质就是一个 torrent），
@@ -699,15 +725,14 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * 只有全部 gid 都终止才算任务结束。</p>
      *
      * @param context 执行上下文
-     * @param config  aria2 配置
      * @param session 本次任务的会话（含已跟踪的全部 gid）
      * @return 内容 gid 的完成状态快照
      * @throws SfcTaskInterruptedException 任务被中断时抛出
      * @throws SfcJsonException           aria2 报错、跟随层级异常、停滞超时或 RPC 失败时抛出
      */
-    private Map<String, Object> awaitCompletion(DownloadContext context, Aria2Property config, Aria2Session session) {
-        long pollIntervalMillis = positive(config.getPollInterval(), DEFAULT_POLL_INTERVAL_MILLIS);
-        long stallTimeoutMillis = positive(config.getStallTimeout(), DEFAULT_STALL_TIMEOUT_SECONDS) * 1000L;
+    private Map<String, Object> awaitCompletion(DownloadContext context, Aria2Session session) {
+        long pollIntervalMillis = positive(aria2Properties.getPollInterval(), DEFAULT_POLL_INTERVAL_MILLIS);
+        long stallTimeoutMillis = positive(aria2Properties.getStallTimeout(), DEFAULT_STALL_TIMEOUT_SECONDS) * 1000L;
         long lastProgressAt = System.currentTimeMillis();
         long lastLoadedSum = -1L;
         int followDepth = 0;
@@ -898,8 +923,12 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 从 aria2 的状态快照中采集本地产物。
      *
-     * <p>aria2 的 {@code files[].path} 是绝对路径，且一定位于本次任务的 {@code dir} 之下；
-     * 这里按任务临时目录计算相对路径交给落盘服务。</p>
+     * <p>aria2 的 {@code files[].path} 是 aria2 侧的绝对路径，且一定位于本次任务映射后的
+     * {@code dir} 之下；这里先按共享目录映射换算为本服务可见路径，再相对任务临时目录计算产物路径
+     * 交给落盘服务。未启用共享目录时映射为恒等变换，与改造前行为一致。</p>
+     *
+     * <p><b>跨容器可见性：</b>共享目录模式下，aria2 报完成与本服务看到文件之间可能有短暂延迟，
+     * 因此对暂时不存在的产物做约 2 秒的有界重试；重试期间响应中断。</p>
      *
      * @param context 执行上下文
      * @param tempDir 任务临时目录
@@ -928,7 +957,16 @@ public class Aria2DownloadEngine implements DownloadEngine {
                         LOG_PREFIX, context.getDownloadId(), path);
                 continue;
             }
-            Path localPath = Path.of(path);
+            Path localPath = aria2Workspace.toLocalArtifactPath(path);
+            if (localPath == null) {
+                // 不在共享目录映射前缀内、或包含越界片段：跳过并记录 WARN，便于排查挂载/配置问题
+                log.warn("{}跳过无法映射到本服务路径的 aria2 产物: downloadId={}, aria2Path={}, 映射={}",
+                        LOG_PREFIX, context.getDownloadId(), path, aria2Workspace.describeMapping());
+                continue;
+            }
+            if (aria2Workspace.isSharedEnabled() && !Files.exists(localPath)) {
+                localPath = awaitArtifactVisible(context, localPath);
+            }
             if (!Files.isRegularFile(localPath)) {
                 log.debug("{}跳过不存在的 aria2 产物: downloadId={}, path={}",
                         LOG_PREFIX, context.getDownloadId(), localPath);
@@ -949,20 +987,44 @@ public class Aria2DownloadEngine implements DownloadEngine {
     }
 
     /**
+     * 在共享目录模式下等待产物文件可见（约 2 秒的有界重试）。
+     *
+     * <p>跨容器共享卷时，aria2 报「完成」与本服务通过另一挂载点看到文件之间可能存在短暂延迟
+     * （挂载缓存、写回延迟等）；这里做 10 次 × 200ms 的重试，期间响任务中断。</p>
+     *
+     * @param context 执行上下文（用于响应中断）
+     * @param path    期望可见的本地产物路径
+     * @return 重试结束后的路径（可能仍不存在，由调用方按「文件不存在」跳过）
+     * @throws SfcTaskInterruptedException 等待期间任务被中断时抛出
+     */
+    private static Path awaitArtifactVisible(DownloadContext context, Path path) {
+        for (int attempt = 0; attempt < ARTIFACT_VISIBILITY_RETRIES; attempt++) {
+            if (Files.exists(path)) {
+                return path;
+            }
+            context.checkInterrupted();
+            sleep(context, ARTIFACT_VISIBILITY_INTERVAL_MILLIS);
+        }
+        return path;
+    }
+
+    /**
      * 生成「任务已完成但采集不到产物」时的诊断摘要。
      *
      * <p>把 aria2 报告的种子名、文件数以及前若干个 {@code path}/{@code length} 拼进异常消息，
-     * 便于一眼区分「aria2 确实没产出任何文件」与「产出了但路径没匹配上（例如落在任务临时目录之外）」。</p>
+     * 便于一眼区分「aria2 确实没产出任何文件」与「产出了但路径没匹配上（例如落在任务临时目录之外）」；
+     * 共享目录模式下再追加当前目录映射，方便排查跨容器挂载配置。</p>
      *
      * @param status aria2 的完成状态快照
      * @return 单行诊断摘要，永不为 {@code null}
      */
-    private static String describeArtifactStatus(Map<String, Object> status) {
+    private String describeArtifactStatus(Map<String, Object> status) {
         StringBuilder builder = new StringBuilder();
         builder.append("种子名=").append(bittorrentName(status));
         Object filesRaw = status.get("files");
         if (!(filesRaw instanceof List<?> files)) {
             builder.append("，aria2 未返回 files 字段");
+            appendMappingIfShared(builder);
             return builder.toString();
         }
         builder.append("，aria2 报告文件数=").append(files.size());
@@ -977,7 +1039,19 @@ public class Aria2DownloadEngine implements DownloadEngine {
         if (files.size() > limit) {
             builder.append("，……其余 ").append(files.size() - limit).append(" 个文件省略");
         }
+        appendMappingIfShared(builder);
         return builder.toString();
+    }
+
+    /**
+     * 共享目录模式下把当前路径映射追加到诊断摘要中。
+     *
+     * @param builder 诊断摘要构建器
+     */
+    private void appendMappingIfShared(StringBuilder builder) {
+        if (aria2Workspace.isSharedEnabled()) {
+            builder.append("，目录映射=").append(aria2Workspace.describeMapping());
+        }
     }
 
     /**
@@ -1014,19 +1088,29 @@ public class Aria2DownloadEngine implements DownloadEngine {
     // ==================== 能力探测 ====================
 
     /**
-     * 执行一次 aria2 探活。
+     * 执行一次 aria2 探活：先校验共享目录配置，再调用 RPC {@code getVersion}。
      *
-     * @param config aria2 配置
      * @return 不可用原因；可用时返回 {@code null}
      */
-    private String probe(Aria2Property config) {
+    private String probe() {
+        String invalidWorkspace = aria2Workspace.validate();
+        if (SfcStringUtils.hasText(invalidWorkspace)) {
+            log.debug("{}aria2 共享目录配置无效: cause={}", LOG_PREFIX, invalidWorkspace);
+            return "aria2 共享目录不可用：" + invalidWorkspace;
+        }
+        String rpcUrl = SfcStringUtils.hasText(aria2Properties.getRpcUrl())
+                ? aria2Properties.getRpcUrl().trim()
+                : Aria2Properties.DEFAULT_RPC_URL;
         try {
             String version = aria2Client.getVersion();
-            log.debug("{}aria2 探活成功: rpcUrl={}, version={}", LOG_PREFIX, config.getRpcUrl(), version);
+            log.debug("{}aria2 探活成功: rpcUrl={}, version={}, mapping={}",
+                    LOG_PREFIX, rpcUrl, version, aria2Workspace.describeMapping());
             return null;
         } catch (RuntimeException e) {
-            log.debug("{}aria2 探活失败: rpcUrl={}, cause={}", LOG_PREFIX, config.getRpcUrl(), e.toString());
-            return "aria2 RPC 不可达（" + config.getRpcUrl() + "）：" + describe(e);
+            log.debug("{}aria2 探活失败: rpcUrl={}, mapping={}, cause={}",
+                    LOG_PREFIX, rpcUrl, aria2Workspace.describeMapping(), e.toString());
+            return "aria2 RPC 不可达（" + rpcUrl + "）：" + describe(e)
+                    + "；目录映射=" + aria2Workspace.describeMapping();
         }
     }
 
@@ -1035,10 +1119,10 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 计算种子文件允许的最大字节数。
      *
-     * @param config aria2 配置
+     * @param config aria2 部署配置
      * @return 最大字节数
      */
-    private static long maxTorrentBytes(Aria2Property config) {
+    private static long maxTorrentBytes(Aria2Properties config) {
         long maxMb = config.getTorrentMaxSize() == null || config.getTorrentMaxSize() <= 0
                 ? DEFAULT_TORRENT_MAX_SIZE_MB
                 : config.getTorrentMaxSize();

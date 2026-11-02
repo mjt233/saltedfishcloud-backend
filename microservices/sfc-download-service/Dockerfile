@@ -18,7 +18,21 @@
 #     saltedfishcloud/sfc-download-service:latest
 #   改用 Nacos 注册中心：
 #     -e SFC_LOCAL_ENABLED=false -e NACOS_ENABLED=true -e NACOS_SERVER_ADDR=<nacos 地址>:8848
-#   ⚠️ 离线下载的 aria2 / Git 业务参数由 core 的管理端「插件配置」统一管理，不在本镜像里配置。
+#
+# P2P（aria2）为可选的部署期配置，修改后需重启容器：
+#   · 同机部署：只需 -e SFC_DOWNLOAD_ARIA2_ENABLED=true（rpc-url 默认 http://127.0.0.1:6800/jsonrpc，
+#     secret 与 aria2c --rpc-secret 保持一致）；
+#   · 跨容器部署：与 aria2 容器挂载【同一共享卷】，并显式配置两侧路径映射，例如：
+#       -v /host/shared:/shared/download \
+#       -e SFC_DOWNLOAD_ARIA2_ENABLED=true \
+#       -e SFC_DOWNLOAD_ARIA2_RPC_URL=http://aria2:6800/jsonrpc \
+#       -e SFC_DOWNLOAD_ARIA2_SECRET=<与 aria2c --rpc-secret 一致的令牌> \
+#       -e SFC_DOWNLOAD_ARIA2_SHARED_DIR=/shared/download \
+#       -e SFC_DOWNLOAD_ARIA2_REMOTE_DIR=/downloads
+#     ⚠️ secret 建议用 docker secrets / 受控环境变量注入，禁止把明文提交到仓库。
+#
+# 配置来源：Git 业务参数由 core 管理端「插件配置」统一管理（改完 ≤5 秒生效）；
+#          aria2 全部参数由部署配置（环境变量 / application.yml）控制，修改后需重启容器。
 
 # ============================== 构建阶段 ==============================
 FROM maven:3.9.11-amazoncorretto-25-al2023 AS build

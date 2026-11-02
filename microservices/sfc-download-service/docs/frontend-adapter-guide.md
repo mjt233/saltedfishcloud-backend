@@ -91,7 +91,7 @@ GET /api/task/download/capabilities?refresh=false
 
 | 参数 | 位置 | 必填 | 默认 | 说明 |
 |---|---|---|---|---|
-| `refresh` | query | 否 | `false` | `true` 时先强制刷新服务端的统一配置快照（配置默认 5 秒缓存）。**不会**清空 aria2 连通性探测缓存（约 30 秒），因此刚打开 aria2 开关后可能仍需等待其自然过期 |
+| `refresh` | query | 否 | `false` | `true` 时先强制刷新 core 统一配置（Git 参数）快照（默认 5 秒缓存）。**不会**清空 aria2 连通性探测缓存（约 30 秒）；aria2 参数为部署期配置，修改后需重启服务，`refresh=true` 无法让其立即生效 |
 
 ### 4.2 响应示例
 
@@ -129,7 +129,7 @@ GET /api/task/download/capabilities?refresh=false
       "name": "磁力链",
       "engineId": "aria2",
       "available": false,
-      "reason": "aria2 未启用：请在 core 后台「离线下载」配置中开启，并填写 aria2c 的 RPC 地址与令牌",
+      "reason": "<aria2 不可用的原因，前端可直接展示；管理员需检查部署配置（sfc.download.aria2.enabled、rpc-url 与共享目录）>",
       "options": [
         { "name": "aria2Options", "title": "aria2 选项", "inputType": "textarea", "sort": "10", "required": false, "describe": "JSON 对象文本，例如 {\"split\":\"16\"}；键为 aria2 原生选项名，值统一按字符串传入。服务端只放行白名单键：split、max-connection-per-server、min-split-size、bt-tracker、max-download-limit、max-overall-download-limit、continue、user-agent、referer；dir/out 等涉及本地路径的选项由服务端强制控制，用户传入会被丢弃" }
       ]
@@ -139,7 +139,7 @@ GET /api/task/download/capabilities?refresh=false
       "name": "种子",
       "engineId": "aria2",
       "available": false,
-      "reason": "aria2 未启用：请在 core 后台「离线下载」配置中开启，并填写 aria2c 的 RPC 地址与令牌",
+      "reason": "<aria2 不可用的原因，前端可直接展示；管理员需检查部署配置（sfc.download.aria2.enabled、rpc-url 与共享目录）>",
       "options": [
         { "name": "aria2Options", "title": "aria2 选项", "inputType": "textarea", "sort": "10", "required": false, "describe": "……同 MAGNET……" }
       ]
@@ -448,7 +448,7 @@ async function readTorrentAsBase64(file) {
 }
 ```
 
-> 体积上限由服务端配置 `download.aria2.torrent-max-size` 控制（默认 **2 MB**，按 Base64 长度折算字节），超限返回 `code=400`「种子文件超过上限 N MB」。前端建议在上传前就做体积校验并提示用户改用 `.torrent` 地址。
+> 体积上限由服务端部署配置 `sfc.download.aria2.torrent-max-size`（环境变量 `SFC_DOWNLOAD_ARIA2_TORRENT_MAX_SIZE`）控制（默认 **2 MB**，按 Base64 长度折算字节），超限返回 `code=400`「种子文件超过上限 N MB」。修改该配置需重启服务。前端建议在上传前就做体积校验并提示用户改用 `.torrent` 地址。
 
 ### 5.6 服务端校验顺序（决定你会先收到哪条错误）
 
@@ -786,8 +786,7 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
 | 非法类型编码 | 400（HTTP 400） | `请求体格式错误: 不支持的下载类型: FOO` |
 | 类型无引擎 | 400 | `不支持的下载类型: FOO` |
 | ed2k | 400 | `ed2k 下载引擎尚未接入，当前支持 HTTP / GIT / MAGNET / TORRENT` |
-| aria2 未启用 | 400 | `aria2 未启用：请在 core 后台「离线下载」配置中开启，并填写 aria2c 的 RPC 地址与令牌` |
-| aria2 不可达 | 400 | `aria2 RPC 不可达（http://127.0.0.1:6800/jsonrpc）：<原因>` |
+| aria2 未启用 / 不可达 | 400 | 由服务端返回的可读原因（创建接口与 `capabilities.reason` 一致，可直接展示）；管理员需检查部署配置 `sfc.download.aria2.enabled`、`rpc-url`、`secret` 与共享目录 |
 | 磁力链格式错 | 400 | `无效的磁力链: <原文>` |
 | ed2k 链接格式错 | 400 | `无效的 ed2k 链接: <原文>` |
 | HTTP 地址非法 | 400 | `无效的下载URL: <原文>` |
@@ -840,7 +839,7 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
    microservices/sfc-download-service/src/main/resources/static/
    ```
    然后重启本服务（core 会通过注册中心 metadata `sfc.plugin.autoload` 重新拉取 `/static/index.umd.js`）。
-4. **本服务未提供插件配置面板**（离线下载的 aria2/Git 参数由管理员在 core 后台的「插件配置 → 离线下载」里维护）。
+4. **配置面板只保留 Git 参数与 SSH 凭据管理**：管理员不再在 core 后台配置 aria2；aria2 全部参数为**部署期配置**（`sfc.download.aria2.*` / 环境变量），需在部署端设置并重启服务（见 §12.1）。
 5. **不要用 HTTP 状态码判断业务失败**：业务异常默认返回 **HTTP 200 + 信封 `code`**，只有请求体解析失败（HTTP 400）、参数校验失败（HTTP 422）与携带 `SfcErrorInfo` 的资源级权限异常（HTTP 403，如非创建者中断任务）会改写 HTTP 状态。请统一按 `body.code === 200` 判断成功、失败时展示 `body.msg`；这与宿主 `sfc-core` 的既有行为一致。
 6. **SSH 克隆与 GIT 代理为新增能力 / 行为变化**：
    - 新增顶层字段 `sshCredentialId`（仅 `GIT` + SSH 地址使用），不影响其它请求体；SSH 地址不提交该字段会被 `code=400` 拒绝；
@@ -862,21 +861,36 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
 
 ### 12.1 用 aria2 打开 P2P 能力
 
-管理员在 core 后台「插件配置 → 离线下载」中配置：
+aria2 参数是**部署期配置**，不再由管理员在 core 后台配置：需在部署端（`application.yml` 或环境变量）设置后
+**重启本服务**才生效。常用配置项：
 
-| 配置项 | 示例 |
-|---|---|
-| `download.aria2.enabled` | `true` |
-| `download.aria2.rpc-url` | `http://127.0.0.1:6800/jsonrpc` |
-| `download.aria2.secret` | 与 `aria2c --rpc-secret` 保持一致 |
+| 部署配置项 | 环境变量 | 示例 / 默认值 |
+|---|---|---|
+| `sfc.download.aria2.enabled` | `SFC_DOWNLOAD_ARIA2_ENABLED` | `true`（默认 `false`） |
+| `sfc.download.aria2.rpc-url` | `SFC_DOWNLOAD_ARIA2_RPC_URL` | `http://127.0.0.1:6800/jsonrpc`；跨容器填容器网络地址（如 `http://aria2:6800/jsonrpc`） |
+| `sfc.download.aria2.secret` | `SFC_DOWNLOAD_ARIA2_SECRET` | 与 `aria2c --rpc-secret` 一致；建议用环境变量 / docker secrets 注入 |
+| `sfc.download.aria2.shared-dir` | `SFC_DOWNLOAD_ARIA2_SHARED_DIR` | 跨容器部署时下载服务容器内的共享目录（如 `/shared/download`）；同机部署留空 |
+| `sfc.download.aria2.remote-dir` | `SFC_DOWNLOAD_ARIA2_REMOTE_DIR` | 跨容器部署时 aria2 容器内的同一共享目录（如 `/downloads`）；留空表示与 `shared-dir` 相同 |
 
-aria2c 启动示例（需与本服务**同机**，服务会把每个任务的 `dir` 指定到自己的临时目录）：
+aria2 的两种部署方式：
+
+- **同机部署**（不配置共享目录）：`rpc-url` 指向本机 aria2 即可，服务会把每个任务的 `dir` 指定到自己的临时目录；
+- **跨容器 / 跨机部署**：两个容器挂载同一共享卷，并配置 `shared-dir` / `remote-dir` 双路径映射；权限需对齐
+  （下载服务镜像以 root 运行，aria2 用户需可读写共享卷；compose 示例为 `PUID=0` / `PGID=0`、`UMASK=022`）。
+
+aria2c 启动示例：
 
 ```bash
+# 同机部署：RPC 仅本机可达
 aria2c --enable-rpc --rpc-listen-all=false --rpc-listen-port=6800 --rpc-secret=<令牌>
+
+# 跨容器 / 跨机部署：RPC 需容器网络可达（仅暴露在内网）
+aria2c --enable-rpc --rpc-listen-all=true --rpc-listen-port=6800 --rpc-secret=<令牌>
 ```
 
-配置保存后最长约 **5 秒**（统一配置缓存）+ **30 秒**（连通性探测缓存）生效；急着验证可调 `GET /capabilities?refresh=true` 并用 `available` 判断。
+配置修改后**重启本服务**生效；`GET /capabilities?refresh=true` 只刷新 Git 配置快照，且 aria2 连通性探测结果按
+`sfc.download.capability.cache-seconds`（默认 30 秒）缓存。前端调用 `GET /capabilities`、按 `available` 展示
+不可用原因即可，无需关心部署细节。
 
 ---
 
@@ -889,7 +903,8 @@ A：`type` 已改为必填，服务端不再按链接自动识别。前端需在
 A：说明本实例没有任何下载引擎注册成功（通常意味着启动异常），需要看服务端日志，不是前端问题。
 
 **Q：创建磁力链返回 `code=400`「aria2 未启用」？**
-A：P2P 下载依赖外部 aria2 进程，需管理员按 §12.1 配置；前端直接把 `msg` 展示给用户即可。
+A：P2P 下载依赖外部 aria2 进程，需部署端按 §12.1 配置 `sfc.download.aria2.enabled` / `rpc-url` / `secret`
+（跨容器部署还要配置共享目录）并重启本服务；前端直接把 `msg` 展示给用户即可。
 
 **Q：Git 克隆进度条看起来不准？**
 A：Git 任务的进度单位是 JGit 的「工作单元」而不是字节，进度比例准确但总量与文件大小无关；完成后的 `size` 才是真实字节数。

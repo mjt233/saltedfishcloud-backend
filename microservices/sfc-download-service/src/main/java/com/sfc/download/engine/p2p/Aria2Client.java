@@ -2,8 +2,7 @@ package com.sfc.download.engine.p2p;
 
 import com.sfc.common.utils.SfcMapperHolder;
 import com.sfc.common.utils.SfcStringUtils;
-import com.sfc.download.config.SfcDownloadConfigService;
-import com.sfc.download.model.property.Aria2Property;
+import com.sfc.download.config.Aria2Properties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -27,9 +26,9 @@ import java.util.UUID;
  * <p>只负责「把 JSON-RPC 2.0 请求发出去、把 {@code result} 拿回来」，不含任何下载业务语义；
  * 下载流程编排在 {@link Aria2DownloadEngine} 中。</p>
  *
- * <p><b>配置读取：</b>RPC 地址与令牌来自 {@code sfc-core} 的统一配置（{@link Aria2Property}），
- * 每次调用都通过 {@link SfcDownloadConfigService} 现取，因此管理员在 core 后台修改 RPC 地址后
- * 无需重启本服务（受配置缓存 TTL 约束）。</p>
+ * <p><b>配置读取：</b>RPC 地址与令牌来自本服务的部署期配置（{@link Aria2Properties}，对应
+ * {@code application.yml} 的 {@code sfc.download.aria2} 节点或 {@code SFC_DOWNLOAD_ARIA2_*} 环境
+ * 变量）。配置在服务启动时绑定，修改后需重启本服务才生效。</p>
  *
  * <p><b>令牌约定：</b>aria2 的 {@code --rpc-secret} 通过 JSON-RPC 参数列表首项
  * {@code "token:<secret>"} 传递；未配置令牌时不传该项。</p>
@@ -69,7 +68,7 @@ public class Aria2Client {
     /**
      * 配置中未填写 RPC 地址时使用的默认地址（与 aria2c 默认端口一致）。
      */
-    private static final String DEFAULT_RPC_URL = "http://127.0.0.1:6800/jsonrpc";
+    private static final String DEFAULT_RPC_URL = Aria2Properties.DEFAULT_RPC_URL;
 
     /**
      * aria2 RPC 令牌参数前缀。
@@ -89,9 +88,9 @@ public class Aria2Client {
     private static final int MAX_RESPONSE_PREVIEW_LENGTH = 512;
 
     /**
-     * 统一配置访问入口（每次调用现取 aria2 配置，不缓存配置对象）。
+     * aria2 部署期配置（启动时绑定，修改后需重启）。
      */
-    private final SfcDownloadConfigService configService;
+    private final Aria2Properties aria2Properties;
 
     /**
      * 共享的 JDK HTTP 客户端（线程安全，可被并发复用）。
@@ -230,14 +229,15 @@ public class Aria2Client {
      * @throws Aria2RpcException 传输失败、返回空响应、响应无法解析或协议返回 {@code error} 时抛出
      */
     private Object call(String method, List<Object> params) {
-        Aria2Property config = configService.getAria2();
-        String rpcUrl = SfcStringUtils.hasText(config.getRpcUrl())
-                ? config.getRpcUrl().trim()
+        String configuredRpcUrl = aria2Properties.getRpcUrl();
+        String rpcUrl = SfcStringUtils.hasText(configuredRpcUrl)
+                ? configuredRpcUrl.trim()
                 : DEFAULT_RPC_URL;
 
         List<Object> rpcParams = new ArrayList<>(params.size() + 1);
-        if (SfcStringUtils.hasText(config.getSecret())) {
-            rpcParams.add(TOKEN_PREFIX + config.getSecret().trim());
+        String secret = aria2Properties.getSecret();
+        if (SfcStringUtils.hasText(secret)) {
+            rpcParams.add(TOKEN_PREFIX + secret.trim());
         }
         rpcParams.addAll(params);
 

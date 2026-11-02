@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 public class SfcDownloadInternalProperties {
 
     /**
-     * 统一配置读取相关的内部参数。
+     * Git 统一配置读取相关的内部参数。
      */
     private Config config = new Config();
 
@@ -23,21 +23,21 @@ public class SfcDownloadInternalProperties {
     private Capability capability = new Capability();
 
     /**
-     * 统一配置读取参数。
+     * Git 统一配置读取参数。
      */
     @Data
     public static class Config {
 
         /**
-         * 统一配置快照的缓存有效期（毫秒）。
+         * Git 统一配置快照的缓存有效期（毫秒）。
          *
-         * <p>管理员在 core 后台修改配置后，最长经过该时长即在本服务生效（无需重启）。
+         * <p>管理员在 core 后台修改 Git 配置后，最长经过该时长即在本服务生效（无需重启）。
          * 取值为 {@code <= 0} 时回落到默认值 5000 毫秒。</p>
          */
         public static final long DEFAULT_REFRESH_INTERVAL_MILLIS = 5000L;
 
         /**
-         * 配置快照缓存有效期（毫秒），默认 5 秒。
+         * Git 配置快照缓存有效期（毫秒），默认 5 秒。
          */
         private long refreshIntervalMillis = DEFAULT_REFRESH_INTERVAL_MILLIS;
     }

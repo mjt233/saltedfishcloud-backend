@@ -546,8 +546,28 @@ public final class DownloadFileUtils {
      */
     public static Path createTaskTempDir(String taskFlag) throws IOException {
         cleanupStaleTempDirsOnce();
+        return createTaskTempDir(getTempDir(), taskFlag);
+    }
+
+    /**
+     * 在指定根目录下为一次下载任务创建独立的临时目录。
+     *
+     * <p>用于共享目录场景：调用方把根目录换成共享工作区（{@code <sharedDir>/offline-download}）后，
+     * 任务目录的命名规则与 {@link #createTaskTempDir(String)} 完全一致；本方法<b>不</b>触发历史残留
+     * 清理，由调用方按自己的根目录负责。</p>
+     *
+     * @param root     任务目录的根目录（必须已存在或可创建），不能为 {@code null}
+     * @param taskFlag 任务标识（通常为下载任务id），允许为 {@code null} 或空白
+     * @return 已创建的任务临时目录
+     * @throws IOException              目录创建失败时抛出
+     * @throws IllegalArgumentException 根目录为 {@code null} 时抛出
+     */
+    public static Path createTaskTempDir(Path root, String taskFlag) throws IOException {
+        if (root == null) {
+            throw new IllegalArgumentException("任务临时目录的根目录不能为空");
+        }
         String prefix = normalizeTaskFlag(taskFlag);
-        Path taskDir = getTempDir().resolve(prefix + "-" + UUID.randomUUID());
+        Path taskDir = root.resolve(prefix + "-" + UUID.randomUUID());
         return Files.createDirectories(taskDir);
     }
 
@@ -631,21 +651,38 @@ public final class DownloadFileUtils {
      * @param maxAge 最大保留时长；为 {@code null} 或负数时使用默认值 7 天
      */
     public static void cleanupStaleTempDirs(Duration maxAge) {
-        Duration age = (maxAge == null || maxAge.isNegative()) ? STALE_TEMP_DIR_MAX_AGE : maxAge;
         Path tempDir;
         try {
             tempDir = getTempDir();
         } catch (IOException e) {
             return;
         }
+        cleanupStaleTempDirs(tempDir, maxAge);
+    }
+
+    /**
+     * 尽力清理指定根目录下超过指定时长未修改的残留目录/文件。
+     *
+     * <p>与 {@link #cleanupStaleTempDirs(Duration)} 行为一致，只是把根目录换成调用方指定的目录，
+     * 供共享目录场景（{@code <sharedDir>/offline-download}）清理历史残留。根目录不存在、不可读或
+     * 删除失败都只记录 DEBUG 日志，不影响调用方。</p>
+     *
+     * @param root   待清理的根目录，为 {@code null} 时直接返回
+     * @param maxAge 最大保留时长；为 {@code null} 或负数时使用默认值 7 天
+     */
+    public static void cleanupStaleTempDirs(Path root, Duration maxAge) {
+        if (root == null) {
+            return;
+        }
+        Duration age = (maxAge == null || maxAge.isNegative()) ? STALE_TEMP_DIR_MAX_AGE : maxAge;
         long threshold = System.currentTimeMillis() - age.toMillis();
-        try (Stream<Path> children = Files.list(tempDir)) {
+        try (Stream<Path> children = Files.list(root)) {
             children.filter(child -> isStale(child, threshold))
                     .forEach(DownloadFileUtils::deleteQuietly);
         } catch (IOException | RuntimeException e) {
             // best-effort：清理失败不影响下载流程，但保留调试日志便于排查
-            log.debug("{}清理历史临时目录失败: tempDir={}, cause={}: {}",
-                    DownloadTaskConstants.LOG_PREFIX, tempDir, e.getClass().getSimpleName(), e.getMessage());
+            log.debug("{}清理历史临时目录失败: root={}, cause={}: {}",
+                    DownloadTaskConstants.LOG_PREFIX, root, e.getClass().getSimpleName(), e.getMessage());
         }
     }
 
