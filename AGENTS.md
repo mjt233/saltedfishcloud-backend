@@ -22,7 +22,7 @@
 - **sfc-core**: 主应用入口 `SaltedfishcloudApplication`，聚合 security/config/controller/service；依赖 `sfc-core-task` 与 `sfc-task-worker`，由 `com.xiaotao.saltedfishcloud.task.worker.AsyncTaskWorkerConfiguration` 把容器中的 `AsyncTaskFactory` 桥接为 SDK 的 `SfcTaskHandler`，以 `CORE` 角色内嵌 Worker 参与任务执行
 - **sfc-auth**: 内部接口（服务间调用）鉴权 SDK：共享密钥（`sfc.internal.key`）、HS256 JWT 自签与校验、Servlet 过滤器与 Feign/RestClient 适配器（不做防重放）。**不继承根 pom**（避免消费方被拖入宿主整套技术栈），同时被 `sfc-core`、`sfc-core-task`、`sfc-task-worker` 与 `microservices/` 侧依赖；单独构建 `microservices/` 前需先 `mvn -pl sfc-auth install`
 - **sfc-ext/**: 每个子目录是一个独立 Maven 模块插件，依赖 `sfc-api` 和可选 `sfc-core` API。⚠️ `sfc-ext/pom.xml` 以 `provided` 引用 `sfc-api`，而 provided 的传递依赖不会向下传递，因此**新增共享库依赖时必须在 `sfc-ext/pom.xml` 显式声明**（`sfc-common` / `sfc-common-data` 已声明）
-- **sfc-rpc / sfc-archive / 异步任务**: `com.sfc.rpc` / `com.sfc.archive` 的契约与模型位于 `sfc-api`、实现位于 `sfc-core`（不单独成模块）；**异步任务**的契约与模型在 `sfc-api`（`com.sfc.task`）、调度与控制面在独立模块 `sfc-core-task`（同包名 `com.sfc.task`）、执行侧在 `microservices/sfc-task-worker`（core 内嵌 Worker 与微服务共用；`/api/internal/task/**` 协议以 SDK 的 `com.sfc.cloud.task.worker.protocol` 为唯一来源）。所有任务统一「入队 → 按类型认领 → 执行」，执行者（core 节点与微服务实例）的能力与存活**统一以服务注册中心为准**（多 core 节点须使用 `registry-provider=nacos`），文档见 [异步任务](docs/develop/framework/async-task.md)
+- **sfc-rpc / sfc-archive / 异步任务**: `com.sfc.rpc` / `com.sfc.archive` 的契约与模型位于 `sfc-api`、实现位于 `sfc-core`（不单独成模块）；**异步任务**的契约与模型在 `sfc-api`（`com.sfc.task`）、调度与控制面在独立模块 `sfc-core-task`（同包名 `com.sfc.task`）、执行侧在 `microservices/sfc-task-worker`（core 内嵌 Worker 与微服务共用；`/api/internal/task/**` 协议以 SDK 的 `com.sfc.cloud.task.worker.protocol` 为唯一来源）。所有任务统一「入队 → 按类型认领 → 执行」，执行者（core 节点与微服务实例）的能力与存活**统一以服务注册中心为准**（多 core 节点须启用 Nacos：`SFC_LOCAL_ENABLED=false` + `NACOS_ENABLED=true`），文档见 [异步任务](docs/develop/framework/async-task.md)
 
 此外：项目根 `pom.xml` 指定的 Java 版本为 Java 25 — 请在本地构建或运行时确保 JDK 版本兼容（或使用工具链/容器）。
 
@@ -36,6 +36,7 @@
 - 异常处理：优先抛出业务自定义异常（`SfcJsonException`，位于 `sfc-common`），由全局异常处理器拦截。
 - 实体类需要getter或setter时，尽可能使用 Lombok 注解（如 @Data、@Getter、@Setter）来简化代码。
 - 涉及批量操作数据的场景，尽可能避免循环处理单条数据和循环单条操作数据库。优先考虑使用 CollectionUtils.partition 对数据拆分批次后，使用 JPA 的批量操作方法。对于批量插入新增实体类，优先考虑使用 `SfcDBUtils.batchInsert`。
+- 更新文档和JavaDoc时，不需要记录本次变更相关内容，直接覆写或删改原文本即可。
 
 ### JPA 及其实体类规范
 

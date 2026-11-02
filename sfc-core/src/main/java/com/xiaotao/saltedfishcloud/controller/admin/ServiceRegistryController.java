@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * 服务注册与发现管理接口。
  * <p>
- * 返回的是<b>注册中心视图</b>：{@code sys.service.registry-provider: local} 时即当前进程内的注册关系，
+ * 返回的是<b>注册中心视图</b>：{@code spring.cloud.sfc-local.registry.enabled: true} 时即当前进程内的注册关系，
  * 未启用微服务模式，因此只可能看到自己；集群节点列表请用 {@code GET /api/cluster/listNodes}
  * —— 两者<b>职责分离，不合并</b>。
  */

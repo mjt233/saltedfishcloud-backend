@@ -15,11 +15,12 @@ spring:
   #            NACOS_SERVER_ADDR / NACOS_GROUP / NACOS_NAMESPACE / NACOS_USERNAME / NACOS_PASSWORD
   cloud:
     sfc-local:
-      enabled: ${SFC_LOCAL_ENABLED:true}
-      server-addr: "${SFC_LOCAL_REGISTRY_ADDR:localhost:8087}"
-      password: "${SFC_LOCAL_REGISTRY_PASSWORD:114514}"
-      # 注册到注册中心的 host；留空 = 自动探测（容器内即容器 IP，与 core 同网络时可直接访问）
-      host: "${SFC_LOCAL_REGISTRY_HOST:}"
+      discovery:
+        enabled: ${SFC_LOCAL_ENABLED:true}
+        server-addr: "${SFC_LOCAL_REGISTRY_ADDR:localhost:8087}"
+        password: "${SFC_LOCAL_REGISTRY_PASSWORD:114514}"
+        # 注册到注册中心的 host；留空 = 自动探测（容器内即容器 IP，与 core 同网络时可直接访问）
+        host: "${SFC_LOCAL_REGISTRY_HOST:}"
     nacos:
       discovery:
         enabled: ${NACOS_ENABLED:false}

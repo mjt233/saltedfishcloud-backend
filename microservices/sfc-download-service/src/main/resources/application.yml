@@ -30,18 +30,19 @@ spring:
   #            NACOS_SERVER_ADDR / NACOS_GROUP / NACOS_NAMESPACE / NACOS_USERNAME / NACOS_PASSWORD
   cloud:
     # local 注册中心：与 core 的内置注册中心对接（服务端地址/密码与 core 的
-    # sys.service.local-registry 配置对应）
+    # spring.cloud.sfc-local.registry 配置对应）
     sfc-local:
-      enabled: ${SFC_LOCAL_ENABLED:true}
-      server-addr: "${SFC_LOCAL_REGISTRY_ADDR:localhost:8087}"
-      password: "${SFC_LOCAL_REGISTRY_PASSWORD:114514}"
-      # 注册到注册中心的 host；留空 = 自动探测（容器内即容器 IP，与 core 同网络时可直接访问）
-      host: "${SFC_LOCAL_REGISTRY_HOST:}"
-      metadata:
-        # 配置面板入口：core 的 ConfigController#listServicesPluginConfig 发现该 metadata 后会
-        # 请求本服务的 /api/meta/pluginInfo，在管理员后台渲染「插件配置」面板
-        sfc.plugin.info: /api/meta/pluginInfo
-        sfc.plugin.autoload: /static/index.umd.js,/static/style.css
+      discovery:
+        enabled: ${SFC_LOCAL_ENABLED:true}
+        server-addr: "${SFC_LOCAL_REGISTRY_ADDR:localhost:8087}"
+        password: "${SFC_LOCAL_REGISTRY_PASSWORD:114514}"
+        # 注册到注册中心的 host；留空 = 自动探测（容器内即容器 IP，与 core 同网络时可直接访问）
+        host: "${SFC_LOCAL_REGISTRY_HOST:}"
+        metadata:
+          # 配置面板入口：core 的 ConfigController#listServicesPluginConfig 发现该 metadata 后会
+          # 请求本服务的 /api/meta/pluginInfo，在管理员后台渲染「插件配置」面板
+          sfc.plugin.info: /api/meta/pluginInfo
+          sfc.plugin.autoload: /static/index.umd.js,/static/style.css
     nacos:
       discovery:
         # 默认走 local 注册中心；切换 Nacos 时把 NACOS_ENABLED 置为 true 并把 SFC_LOCAL_ENABLED 置为 false

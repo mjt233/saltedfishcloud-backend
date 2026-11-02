@@ -9,6 +9,7 @@ import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.service.registry.local.LocalRegistryAuthService;
 import com.xiaotao.saltedfishcloud.service.registry.local.LocalServiceRegistry;
+import com.xiaotao.saltedfishcloud.service.registry.local.SfcLocalRegistryServerProperties;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -26,14 +27,14 @@ import java.util.List;
 /**
  * local 注册中心外部服务接口。
  * <p>
- * 仅在 {@code sys.service.registry-provider=local} 时装配，所有请求都必须携带
+ * 仅在 {@code spring.cloud.sfc-local.registry.enabled=true}（默认）时装配，所有请求都必须携带
  * {@code X-Sfc-Local-Registry-Password} 请求头。该接口独立于 {@code /api/internal/**}，
  * 不会被服务间鉴权过滤器拦截；客户端应直连 core。
  */
 @RestController
 @RequestMapping(SfcLocalRegistryConstants.API_PREFIX)
-@ConditionalOnProperty(prefix = "sys.service", name = "registry-provider",
-        havingValue = "local", matchIfMissing = true)
+@ConditionalOnProperty(prefix = SfcLocalRegistryServerProperties.PREFIX, name = "enabled",
+        havingValue = "true", matchIfMissing = true)
 @RequiredArgsConstructor
 @Tag(name = "本地注册中心-内部接口")
 public class LocalRegistryController {

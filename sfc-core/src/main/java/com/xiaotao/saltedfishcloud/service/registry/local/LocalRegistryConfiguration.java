@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.service.registry.local;
 
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.client.serviceregistry.AutoServiceRegistrationProperties;
 import org.springframework.cloud.commons.util.InetUtils;
 import org.springframework.context.ApplicationContext;
@@ -12,34 +12,37 @@ import org.springframework.core.env.Environment;
 import java.util.Map;
 
 /**
- * local provider 装配。
+ * local 注册中心服务端装配。
  * <p>
- * 仅在 {@code sys.service.registry-provider=local}（默认）时生效；Nacos provider 由
- * Spring Cloud Alibaba 的自动配置提供，两者不会同时存在。
+ * 仅在 {@code spring.cloud.sfc-local.registry.enabled=true}（默认）时生效；Nacos 注册中心由
+ * Spring Cloud Alibaba 的自动配置提供，两者应二选一（同时启用会因存在两个 {@code Registration}
+ * Bean 导致启动失败）。
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(prefix = "sys.service", name = "registry-provider", havingValue = "local", matchIfMissing = true)
+@ConditionalOnProperty(prefix = SfcLocalRegistryServerProperties.PREFIX, name = "enabled",
+        havingValue = "true", matchIfMissing = true)
+@EnableConfigurationProperties(SfcLocalRegistryServerProperties.class)
 public class LocalRegistryConfiguration {
     /**
      * 进程内注册表。关闭动作由 {@link LocalAutoServiceRegistration} 的生命周期统一触发。
      *
-     * @param sysProperties 系统配置
+     * @param properties 本地注册中心服务端配置
      * @return 进程内注册表
      */
     @Bean(destroyMethod = "")
-    public LocalServiceRegistry localServiceRegistry(SysProperties sysProperties) {
-        return new LocalServiceRegistry(sysProperties);
+    public LocalServiceRegistry localServiceRegistry(SfcLocalRegistryServerProperties properties) {
+        return new LocalServiceRegistry(properties);
     }
 
     /**
      * 外部注册接口的密码校验服务。
      *
-     * @param sysProperties 系统配置
+     * @param properties 本地注册中心服务端配置
      * @return 密码校验服务
      */
     @Bean
-    public LocalRegistryAuthService localRegistryAuthService(SysProperties sysProperties) {
-        return new LocalRegistryAuthService(sysProperties);
+    public LocalRegistryAuthService localRegistryAuthService(SfcLocalRegistryServerProperties properties) {
+        return new LocalRegistryAuthService(properties);
     }
 
     /**

@@ -34,8 +34,8 @@ Worker（微服务内嵌 / core 内嵌）认领任务 ──► 本地线程池�
 - **协议唯一来源**：执行者与调度面之间的报文类型定义在 `com.sfc.cloud.task.worker.protocol`，
   core 的 `TaskWorkerInternalController` / `TaskInterruptRouter` 直接复用同一份类型，微服务侧不要另行定义 DTO。
 
-> **部署前提**：单节点部署可用 `sys.service.registry-provider=local`（进程内注册表）；
-> **多个 core 节点部署必须使用 `nacos`**，否则各节点看不到彼此的实例，会把对方执行的任务误判为失联。
+> **部署前提**：单节点部署使用 core 默认的进程内 local 注册表（`spring.cloud.sfc-local.registry.enabled=true`）；
+> **多个 core 节点部署必须启用 Nacos**（`SFC_LOCAL_ENABLED=false` + `NACOS_ENABLED=true`），否则各节点看不到彼此的实例，会把对方执行的任务误判为失联。
 > 微服务侧同样需要启用服务发现（Nacos 或 `sfc-local-registry-client`）。
 
 ## 2. 与宿主内嵌 Worker 的关系

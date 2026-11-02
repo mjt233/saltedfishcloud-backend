@@ -12,7 +12,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
 import java.nio.charset.Charset;
-import java.time.Duration;
 
 @Slf4j
 @Configuration
@@ -38,12 +37,32 @@ public class SysProperties implements InitializingBean {
     @ToString.Exclude
     private String JWT_SECRET;
 
+    /**
+     * Redis 相关配置。
+     */
+    private Redis redis = new Redis();
+
     private Store store;
     /**
      * 系统服务相关配置。
      */
     private Service service = new Service();
 
+
+    /**
+     * Redis 相关配置。
+     */
+    @Data
+    public static class Redis {
+        /**
+         * 是否启用 Redis，配置项 {@code sys.redis.enabled}。
+         * <p>默认值为 {@code true}；设置为 {@code false} 时允许在不启动 Redis 的情况下运行系统。</p>
+         * <p>注意：禁用 Redis 会影响缓存（{@code sys.service.cache-provider} 需设置为 {@code local}）、
+         * 资源锁（{@code sys.service.lock-provider} 需设置为 {@code local}）、消息队列
+         * （{@code sys.service.mq-provider} 需设置为 {@code local}）以及 RPC 等功能。</p>
+         */
+        private boolean enabled = true;
+    }
 
     @Data
     public static class Store {
@@ -86,6 +105,20 @@ public class SysProperties implements InitializingBean {
     @Data
     public static class Service {
         /**
+         * 缓存服务提供者，配置项 {@code sys.service.cache-provider}。<br>
+         * redis：使用 Redis 实现缓存（默认值）；<br>
+         * local：使用进程内本地缓存。
+         */
+        private String cacheProvider = "redis";
+
+        /**
+         * 资源锁服务提供者，配置项 {@code sys.service.lock-provider}。<br>
+         * redisson：使用 Redisson 实现分布式资源锁（默认值）；<br>
+         * local：使用仅当前服务实例内生效的本地可重入锁（不注入 Redisson）。
+         */
+        private String lockProvider = "redisson";
+
+        /**
          * 消息队列服务提供者，可选 redis 或 local。
          */
         private String mqProvider = "redis";
@@ -94,40 +127,6 @@ public class SysProperties implements InitializingBean {
          * RPC 服务提供者，可选 redis 或 mq。
          */
         private String rpcProvider = "redis";
-
-        /**
-         * 服务注册 provider。<br>
-         * local：进程内注册表（默认值，支持外部服务通过 {@code /api/local-registry/**} 注册）；<br>
-         * nacos：Nacos 注册中心，连接与分组参数见 {@code spring.cloud.nacos.discovery.*}。
-         */
-        private String registryProvider = "local";
-
-        /**
-         * 本地注册中心配置，仅在 {@code registry-provider=local} 时生效。
-         */
-        private LocalRegistry localRegistry = new LocalRegistry();
-
-        /**
-         * 本地注册中心的外部服务注册配置。
-         */
-        @Data
-        public static class LocalRegistry {
-            /**
-             * 外部服务注册密码。留空表示禁用外部注册接口。
-             */
-            @ToString.Exclude
-            private String password;
-
-            /**
-             * 实例心跳超时时间，超过该时间未收到心跳的实例会被移除。
-             */
-            private Duration heartbeatTimeout = Duration.ofSeconds(30);
-
-            /**
-             * 过期实例清理任务执行间隔。
-             */
-            private Duration cleanupInterval = Duration.ofSeconds(10);
-        }
     }
 
 

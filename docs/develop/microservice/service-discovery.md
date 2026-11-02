@@ -41,17 +41,48 @@ spring:
 
 ## 3. core 侧配置
 
-core 通过 `sys.service.registry-provider` 选择注册 provider：`local`（默认，进程内注册表）或 `nacos`。
-Nacos 能力已内置，服务名与连接参数使用标准 Spring 配置：
+core 的注册中心由两个标准开关控制（二者应二选一，由部署配置人工确保）：
+
+| 开关 | 默认值 | 说明 |
+|---|---|---|
+| `spring.cloud.sfc-local.registry.enabled` | `true` | core 进程内 local 注册表（含 `/api/local-registry/**`），环境变量 `SFC_LOCAL_ENABLED` |
+| `spring.cloud.nacos.discovery.enabled` | `false` | Nacos 注册中心，环境变量 `NACOS_ENABLED` |
+
+`spring.cloud.sfc-local.discovery.enabled` 在 core 的 `application.yml` 中固定为 `false`：
+core 是 local 注册中心服务端，不启用 `sfc-local-registry-client` 的客户端 Bean。
+
+local 模式（默认）：
 
 ```yaml
 spring:
-  # 注册到 Nacos 的服务名
   application:
     name: sfc-core
   cloud:
+    sfc-local:
+      discovery:
+        enabled: false      # 固定：core 不启用 SDK 客户端
+      registry:
+        enabled: true       # 进程内 local 注册中心（默认）
     nacos:
       discovery:
+        enabled: false
+```
+
+Nacos 模式（`SFC_LOCAL_ENABLED=false` + `NACOS_ENABLED=true`）：
+
+```yaml
+spring:
+  application:
+    name: sfc-core
+  cloud:
+    sfc-local:
+      discovery:
+        enabled: false
+      registry:
+        enabled: false
+    nacos:
+      discovery:
+        enabled: true
         server-addr: 127.0.0.1:8848
         # 必须与各微服务的 group 一致
         group: SFC
@@ -59,14 +90,11 @@ spring:
         # Nacos 服务端未开启鉴权时留空
         username: ""
         password: ""
-
-sys:
-  service:
-    registry-provider: nacos
 ```
 
-`registry-provider: local` 时 Nacos 自动配置整体关闭，不会创建客户端或尝试连接注册中心。
-配置为 `nacos` 时若注册中心不可达，启动会快速失败。
+> ⚠️ 两个开关同时启用会因存在两个 `Registration` Bean 导致 core 启动失败；都关闭则缺少
+> `Registration`/`DiscoveryClient` 同样无法启动——配置正确性由部署方人工保证。
+> 启用 Nacos 时若注册中心不可达，启动会快速失败。
 
 部署侧的完整默认值见 [配置参数](../../quick-start/config.md)。
 
@@ -89,21 +117,22 @@ curl "http://127.0.0.1:8848/nacos/v3/client/ns/instance/list?serviceName=sfc-hel
 
 ## 5. local 注册中心与外部服务注册
 
-未启用 Nacos 时，`registry-provider: local` 也支持跨进程注册与发现：core 在 `/api/local-registry/**` 暴露带密码保护的注册接口，外部服务通过心跳续约，超时未续约的实例会被自动移除。服务进程由使用者自行启动。
+未启用 Nacos 时，`spring.cloud.sfc-local.registry.enabled=true`（默认）也支持跨进程注册与发现：core 在 `/api/local-registry/**` 暴露带密码保护的注册接口，外部服务通过心跳续约，超时未续约的实例会被自动移除。服务进程由使用者自行启动。
 
 ### 5.1 core 配置
 
 ```yaml
-sys:
-  service:
-    registry-provider: local
-    local-registry:
-      # 外部注册密码。留空表示禁用外部注册接口
-      password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
-      # 心跳超时时间
-      heartbeat-timeout: 30s
-      # 过期实例清理间隔
-      cleanup-interval: 10s
+spring:
+  cloud:
+    sfc-local:
+      registry:
+        enabled: true
+        # 外部注册密码。留空表示禁用外部注册接口
+        password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
+        # 心跳超时时间
+        heartbeat-timeout: 30s
+        # 过期实例清理间隔
+        cleanup-interval: 10s
 ```
 
 密码通过请求头 `X-Sfc-Local-Registry-Password` 传递，注册、心跳、注销与发现接口都会校验。密码为空时接口返回 403（fail-closed）。
@@ -128,19 +157,22 @@ spring:
     name: sfc-hello-service
   cloud:
     sfc-local:
-      server-addr: 127.0.0.1:8087
-      password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
-      heartbeat-interval: 10s
-      metadata:
-        sfc.api.prefix: /api
+      discovery:
+        server-addr: 127.0.0.1:8087
+        password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
+        heartbeat-interval: 10s
+        metadata:
+          sfc.api.prefix: /api
 ```
 
 SDK 会在 Web 端口绑定后自动注册，并按 `heartbeat-interval` 发送心跳；core 重启导致实例丢失时会自动重新注册。`server-addr` 为空时 SDK 不创建任何 Bean，无需 `@EnableDiscoveryClient`。需要使用 `lb://服务名` 调用其他服务时，额外引入 `spring-cloud-starter-loadbalancer`。
 
+下表配置项均位于前缀 `spring.cloud.sfc-local.discovery` 下：
+
 | 配置项 | 说明 |
 |---|---|
 | `server-addr` | 注册中心地址，支持 `host:port` 或 `http(s)://host:port` |
-| `password` | 与服务端 `sys.service.local-registry.password` 一致 |
+| `password` | 与服务端 `spring.cloud.sfc-local.registry.password` 一致 |
 | `service-name` | 服务名，缺省取 `spring.application.name` |
 | `instance-id` | 实例 ID，缺省为 `host:port` |
 | `host` | 注册 host，缺省取本机地址 |

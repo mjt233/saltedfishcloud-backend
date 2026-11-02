@@ -2,7 +2,7 @@ package com.sfc.cloud.local.registry;
 
 import com.sfc.cloud.local.registry.model.SfcLocalRegisterResult;
 import com.sfc.cloud.local.registry.model.SfcLocalRegistryException;
-import com.sfc.cloud.local.registry.config.SfcLocalRegistryProperties;
+import com.sfc.cloud.local.registry.config.SfcLocalDiscoveryProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.DisposableBean;
 import org.springframework.cloud.client.serviceregistry.ServiceRegistry;
@@ -30,7 +30,7 @@ public class SfcLocalServiceRegistry implements ServiceRegistry<SfcLocalRegistra
     private final SfcLocalRegistryHttpClient httpClient;
 
     /** 客户端配置 */
-    private final SfcLocalRegistryProperties properties;
+    private final SfcLocalDiscoveryProperties properties;
 
     /** 当前实例注册信息 */
     private final AtomicReference<SfcLocalRegistration> registration = new AtomicReference<>();
@@ -63,7 +63,7 @@ public class SfcLocalServiceRegistry implements ServiceRegistry<SfcLocalRegistra
      * @param properties 客户端配置
      */
     public SfcLocalServiceRegistry(SfcLocalRegistryHttpClient httpClient,
-                                   SfcLocalRegistryProperties properties) {
+                                   SfcLocalDiscoveryProperties properties) {
         this.httpClient = httpClient;
         this.properties = properties;
     }

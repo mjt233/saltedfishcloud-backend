@@ -97,7 +97,7 @@ sfc-gateway ──(discovery locator: 剥离 /api/service/{serviceId} 并补 /ap
 | `spring.datasource.url` | `jdbc:sqlite:./download.db?journal_mode=WAL&busy_timeout=5000` | 本服务独立库；`ddl-auto=update` 自动建表。**启动 cwd 决定文件位置** |
 | `spring.datasource.hikari.maximum-pool-size` / `minimum-idle` | `1` / `1` | SQLite 单写连接，避免并发写时的 `SQLITE_BUSY_SNAPSHOT` |
 | `sfc.internal.key` | `${SFC_INTERNAL_KEY:}` | 服务间内部鉴权共享密钥，**必须与 core 完全一致**（≥32 字符） |
-| `spring.cloud.sfc-local.*` | 见文件 | local 注册中心（默认启用） |
+| `spring.cloud.sfc-local.discovery.*` | 见文件 | local 注册中心客户端（默认启用） |
 | `spring.cloud.nacos.discovery.*` | `enabled=false` | 启用 Nacos 时置 true 并关闭 `sfc-local` |
 | `metadata.sfc.plugin.autoload` | `/static/index.umd.js,/static/style.css` | 供 core 合并前端自动加载资源（local/nacos 两处都要配） |
 | `metadata.sfc.plugin.info` | `/api/meta/pluginInfo` | 供 core 后台拉取本服务的配置面板（local/nacos 两处都要配） |

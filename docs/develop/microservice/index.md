@@ -13,7 +13,7 @@
 |---|---|
 | [`sfc-common`](../../../sfc-common/) | 共享库（非可运行进程，**位于仓库根目录**）：信任头常量、用户凭证解析、远程调用契约模型，以及 Phase 1 迁出的响应信封 `SfcJsonResult`、异常族、常量、字符串/JSON 工具、分页模型 `SfcPageInfo`/`SfcPageableRequest` |
 | [`sfc-common-data`](../../../sfc-common-data/) | 共享库（非可运行进程，**位于仓库根目录**）：JPA 数据访问基座（实体基类、`SfcBaseRepo`、`SfcCrudService(Impl)`、雪花主键、`SfcDBUtils`、`@SfcUID`），身份与事务经 SPI 注入 |
-| [`sfc-local-registry-client`](../../../sfc-local-registry-client/) | 共享 SDK（非可运行进程，**位于仓库根目录**）：`spring.cloud.sfc-local.*` 配置下的 local 注册中心注册与发现实现 |
+| [`sfc-local-registry-client`](../../../sfc-local-registry-client/) | 共享 SDK（非可运行进程，**位于仓库根目录**）：`spring.cloud.sfc-local.discovery.*` 配置下的 local 注册中心注册与发现实现 |
 | `sfc-remote-client` | 远程客户端 SDK（库）：调用 sfc-core 网盘文件操作的 OpenFeign 声明式接口 |
 | `sfc-task-worker` | 异步任务执行者 SDK（库）：微服务实现 `SfcTaskHandler` 即可接入 sfc-core 统一的异步任务调度（见[接入文档](async-task-worker.md)） |
 | `sfc-gateway` | 独立网关（Spring Cloud Gateway Server WebFlux）：整站唯一入口与微服务代理 |

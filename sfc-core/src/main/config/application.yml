@@ -7,6 +7,19 @@ server:
 springdoc:
   enable-kotlin: false
 spring:
+  cloud:
+    # 服务注册与发现（local 与 Nacos 应二选一，由部署配置人工确保）：
+    #   local：core 进程内注册表（默认启用），由 sfc-local.registry.enabled 控制（环境变量 SFC_LOCAL_ENABLED）
+    #   nacos：由 nacos.discovery.enabled 控制（环境变量 NACOS_ENABLED，默认关闭）；启用 Nacos 时需 SFC_LOCAL_ENABLED=false
+    # sfc-local.discovery.enabled 固定 false：core 是 local 注册中心服务端，不启用 SDK 客户端
+    sfc-local:
+      discovery:
+        enabled: false
+      registry:
+        enabled: ${SFC_LOCAL_ENABLED:true}
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:false}
   application:
     name: sfc-core
   jpa:

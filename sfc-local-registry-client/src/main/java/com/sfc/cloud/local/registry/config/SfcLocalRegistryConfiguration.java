@@ -13,6 +13,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.cloud.client.discovery.DiscoveryClient;
 import org.springframework.cloud.client.serviceregistry.AutoServiceRegistrationProperties;
+import org.springframework.cloud.client.serviceregistry.ServiceRegistry;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,10 +26,14 @@ import java.net.UnknownHostException;
  * local 注册中心客户端的 Bean 装配。
  * <p>
  * 由 {@link SfcLocalRegistryAutoConfiguration} 在客户端启用（配置了
- * {@code spring.cloud.sfc-local.server-addr} 且未被禁用）时通过 {@code @Import} 引入，
- * 因此本类不再重复声明启用条件，只负责装配 HTTP 客户端、注册信息、注册/发现实现与自动注册生命周期。
+ * {@code spring.cloud.sfc-local.discovery.server-addr} 且未被禁用）时通过 {@code @Import} 引入；
+ * 本类同时重复声明相同的生效条件，避免被直接 {@code @Import} 时在 local 注册中心服务端
+ * （sfc-core）进程中误创建客户端 Bean。
  */
 @Configuration(proxyBeanMethods = false)
+@ConditionalOnClass({DiscoveryClient.class, ServiceRegistry.class})
+@ConditionalOnProperty(prefix = SfcLocalDiscoveryProperties.PREFIX, name = "enabled",
+        havingValue = "true", matchIfMissing = true)
 public class SfcLocalRegistryConfiguration {
     /**
      * 默认服务名。
@@ -45,7 +50,7 @@ public class SfcLocalRegistryConfiguration {
     @Bean
     @ConditionalOnMissingBean
     public SfcLocalRegistryHttpClient sfcLocalRegistryHttpClient(
-            SfcLocalRegistryProperties properties,
+            SfcLocalDiscoveryProperties properties,
             ObjectProvider<ObjectMapper> objectMapperProvider) {
         return new SfcLocalRegistryHttpClient(properties, objectMapperProvider.getIfAvailable());
     }
@@ -59,7 +64,7 @@ public class SfcLocalRegistryConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public SfcLocalRegistration sfcLocalRegistration(SfcLocalRegistryProperties properties,
+    public SfcLocalRegistration sfcLocalRegistration(SfcLocalDiscoveryProperties properties,
                                                      Environment environment) {
         String serviceName = hasText(properties.getServiceName())
                 ? properties.getServiceName().trim()
@@ -78,7 +83,7 @@ public class SfcLocalRegistryConfiguration {
      */
     @Bean
     @ConditionalOnMissingBean
-    public SfcLocalServiceRegistry sfcLocalServiceRegistry(SfcLocalRegistryProperties properties,
+    public SfcLocalServiceRegistry sfcLocalServiceRegistry(SfcLocalDiscoveryProperties properties,
                                                            SfcLocalRegistryHttpClient httpClient) {
         return new SfcLocalServiceRegistry(httpClient, properties);
     }

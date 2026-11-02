@@ -3,7 +3,6 @@ package com.xiaotao.saltedfishcloud.service.registry.local;
 import com.sfc.cloud.local.registry.model.SfcLocalRegisterRequest;
 import com.sfc.cloud.local.registry.model.SfcLocalRegisterResult;
 import com.sfc.common.exception.SfcJsonException;
-import com.xiaotao.saltedfishcloud.config.SysProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.client.DefaultServiceInstance;
 import org.springframework.cloud.client.ServiceInstance;
@@ -22,10 +21,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 进程内服务注册与发现实现（{@code sys.service.registry-provider=local}，默认值）。
+ * 进程内服务注册与发现实现（{@code spring.cloud.sfc-local.registry.enabled=true}，默认值）。
  * <p>
  * 除宿主自身实例外，还接受外部服务通过 {@code /api/local-registry/**} 注册。外部实例
- * 通过心跳续约，超过 {@code sys.service.local-registry.heartbeat-timeout} 未续约时被移除。
+ * 通过心跳续约，超过 {@code spring.cloud.sfc-local.registry.heartbeat-timeout} 未续约时被移除。
  * 对外的契约完全使用 Spring Cloud 官方接口：写入侧实现 {@link ServiceRegistry}，
  * 读取侧实现 {@link DiscoveryClient}。
  * <p>
@@ -61,8 +60,8 @@ public class LocalServiceRegistry implements DiscoveryClient, ServiceRegistry<Lo
     /** 外部实例表：serviceId -> (instanceId -> 带过期时间的实例快照) */
     private final Map<String, Map<String, ExternalInstance>> externalRegistry = new ConcurrentHashMap<>();
 
-    /** 系统配置，用于读取本地注册中心的心跳超时 */
-    private final SysProperties sysProperties;
+    /** 本地注册中心服务端配置，用于读取心跳超时 */
+    private final SfcLocalRegistryServerProperties properties;
 
     /** 注册表是否已关闭 */
     private volatile boolean closed;
@@ -70,10 +69,10 @@ public class LocalServiceRegistry implements DiscoveryClient, ServiceRegistry<Lo
     /**
      * 创建进程内注册表。
      *
-     * @param sysProperties 系统配置
+     * @param properties 本地注册中心服务端配置
      */
-    public LocalServiceRegistry(SysProperties sysProperties) {
-        this.sysProperties = sysProperties;
+    public LocalServiceRegistry(SfcLocalRegistryServerProperties properties) {
+        this.properties = properties;
     }
 
     /**
@@ -225,7 +224,7 @@ public class LocalServiceRegistry implements DiscoveryClient, ServiceRegistry<Lo
      * 清理已过期的外部实例。由 Spring 定时调度。
      */
     @org.springframework.scheduling.annotation.Scheduled(
-            fixedDelayString = "${sys.service.local-registry.cleanup-interval:10s}")
+            fixedDelayString = "${spring.cloud.sfc-local.registry.cleanup-interval:10s}")
     public void expireExternalInstances() {
         if (closed) {
             return;
@@ -376,11 +375,7 @@ public class LocalServiceRegistry implements DiscoveryClient, ServiceRegistry<Lo
      * @return 心跳超时纳秒数
      */
     private long heartbeatTimeoutNanos() {
-        Duration timeout = sysProperties == null
-                || sysProperties.getService() == null
-                || sysProperties.getService().getLocalRegistry() == null
-                ? null
-                : sysProperties.getService().getLocalRegistry().getHeartbeatTimeout();
+        Duration timeout = properties == null ? null : properties.getHeartbeatTimeout();
         if (timeout == null || timeout.isZero() || timeout.isNegative()) {
             timeout = DEFAULT_HEARTBEAT_TIMEOUT;
         }

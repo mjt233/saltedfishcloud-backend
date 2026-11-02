@@ -3,7 +3,7 @@ package com.sfc.cloud.local.registry;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sfc.cloud.local.registry.config.SfcLocalRegistryProperties;
+import com.sfc.cloud.local.registry.config.SfcLocalDiscoveryProperties;
 import com.sfc.cloud.local.registry.model.*;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ public class SfcLocalRegistryHttpClient {
     private final ObjectMapper objectMapper;
 
     /** 客户端配置 */
-    private final SfcLocalRegistryProperties properties;
+    private final SfcLocalDiscoveryProperties properties;
 
     /** 注册中心 API 根地址 */
     private final String baseUrl;
@@ -41,7 +41,7 @@ public class SfcLocalRegistryHttpClient {
      * @param properties   客户端配置，必须配置 server-addr
      * @param objectMapper JSON 序列化器，可为 null
      */
-    public SfcLocalRegistryHttpClient(SfcLocalRegistryProperties properties, ObjectMapper objectMapper) {
+    public SfcLocalRegistryHttpClient(SfcLocalDiscoveryProperties properties, ObjectMapper objectMapper) {
         this.properties = properties;
         this.objectMapper = objectMapper == null ? new ObjectMapper() : objectMapper;
         this.baseUrl = buildBaseUrl(properties);
@@ -278,10 +278,10 @@ public class SfcLocalRegistryHttpClient {
      * @param properties 客户端配置
      * @return 根地址
      */
-    private static String buildBaseUrl(SfcLocalRegistryProperties properties) {
+    private static String buildBaseUrl(SfcLocalDiscoveryProperties properties) {
         String serverAddr = properties.getServerAddr();
         if (!hasText(serverAddr)) {
-            throw new IllegalArgumentException("spring.cloud.sfc-local.server-addr 不能为空");
+            throw new IllegalArgumentException("spring.cloud.sfc-local.discovery.server-addr 不能为空");
         }
         String base = serverAddr.trim();
         if (!base.startsWith("http://") && !base.startsWith("https://")) {

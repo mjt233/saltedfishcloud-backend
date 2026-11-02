@@ -31,6 +31,15 @@ spring:
   datasource:
     driver-class-name: org.sqlite.JDBC
     url: "jdbc:sqlite:./xyy.db"
+  cloud:
+    sfc-local:
+      registry:
+        # 外部服务注册密码。留空表示禁用外部注册接口
+        password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
+        # 心跳超时时间，超过该时间未续约的实例会被移除
+        heartbeat-timeout: 30s
+        # 过期实例清理任务执行间隔
+        cleanup-interval: 10s
 
 sys:
   redis:
@@ -47,17 +56,6 @@ sys:
     mq-provider: local
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: mq
-    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。
-    # 启用 Nacos 时设为 nacos，并配置 spring.application.name 与 spring.cloud.nacos.discovery.*
-    registry-provider: local
-    # 本地注册中心外部注册配置（registry-provider=local 时生效）
-    local-registry:
-      # 外部服务注册密码。留空表示禁用外部注册接口
-      password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
-      # 心跳超时时间，超过该时间未续约的实例会被移除
-      heartbeat-timeout: 30s
-      # 过期实例清理任务执行间隔
-      cleanup-interval: 10s
     # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
     client:
       # 连接超时；留空使用默认值 5s，0 或负值表示不限制
@@ -133,8 +131,22 @@ spring:
       database: ${REDIS_DB:0}
 #    password:
   cloud:
+    # 服务注册与发现（local 与 Nacos 应二选一，由部署配置人工确保）
+    sfc-local:
+      discovery:
+        enabled: false
+      registry:
+        enabled: ${SFC_LOCAL_ENABLED:true}
+        # 外部服务注册密码。留空表示禁用外部注册接口
+        password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
+        # 心跳超时时间，超过该时间未续约的实例会被移除
+        heartbeat-timeout: ${LOCAL_REGISTRY_HEARTBEAT_TIMEOUT:30s}
+        # 过期实例清理任务执行间隔
+        cleanup-interval: ${LOCAL_REGISTRY_CLEANUP_INTERVAL:10s}
     nacos:
       discovery:
+        # 是否启用 Nacos 注册中心，默认 false（使用 core 进程内 local 注册中心）
+        enabled: ${NACOS_ENABLED:false}
         # 服务端地址，多节点用逗号分隔
         server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
         # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
@@ -169,17 +181,6 @@ sys:
     mq-provider: ${MQ_PROVIDER:redis}
     # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
     rpc-provider: ${RPC_PROVIDER:redis}
-    # 服务注册 provider，默认 local（进程内注册表，未启用微服务模式）。
-    # 启用 Nacos 时设为 nacos，并配置 spring.application.name 与 spring.cloud.nacos.discovery.*
-    registry-provider: ${REGISTRY_PROVIDER:local}
-    # 本地注册中心外部注册配置（registry-provider=local 时生效）
-    local-registry:
-      # 外部服务注册密码。留空表示禁用外部注册接口
-      password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
-      # 心跳超时时间，超过该时间未续约的实例会被移除
-      heartbeat-timeout: ${LOCAL_REGISTRY_HEARTBEAT_TIMEOUT:30s}
-      # 过期实例清理任务执行间隔
-      cleanup-interval: ${LOCAL_REGISTRY_CLEANUP_INTERVAL:10s}
     # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
     client:
       # 连接超时；留空使用默认值 5s，0 或负值表示不限制
@@ -280,6 +281,19 @@ server:
       remote-ip-header: X-Real-IP
 
 spring:
+  cloud:
+    # 服务注册与发现（local 与 Nacos 应二选一，由部署配置人工确保）：
+    #   local：core 进程内注册表（默认启用），由 sfc-local.registry.enabled 控制
+    #   nacos：由 nacos.discovery.enabled 控制；启用 Nacos 时需 SFC_LOCAL_ENABLED=false
+    # sfc-local.discovery.enabled 固定 false：core 是 local 注册中心服务端，不启用 SDK 客户端
+    sfc-local:
+      discovery:
+        enabled: false
+      registry:
+        enabled: ${SFC_LOCAL_ENABLED:true}
+    nacos:
+      discovery:
+        enabled: ${NACOS_ENABLED:false}
   jpa:
     database: mysql
     open-in-view: false

@@ -9,18 +9,20 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * local 注册中心客户端配置，前缀 {@code spring.cloud.sfc-local}。
+ * local 注册中心客户端配置，前缀 {@code spring.cloud.sfc-local.discovery}（层级风格对齐
+ * {@code spring.cloud.nacos.discovery.*}）。
  */
 @Data
-@ConfigurationProperties("spring.cloud.sfc-local")
-public class SfcLocalRegistryProperties {
+@ConfigurationProperties(prefix = SfcLocalDiscoveryProperties.PREFIX)
+public class SfcLocalDiscoveryProperties {
+    public static final String PREFIX = "spring.cloud.sfc-local.discovery";
     /** 是否启用客户端；默认 true。未配置 server-addr 时不会产生任何 Bean */
     private boolean enabled = true;
 
     /** 注册中心地址，支持 {@code host:port} 或 {@code http(s)://host:port} */
     private String serverAddr;
 
-    /** 注册密码，必须与服务端 {@code sys.service.local-registry.password} 一致 */
+    /** 注册密码，必须与服务端 {@code spring.cloud.sfc-local.registry.password} 一致 */
     @ToString.Exclude
     private String password;
 

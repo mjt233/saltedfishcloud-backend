@@ -166,7 +166,7 @@
         </dependency>
         <!--
             local 注册中心客户端 SDK：宿主复用其接口 DTO/常量（本地注册表的服务端实现仍在 sfc-core）。
-            该 SDK 的自动配置仅在配置 spring.cloud.sfc-local.server-addr 时生效，宿主不会创建客户端 Bean。
+            该 SDK 的自动配置仅在配置 spring.cloud.sfc-local.discovery.server-addr 时生效，宿主不会创建客户端 Bean。
         -->
         <dependency>
             <groupId>com.sfc.cloud</groupId>

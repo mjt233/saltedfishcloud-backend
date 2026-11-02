@@ -13,7 +13,7 @@
 #   docker run -d --name sfc-download-service -p 8092:8092 \
 #     -e SFC_INTERNAL_KEY=<与 core 一致的共享密钥，至少 32 字符> \
 #     -e SFC_LOCAL_REGISTRY_ADDR=host.docker.internal:8087 \
-#     -e SFC_LOCAL_REGISTRY_PASSWORD=<与 core 的 sys.service.local-registry.password 一致> \
+#     -e SFC_LOCAL_REGISTRY_PASSWORD=<与 core 的 spring.cloud.sfc-local.registry.password 一致> \
 #     -v sfc-download-data:/data \
 #     saltedfishcloud/sfc-download-service:latest
 #   改用 Nacos 注册中心：

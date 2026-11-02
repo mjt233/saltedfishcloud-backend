@@ -18,7 +18,7 @@
     <version>1.0.0</version>
     <packaging>jar</packaging>
     <name>sfc-local-registry-client</name>
-    <description>local 注册中心客户端 SDK：spring.cloud.sfc-local.* 配置下的服务注册与发现</description>
+    <description>local 注册中心客户端 SDK：spring.cloud.sfc-local.discovery.* 配置下的服务注册与发现</description>
 
     <properties>
         <java.version>25</java.version>

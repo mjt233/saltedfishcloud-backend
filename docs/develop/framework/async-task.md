@@ -99,8 +99,8 @@
 - **存活判定只信服务注册中心**：运行中任务记录 `claimed_service + claimed_worker`（serviceId + `host:port`），健康检查据此判断执行者是否还在线；
 - `GET /api/asyncTask/listWorker`（仅管理员）返回注册中心里的实例视图：**当前节点自身**会标注角色 `CORE` 并给出其支持的任务类型，其他实例的角色与类型为空。该接口列出的是注册中心中的全部服务实例，不限于任务执行者，用于排查「执行者是否在线」。
 
-> 单节点部署可使用 `sys.service.registry-provider=local`（进程内注册表）；
-> **多个 core 节点部署必须使用 `nacos`**（`sys.service.registry-provider=nacos`），否则各节点互相看不到对方的实例，
+> 单节点部署使用 core 默认的进程内 local 注册表（`spring.cloud.sfc-local.registry.enabled=true`）；
+> **多个 core 节点部署必须启用 Nacos**（`SFC_LOCAL_ENABLED=false` + `NACOS_ENABLED=true`），否则各节点互相看不到对方的实例，
 > 健康检查会把其他节点执行的任务误判为失联。微服务侧同样需要注册到与 core 相同的注册中心。
 >
 > Worker 的 `workerId` 来自服务注册信息（`Registration`）中的 `host:port`。该 bean 是 Worker SDK 的必需依赖，
@@ -456,7 +456,7 @@ core 内嵌 Worker 通过内部 HTTP 调用本机（或其他 core 节点）的 
 
 ### 9.4 多节点部署
 
-- **多个 core 节点必须使用 `nacos`**（`sys.service.registry-provider=nacos`），否则节点间互相看不到实例，健康检查会误回收任务；
+- **多个 core 节点必须启用 Nacos**（`SFC_LOCAL_ENABLED=false` + `NACOS_ENABLED=true`），否则节点间互相看不到实例，健康检查会误回收任务；
 - 多 core 部署应使用共享缓存（`cache-provider=redis`）与共享 MQ（`mq-provider=redis`）；
   使用本地缓存/本地 MQ 时，运行中日志与进度快照只在接收上报的节点可见（见 6.2、6.3）；
 - 微服务同样需要注册到与 core 相同的注册中心，并配置相同的 `SFC_INTERNAL_KEY`。

@@ -15,7 +15,7 @@
 #   docker run -d --name sfc-gateway -p 9090:9090 \
 #     -e SFC_JWT_SECRET=<与 core 的 sys.jwt-secret 完全相同，必须恰好 32 字符> \
 #     -e SFC_LOCAL_REGISTRY_ADDR=host.docker.internal:8087 \
-#     -e SFC_LOCAL_REGISTRY_PASSWORD=<与 core 的 sys.service.local-registry.password 一致> \
+#     -e SFC_LOCAL_REGISTRY_PASSWORD=<与 core 的 spring.cloud.sfc-local.registry.password 一致> \
 #     saltedfishcloud/sfc-gateway:latest
 #   ⚠️ SFC_JWT_SECRET 缺失或长度不是 32 时网关【启动即失败】（fail-fast）；core 侧同名配置项为
 #      sys.jwt-secret（同一个环境变量 SFC_JWT_SECRET 同时注入 core 与网关，两侧取值必须完全一致）；

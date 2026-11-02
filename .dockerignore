@@ -30,3 +30,4 @@ docker-compose.yml
 
 # 当前 Dockerfile 仅复制 conf/config.yml
 conf/env.list
+data
