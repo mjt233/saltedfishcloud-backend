@@ -1,0 +1,188 @@
+services:
+  # 服务发现/注册中心 Nacos
+  nacos:
+    image: nacos/nacos-server:v3.3.0
+    container_name: nacos
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: ${NACOS_AUTH_ENABLE:-true}
+      # accessToken 签名密钥：Base64 编码且解码后不少于 32 字节，生产环境必须自行生成覆盖（`openssl rand -base64 32`）
+      NACOS_AUTH_TOKEN: ${NACOS_AUTH_TOKEN:-qYI/kHj74aR5NnPeSd/yuQUyg3+CXGABv4exxziPNTU=}
+      # 服务端节点间身份识别的 key/value，集群部署时各节点需保持一致，生产环境请自行替换
+      NACOS_AUTH_IDENTITY_KEY: ${NACOS_AUTH_IDENTITY_KEY:-nacos-server-identity}
+      NACOS_AUTH_IDENTITY_VALUE: ${NACOS_AUTH_IDENTITY_VALUE:-nacos-server-identity-value}
+    networks:
+      - nacos
+    expose:
+      - 8848
+      - 9848
+      - 8080
+    ports:
+      - 8080:8080
+    volumes:
+      - ./data/nacos/logs:/home/nacos/logs
+      - ./data/nacos/data:/home/nacos/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -o /dev/null http://127.0.0.1:8848/nacos/v3/admin/core/state/readiness 2>/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      # Nacos 单机启动通常需要 20~60s，此期间探针失败不计入 retries
+      start_period: 30s
+
+  # 离线下载服务
+  sfc-download-service:
+    image: sfc/sfc-download-service:latest
+    container_name: sfc-download-service
+    build:
+      context: .
+      dockerfile: microservices/sfc-download-service/Dockerfile
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://repo.maven.apache.org/maven2}
+    depends_on:
+      # 等待 Nacos 健康检查通过（8848 就绪接口）后再启动，避免注册失败
+      nacos:
+        condition: service_healthy
+    networks:
+      # 必须接入 nacos 网络，否则解析不到 nacos:8848，也无法被 core/网关发现
+      - nacos
+    volumes:
+      - ./data/download:/data
+    environment:
+      # 启用 Nacos
+      SFC_LOCAL_ENABLED: false
+      NACOS_ENABLED: true
+      NACOS_SERVER_ADDR: nacos:8848
+      # Nacos 鉴权账号：服务端已开启 Client API 鉴权，必须与 Nacos 控制台（8080）的管理员账号一致，
+      # 缺失或错误会以 "User not found! Please check user exist or password is right!" 注册失败并中断启动
+      NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
+      NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
+      SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+
+  # AI 助手服务
+  sfc-ai-service:
+    image: sfc/sfc-ai-service:latest
+    container_name: sfc-ai-service
+    build:
+      context: .
+      dockerfile: microservices/sfc-ai-service/Dockerfile
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://repo.maven.apache.org/maven2}
+    depends_on:
+      # 等待 Nacos 健康检查通过（8848 就绪接口）后再启动，避免注册失败
+      nacos:
+        condition: service_healthy
+    networks:
+      - nacos
+    environment:
+      # 启用 Nacos
+      SFC_LOCAL_ENABLED: false
+      NACOS_ENABLED: true
+      NACOS_SERVER_ADDR: nacos:8848
+      # Nacos 鉴权账号：服务端已开启 Client API 鉴权，必须与 Nacos 控制台（8080）的管理员账号一致，
+      # 缺失或错误会以 "User not found! Please check user exist or password is right!" 注册失败并中断启动
+      NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
+      NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
+      SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+    volumes:
+      # SQLite 数据库 ai.db 所在目录（镜像内 /data），重建容器不丢数据
+      - ./data/ai:/data
+    expose:
+      - 8091
+
+  # 网关服务
+  sfc-gateway:
+    image: sfc/sfc-gateway:latest
+    container_name: sfc-gateway
+    build:
+      context: .
+      dockerfile: microservices/sfc-gateway/Dockerfile
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://repo.maven.apache.org/maven2}
+    depends_on:
+      # 网关自身也是 Nacos 客户端：等注册中心健康检查通过后再启动，避免注册失败中断启动
+      nacos:
+        condition: service_healthy
+    networks:
+      - nacos
+    environment:
+      NACOS_ENABLED: true
+      SFC_LOCAL_ENABLED: false
+      NACOS_SERVER_ADDR: nacos:8848
+      # Nacos 鉴权账号：服务端已开启 Client API 鉴权，必须与 Nacos 控制台（8080）的管理员账号一致，
+      # 缺失或错误会以 "User not found! Please check user exist or password is right!" 注册失败并中断启动
+      NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
+      NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
+      SFC_JWT_SECRET: ${SFC_JWT_SECRET:?未设置 SFC_JWT_SECRET：请在 .env 或部署环境中配置恰好 32 字符的 JWT 会话密钥}
+      SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+    expose:
+      - 9090
+    ports:
+      - 9090:9090
+
+  # 核心服务
+  sfc-core:
+    image: sfc/sfc-core:latest
+    container_name: sfc-core
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        MAVEN_MIRROR_URL: ${MAVEN_MIRROR_URL:-https://repo.maven.apache.org/maven2}
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      # 等待 Nacos 健康检查通过（8848 就绪接口）后再启动，避免注册失败
+      nacos:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      REDIS_HOST: redis
+      JDBC_PARAMETER: useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+      SFC_JWT_SECRET: ${SFC_JWT_SECRET:?未设置 SFC_JWT_SECRET：请在 .env 或部署环境中配置恰好 32 字符的 JWT 会话密钥}
+      SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+      # 启用 Nacos，关闭 core 的进程内 local 注册中心（两者二选一，同时启用会因 Registration Bean 冲突启动失败）
+      SFC_LOCAL_ENABLED: false
+      NACOS_ENABLED: true
+      NACOS_SERVER_ADDR: nacos:8848
+      # Nacos 鉴权账号：服务端已开启 Client API 鉴权，必须与 Nacos 控制台（8080）的管理员账号一致，
+      # 缺失或错误会以 "User not found! Please check user exist or password is right!" 注册失败并中断启动
+      NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
+      NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
+    networks:
+      - xyy-backend-net
+      - nacos
+    volumes:
+      - ./data/core/store:/saltedfish/store
+
+  # Redis 缓存
+  redis:
+    image: "redis:alpine"
+    networks:
+      - xyy-backend-net
+    expose:
+      - 6379
+
+  # 核心服务用的 MySQL 数据库
+  mysql:
+    image: "mysql:8.0"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      timeout: 5s
+      retries: 10
+      interval: 10s
+    networks:
+      - xyy-backend-net
+    environment:
+      MYSQL_ROOT_PASSWORD: test
+      MYSQL_DATABASE: xyy
+    volumes:
+      - ./data/core/mysql:/var/lib/mysql
+    expose:
+      - 3306
+
+networks:
+  xyy-backend-net:
+  nacos:
