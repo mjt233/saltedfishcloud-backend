@@ -29,7 +29,6 @@ import java.security.PublicKey;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -220,7 +219,7 @@ public class SFTPStorage implements Storage, Closeable {
     @Override
     public boolean mkdir(String path) throws IOException {
         try (SFTPClient sftpClient = getSFTPClient()) {
-            getSFTPClient().mkdirs(path);
+            sftpClient.mkdirs(path);
             return true;
         }
     }
@@ -251,9 +250,21 @@ public class SFTPStorage implements Storage, Closeable {
 
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
-        try(SFTPClient client = getSFTPClient()) {
-            return new SFTPFileOutputStream(client.open(path, Set.of(OpenMode.WRITE, OpenMode.TRUNC)));
+        SFTPClient client = getSFTPClient();
+        RemoteFile file;
+        try {
+            // TRUNC 必须与 CREAT 同用：目标文件不存在时缺少 CREAT 会直接报 SFTPException: No such file
+            file = client.open(path, CREATE_OPEN_MODE);
+        } catch (IOException | RuntimeException e) {
+            // 打开文件失败时需要先把借出的会话归还连接池，避免会话泄漏
+            try {
+                client.close();
+            } catch (IOException closeException) {
+                e.addSuppressed(closeException);
+            }
+            throw e;
         }
+        return new SFTPFileOutputStream(file, client);
     }
 
     @Override
@@ -268,7 +279,11 @@ public class SFTPStorage implements Storage, Closeable {
     @Override
     public boolean copy(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         Resource srcResource = getResource(src);
-        try (OutputStream os = newOutputStream(dest);InputStream is = srcResource.getInputStream()) {
+        if (srcResource == null) {
+            throw new IOException("复制源文件不存在：" + src);
+        }
+        // 先打开源文件再创建目标文件，避免源文件不可读时目标文件已被创建或被截断
+        try (InputStream is = srcResource.getInputStream(); OutputStream os = newOutputStream(dest)) {
             if (item != null) {
                 long total = srcResource.contentLength();
                 item.setTotal(total);
@@ -286,9 +301,52 @@ public class SFTPStorage implements Storage, Closeable {
     @Override
     public boolean move(String src, String dest, @Nullable FileTransferItem item) throws IOException {
         try (SFTPClient sftpClient = getSFTPClient()) {
-            sftpClient.rename(src, dest);
+            renameWithOverwrite(sftpClient, src, dest);
         }
         return true;
+    }
+
+    /**
+     * 支持覆盖已存在普通文件的重命名/移动。
+     * <p>
+     * OpenSSH 的 SFTP 服务端只实现协议 v3，其 RENAME 请求不支持覆盖语义（服务端以 link()+unlink() 实现，
+     * 目标已存在时返回 SSH_FX_FAILURE，映射为 {@link Response.StatusCode#FAILURE}）；
+     * sshj 仅对 SFTP v5+ 下发 RenameFlags，对 OpenSSH(v3) 无效，且未实现 posix-rename@openssh.com 扩展，
+     * 因此这里采用「删除已存在的目标普通文件后重试 rename」的方式实现覆盖。
+     * <p>
+     * 仅在确认源与目标都是存在的普通文件时才执行删除重试；源丢失、目标不存在、任一方为目录或其他错误码时
+     * 原样抛出原始异常，不删除任何内容，避免误删目录或在源已丢失时误删目标，行为符合 {@link Storage#move} 的失败语义。
+     * <p>
+     * 另外，源与目标为同一路径时直接视为移动成功（no-op）：OpenSSH v3 对 rename(p, p) 同样返回 FAILURE，
+     * 若不拦截，后续的删除重试会先删掉该文件唯一的目录项，造成源文件永久丢失。
+     *
+     * @param sftpClient 已借出的SFTP会话
+     * @param src        源路径
+     * @param dest       目标路径
+     * @throws IOException 重命名失败（包括无法覆盖的非普通文件场景）时抛出
+     */
+    private void renameWithOverwrite(SFTPClient sftpClient, String src, String dest) throws IOException {
+        try {
+            sftpClient.rename(src, dest);
+        } catch (SFTPException e) {
+            if (e.getStatusCode() != Response.StatusCode.FAILURE) {
+                throw e;
+            }
+            // 同路径移动为 no-op 成功，绝不能进入删除重试逻辑，否则会删掉源文件
+            if (src.equals(dest)) {
+                return;
+            }
+            FileAttributes destAttributes = sftpClient.statExistence(dest);
+            FileAttributes srcAttributes = sftpClient.statExistence(src);
+            if (destAttributes == null || srcAttributes == null
+                    || destAttributes.getType() == FileMode.Type.DIRECTORY
+                    || srcAttributes.getType() == FileMode.Type.DIRECTORY) {
+                throw e;
+            }
+            // 目标已存在且均为普通文件：SFTP v3 的 RENAME 无法覆盖，删除目标后重试
+            sftpClient.rm(dest);
+            sftpClient.rename(src, dest);
+        }
     }
 
     @Override
@@ -301,11 +359,9 @@ public class SFTPStorage implements Storage, Closeable {
     }
 
     @Override
-    public boolean exist(String path) {
-        try {
-            return getSFTPClient().statExistence(path) != null;
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+    public boolean exist(String path) throws IOException {
+        try (SFTPClient sftpClient = getSFTPClient()) {
+            return sftpClient.statExistence(path) != null;
         }
     }
 

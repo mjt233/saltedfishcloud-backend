@@ -1,6 +1,7 @@
 package com.saltedfishcloud.ext.sftp;
 
 import lombok.*;
+import net.schmizz.sshj.sftp.RemoteFile;
 import net.schmizz.sshj.sftp.SFTPClient;
 import org.springframework.core.io.AbstractResource;
 
@@ -42,6 +43,18 @@ public class SFTPResource extends AbstractResource {
     @Override
     public InputStream getInputStream() throws IOException {
         SFTPClient sftpClient = handler.getSFTPClient();
-        return new SFTPFileInputStream(sftpClient.open(path), sftpClient);
+        RemoteFile remoteFile;
+        try {
+            remoteFile = sftpClient.open(path);
+        } catch (IOException | RuntimeException e) {
+            // 打开文件失败时需要先把借出的会话归还连接池，避免会话泄漏
+            try {
+                sftpClient.close();
+            } catch (IOException closeException) {
+                e.addSuppressed(closeException);
+            }
+            throw e;
+        }
+        return new SFTPFileInputStream(remoteFile, sftpClient);
     }
 }
