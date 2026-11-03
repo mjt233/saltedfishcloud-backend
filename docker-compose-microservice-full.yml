@@ -186,9 +186,17 @@ services:
       # 缺失或错误会以 "User not found! Please check user exist or password is right!" 注册失败并中断启动
       NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
       NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
+      # 注册到 Nacos 的地址（映射 spring.cloud.nacos.discovery.ip）：必须是所有调用方都能解析的地址。
+      # 这里用 compose 服务名 sfc-core —— 与 core 同处 nacos 网络的 gateway / ai / download 会经Docker 内置 DNS 解析到 core 在该网络上的 IP。
+      # 由于 core 同时接入 nacos 与 xyy-backend-net 两个网络，
+      #    Docker 不保证网卡顺序，自动探测可能选中 xyy-backend-net 的 IP，导致只接 nacos 网络的服务连接超时。
+      #    修改本服务名 / container_name 时需同步修改。
+      ADVERTISE_ADDRESS: sfc-core
     networks:
       - nacos
       - xyy-backend-net
+    expose:
+      - 8087
     volumes:
       - ./data/core/store:/saltedfish/store
 
@@ -219,5 +227,9 @@ services:
       - 3306
 
 networks:
+  # 数据网络：仅 sfc-core 与 mysql / redis 接入，不承载服务发现与业务互调。
   xyy-backend-net:
+  # 服务互通网络（名称沿用 nacos）：注册中心 nacos 与所有需要互相调用的业务服务都接入。
+  # 服务间一律用 compose 服务名寻址（如 http://sfc-core:8087），不要使用容器 IP；
+  # 多网络容器（见 sfc-core 的 ADVERTISE_ADDRESS）注册到 Nacos 的地址必须是本网络内可解析的名字。
   nacos:

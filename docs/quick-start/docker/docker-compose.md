@@ -91,6 +91,35 @@ docker-compose down
 docker-compose down -v
 ```
 
+## 微服务全量编排（docker-compose-microservice-full.yml）
+
+仓库根目录另有 `docker-compose-microservice-full.yml`，用于一次性启动「Nacos + 网关 + core + AI 服务 + 离线下载服务 + MySQL/Redis」的微服务模式：
+
+```bash
+docker compose -f docker-compose-microservice-full.yml -p saltedfishcloud-backend up -d
+```
+
+网络拓扑：
+
+| 网络 | 接入者 | 用途 |
+|---|---|---|
+| `nacos` | nacos、sfc-gateway、sfc-ai-service、sfc-download-service、aria2、sfc-core | 服务互通网络：注册中心 + 所有需要互相调用的服务 |
+| `xyy-backend-net` | sfc-core、mysql、redis | 数据网络：仅 core 访问数据库/缓存，不承载服务发现 |
+
+⚠️ **sfc-core 是唯一同时接入两个网络的服务**：其注册到 Nacos 的地址由 `ADVERTISE_ADDRESS=sfc-core`
+（compose 服务名）显式指定，不能依赖自动探测——容器 IP 会随重建变化，且可能落在调用方不在的网络上，
+网关会报 `ConnectTimeoutException ... /<容器IP>:8087`。**不要删除该环境变量**；若修改 core 的
+`container_name`/服务名，需同步修改它。原理与排查见[服务发现与注册](../../develop/microservice/service-discovery.md)。
+
+验证注册地址是否生效：
+
+1. 打开 Nacos 控制台 `http://<主机>:8080` → 服务管理 → `SFC` 分组 → `sfc-core`，实例 IP 应显示为
+   `sfc-core`（而非 172.x 的容器 IP）；
+2. 网关容器内执行
+   `docker compose exec sfc-gateway sh -c 'curl -sS -m 5 -o /dev/null -w "%{http_code}\n" http://sfc-core:8087/api/hello/feature'`
+   应返回 `200`；
+3. 浏览器访问 `http://<主机>:9090`，入口不再出现网关连接超时。
+
 ## 相关文档
 
 - [Dockerfile 构建](dockerfile.md)

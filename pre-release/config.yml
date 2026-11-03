@@ -50,6 +50,9 @@ spring:
         # 集群名，用于同一服务内实例的再分组
         cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
         # 本机对外可达地址（host 或 IP，不含端口）；留空自动探测
+        # ⚠️ 容器化多网络部署（容器接入多个 Docker 网络）时必须显式指定：自动探测按网卡顺序取
+        #    第一个非回环地址，不保证落在所有调用方都能访问的网络上。推荐填写 compose 服务名
+        #    （如 sfc-core），共享该网络的服务可经 Docker 内置 DNS 解析；单网络/非容器部署可留空。
         ip: ${ADVERTISE_ADDRESS:}
         # 注销后不额外等待，实例立即从注册中心移除
         graceful-shutdown-wait-time: 0

@@ -98,6 +98,49 @@ spring:
 
 部署侧的完整默认值见 [配置参数](../../quick-start/config.md)。
 
+### 3.1 容器化 / 多网络部署的注册地址
+
+注册到 Nacos 的 `ip` 未显式配置时，Spring Cloud Alibaba 会按网卡顺序自动探测第一个非回环 IPv4；容器接入多个 Docker
+网络时，网卡顺序由 Docker 决定、Compose 不保证，自动探测可能选中"调用方所在网络之外"的 IP，
+表现为调用方连接超时（如网关报 `ConnectTimeoutException ... /172.18.0.4:8087`）。
+
+Docker Compose 部署推荐**用 compose 服务名注册**，并保证需要互调的服务与目标服务接入同一个
+自定义（bridge）网络。以同时接入业务网络与数据网络的 core 为例：
+
+```yaml
+services:
+  sfc-core:
+    environment:
+      # 映射 spring.cloud.nacos.discovery.ip；值必须等于本服务可被其它容器解析的名字
+      ADVERTISE_ADDRESS: sfc-core
+    networks:
+      - nacos              # 服务互通网络：注册中心与所有业务服务都在这里
+      - xyy-backend-net    # 数据网络：mysql/redis，仅 core 接入
+    expose:
+      - 8087
+```
+
+限制与注意事项：
+
+- 只对**同一 Docker 网络内**的调用方有效。若有容器外进程（宿主机或其它机器上的服务）也要经 Nacos
+  调用，需为该进程配置 hosts/内部 DNS，或改用它能直接路由的固定地址（如宿主机 IP + 发布端口）。
+- `ADVERTISE_ADDRESS` 必须与该服务的 compose 服务名/容器名一致，改名时同步修改（否则名字解析不到）。
+- Nacos 控制台会显示服务名而不是 IP，属预期现象；排查时按「服务名 ↔ 容器名」对照。
+- 默认的临时实例（`ephemeral: true`）由客户端连接保活，服务端不需要反连该地址，填服务名不影响健康检查。
+
+排查命令（在部署机、compose 项目目录执行）：
+
+```shell
+# 1) 容器内直接按服务名访问，输出里的 Trying <IP> 应等于目标服务在共享网络上的地址
+docker compose exec sfc-gateway sh -c 'curl -sSv -m 5 http://sfc-core:8087/api/hello/feature 2>&1 | head -5'
+
+# 2) 对比容器网卡与 IP（多网络容器会有多个地址）
+docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}={{$v.IPAddress}} {{end}}' sfc-core
+docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}}={{$v.IPAddress}} {{end}}' sfc-gateway
+
+# 3) Nacos 控制台：服务管理 → sfc-core，实例 IP 应为 sfc-core（而非 172.x 容器 IP）
+```
+
 ## 4. 验证注册结果
 
 先查 Nacos 服务端，再查业务侧。服务端 API 查询（Nacos 3.x 路径）：
