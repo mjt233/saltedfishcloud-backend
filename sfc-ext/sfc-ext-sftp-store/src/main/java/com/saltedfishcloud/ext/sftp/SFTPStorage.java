@@ -29,6 +29,7 @@ import java.security.PublicKey;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -251,7 +252,7 @@ public class SFTPStorage implements Storage, Closeable {
     @Override
     public OutputStream newOutputStream(String path) throws IOException {
         try(SFTPClient client = getSFTPClient()) {
-            return new SFTPFileOutputStream(client.open(path));
+            return new SFTPFileOutputStream(client.open(path, Set.of(OpenMode.WRITE, OpenMode.TRUNC)));
         }
     }
 

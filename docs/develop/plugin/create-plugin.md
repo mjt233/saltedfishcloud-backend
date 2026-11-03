@@ -40,7 +40,11 @@ git clone git@github.com:mjt233/saltedfishcloud-backend.git
 
     <dependencies>
         <!-- 插件实现的依赖 -->
-        <!-- 若存在重复的传递依赖，请尽量手动排除 -->
+        <!--
+            宿主已提供的库不要打包进插件（必须用 <exclusions> 排除其传递依赖）：
+            Spring / Spring Boot、Jackson、OkHttp、BouncyCastle（bcprov-jdk18on）等。
+            详见文末「插件依赖约定」。
+        -->
     </dependencies>
 
     <build>
@@ -155,3 +159,19 @@ mvn clean package
 - `config-properties.json` - 插件配置项（可选）
 - `plugin-lib` - 插件依赖的第三方 jar 包
 - `static` - 需要暴露给外部访问的静态资源
+
+## 8. 插件依赖约定
+
+插件采用 merge 方式加载：`plugin-lib/` 中的第三方 jar 会在启动时被加入**以宿主应用为父加载器**的合并类加载器。因此：
+
+1. **宿主已提供的库不得打包进插件**：Spring / Spring Boot、Jackson、OkHttp、BouncyCastle 等。
+   用 `mvn dependency:tree -pl sfc-ext/你的插件` 排查传递依赖，并通过 `<exclusions>` 排除。
+2. **`plugin-lib` 中不得出现与宿主类路径重名的类**。一旦重名，插件系统会打印
+   `外部插件无法加载: xxx.jar，存在以下冲突class：[...]` 并中断启动（`PluginInfoException`）。
+   例如插件通过 `sshj` 传递打包了 `bcprov-jdk15on`，而宿主已有 `bcprov-jdk18on`，会因 `org.bouncycastle.**` 重名而加载失败。
+3. **多个插件共享同一第三方库时必须保持同名同版本**。框架对「同名同版本」的重复依赖只告警并跳过，
+   对「同名不同版本」按版本冲突跳过，但对「构件名不同、类却重叠的同一库」（如 `bcprov-jdk15on` 与 `bcprov-jdk18on`）会直接判定为类冲突。
+   因此跨插件共享的库请统一构件名与版本。
+
+> 注：宿主当前由 `spring-cloud-starter` 传递提供 BouncyCastle（`bcprov-jdk18on`），`sfc-core` 不单独声明其版本，
+> 因此不要排除该传递依赖；升级 Spring Cloud 后需回归 SFTP / Samba 存储功能。

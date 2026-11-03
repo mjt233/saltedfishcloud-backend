@@ -22,6 +22,12 @@
             <groupId>com.hierynomus</groupId>
             <artifactId>smbj</artifactId>
             <version>0.13.0</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk18on</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
