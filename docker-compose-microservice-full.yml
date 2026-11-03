@@ -17,8 +17,11 @@ services:
       - 8848
       - 9848
       - 8080
-    ports:
-      - 8080:8080
+     # 映射端口到本机，建议只在开发和测试环境直接使用，生产环境请自行配置防火墙或反向代理，避免直接暴露到公网
+#    ports:
+#      - 8080:8080
+#      - 8848:8848
+#      - 9848:9848
     volumes:
       - ./data/nacos/logs:/home/nacos/logs
       - ./data/nacos/data:/home/nacos/data
@@ -199,6 +202,8 @@ services:
       - 8087
     volumes:
       - ./data/core/store:/saltedfish/store
+      # 映射静态链接的ffmpeg程序目录，以便插件的视频增强插件能够直接调用到ffmpeg二进制程序
+#      - /usr/local/ffmpeg:/usr/local/ffmpeg
 
   # Redis 缓存
   redis:
