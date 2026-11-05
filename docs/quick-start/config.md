@@ -1,77 +1,250 @@
 # 参数配置
 
-主要在config.yml中进行配置，也可以使用命令行进行配置。
+sfc-core 使用 Spring Boot 标准的「多文件 + 环境变量」覆盖机制：默认值集中打包在 jar 内，部署时只覆盖需要修改的项。
 
-## 配置示例
+## 1. 配置加载顺序
 
-大部分情况下，推荐使用修改config.yml的方式进行配置，下面将以修改服务端口为例展示两种初始配置方式
+优先级由低到高（后加载的覆盖先加载的，未配置的项自动取更低层的值）：
 
+| 层级 | 文件 / 来源                                                        | 作用                                                                                                                   |
+|----|----------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------|
+| 1  | `sfc-core/src/main/config/application.yml`（打包进 jar）            | **唯一默认值来源**：基础设施与部署可调项，全部写成 `${ENV:默认值}` 占位                                                                          |
+| 2  | `application-develop.yml`（同目录，打包进 jar）                         | 仅在 `--spring.profiles.active=develop` 时加载：本地开发差异（SQLite、本地缓存/锁、调试日志等）                                                |
+| 3  | 仓库根 `./config-local.yml`                                       | 开发者个人覆盖，仅 develop 下由第 2 层通过 `spring.config.import: optional:file:./config-local.yml` 自动导入；该文件已加入 `.gitignore`，不存在时忽略 |
+| 4  | 外部 `config.yml`（发布目录，`--spring.config.import=file:config.yml`） | 部署覆盖：按需取消注释模板中的项（未取消注释的项取内置默认值），模板见 `pre-release/config.yml`                                                                           |
+| 5  | 环境变量 / 命令行参数                                                   | 优先级最高，适合容器、CI 与临时调试                                                                                                  |
 
-### config.yml方式
-```yaml
-server:
-  port: 8087
+!!! info "说明"
+
+    - 发布包默认只加载第 1 层；需要本地开发配置时显式激活 develop profile（见下文「本地开发」）。
+    - 第 3 层的相对路径 `./config-local.yml` 相对**启动工作目录**解析，因此本地开发时请以仓库根为工作目录启动。
+    - 完整默认值以 `sfc-core/src/main/config/application.yml` 与对应 `@ConfigurationProperties` 类为准，本文只列常用项。
+
+## 2. 配置方式
+
+### 2.1 环境变量（推荐）
+
+容器化 / CI 部署无需挂载配置文件，只靠环境变量即可启动：
+
+```shell
+export SFC_JWT_SECRET="$(openssl rand -hex 16)"   # 恰好 32 字符
+export SFC_INTERNAL_KEY="$(openssl rand -hex 16)" # 不少于 32 字符
+export DB_HOST=127.0.0.1
+export REDIS_HOST=127.0.0.1
+java -jar sfc-core.jar
 ```
 
-### 命令行方式
+### 2.2 编辑 release 中的 config.yml
+
+发布目录（`release/`）中的 `config.yml` 是可选的部署覆盖文件。模板 `pre-release/config.yml` 以
+**全部注释**的形式列出了 `application.yml` 的全部可配置项（含两个必填密钥），默认等价于
+「不做任何覆盖」：未取消注释的项一律取内置默认值。需要修改某项时，删除该项**及其层级父行**行首的
+`# ` 即可（说明性注释可以保留）：
+
 ```yaml
+# 模板节选（默认全部注释；删除行首的 "# " 即生效）
+# server:
+#   port: "${SERVER_PORT:8087}"
+# sys:
+#   jwt-secret: "${SFC_JWT_SECRET:}"
+# sfc:
+#   internal:
+#     key: "${SFC_INTERNAL_KEY:}"
+```
+
+> 必填密钥 `sys.jwt-secret` / `sfc.internal.key` 推荐直接用环境变量 `SFC_JWT_SECRET` /
+> `SFC_INTERNAL_KEY` 注入，也可以取消模板中的注释后填写。模板中的 `app.version` /
+> `app.build-date` 由 Maven 打包时注入，请勿取消注释覆盖。
+
+`release/start.sh` / `start.bat` 已包含 `--spring.config.import=file:config.yml`，因此改完 `config.yml`
+后直接执行启动脚本即可。也可以把该参数改成任意路径的 yml 文件。
+
+### 2.3 命令行参数
+
+临时覆盖个别配置项（无需改文件）：
+
+```shell
 java -jar sfc-core.jar --spring.config.import=file:config.yml --server.port=8087
 ```
 
-### 以不依赖Redis和MySQL的方式运行
+## 3. 常用配置组
 
-参考以下配置节点改为，停用redis，启用sqlite，启用本地缓存和消息队列:
+> 下表只列常用项；完整默认值与注释见 `sfc-core/src/main/config/application.yml`，配置项含义以对应
+`@ConfigurationProperties` 类为准。
 
-!!! info "注意"
+### 3.1 服务器、数据库与 JPA
 
-    需要启用`sfc-ext-local-mq`插件，`sys.service.mq-provider`才能使用`local`
+| 配置项                             | 默认值                                                          | 环境变量                                     | 说明                           |
+|---------------------------------|--------------------------------------------------------------|------------------------------------------|------------------------------|
+| `server.port`                   | `8087`                                                       | `SERVER_PORT`                            | HTTP 服务端口                    |
+| `spring.application.name`       | `sfc-core`                                                   | `SERVICE_NAME`                           | 注册到注册中心的服务名                  |
+| `spring.datasource.url`         | `jdbc:mysql://127.0.0.1/xyy?useSSL=false&serverTimezone=UTC` | `DB_HOST` / `DB_NAME` / `JDBC_PARAMETER` | 默认 MySQL；`DB_NAME` 默认 `xyy`  |
+| `spring.datasource.username`    | `root`                                                       | `DB_USER`                                |                              |
+| `spring.datasource.password`    | `test`                                                       | `DB_PASSWORD`                            | 生产环境务必修改                     |
+| `spring.data.redis.host`        | `127.0.0.1`                                                  | `REDIS_HOST`                             |                              |
+| `spring.data.redis.port`        | `6379`                                                       | `REDIS_PORT`                             |                              |
+| `spring.data.redis.database`    | `0`                                                          | `REDIS_DB`                               |                              |
+| `spring.jpa.database`           | `mysql`                                                      | —                                        | develop profile 下为 `default` |
+| `spring.jpa.hibernate.ddl-auto` | `update`                                                     | —                                        | 由 JPA 自动创建 / 更新表结构           |
 
-```yaml
-spring:
-  datasource:
-    driver-class-name: org.sqlite.JDBC
-    url: "jdbc:sqlite:./xyy.db"
-  cloud:
-    sfc-local:
-      registry:
-        # 外部服务注册密码。留空表示禁用外部注册接口
-        password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
-        # 心跳超时时间，超过该时间未续约的实例会被移除
-        heartbeat-timeout: 30s
-        # 过期实例清理任务执行间隔
-        cleanup-interval: 10s
+### 3.2 服务注册与发现（local / Nacos 二选一）
 
-sys:
-  redis:
-    # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
-    # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider设置为local）、RPC等功能
-    enabled: false
-  service:
-    # 缓存provider，默认 redis，可选 local（程序内缓存）
-    cache-provider: local
-    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）
-    lock-provider: local
-    # MQ provider，默认 redis
-    # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
-    mq-provider: local
-    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
-    rpc-provider: mq
-    # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
-    client:
-      # 连接超时；留空使用默认值 5s，0 或负值表示不限制
-      connect-timeout: 5s
-      # 读取超时；留空使用默认值 60s，0 或负值表示不限制（大文件传输可放宽）
-      read-timeout: 60s
-    # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
-    # ⚠️ core 不参与代理链路：凭证验签（密钥经环境变量 SFC_JWT_SECRET 注入）、路径校验、服务名白名单、
-    #    api 前缀解析与转发全部在网关进程内（网关默认监听 8081，是整站唯一入口）。
-    #    此处曾有的 sys.service.gateway.*（enabled / default-api-prefix）与 POST /api/gateway/resolve
-    #    已随"网关独立验签"一并删除，不要再补回来。
+| 配置项                                                  | 默认值              | 环境变量                                | 说明                                         |
+|------------------------------------------------------|------------------|-------------------------------------|--------------------------------------------|
+| `spring.cloud.sfc-local.registry.enabled`            | `true`           | `SFC_LOCAL_ENABLED`                 | core 进程内 local 注册中心；启用 Nacos 时须设为 `false`  |
+| `spring.cloud.sfc-local.registry.password`           | 空                | `SFC_LOCAL_REGISTRY_PASSWORD`       | 外部服务注册密码，留空表示禁用外部注册接口；develop 下默认 `114514` |
+| `spring.cloud.sfc-local.registry.heartbeat-timeout`  | `30s`            | `LOCAL_REGISTRY_HEARTBEAT_TIMEOUT`  | 超过该时间未续约的实例会被移除                            |
+| `spring.cloud.sfc-local.registry.cleanup-interval`   | `10s`            | `LOCAL_REGISTRY_CLEANUP_INTERVAL`   | 过期实例清理任务执行间隔                               |
+| `spring.cloud.nacos.discovery.enabled`               | `false`          | `NACOS_ENABLED`                     | 启用 Nacos 时需同时设置 `SFC_LOCAL_ENABLED=false`  |
+| `spring.cloud.nacos.discovery.server-addr`           | `127.0.0.1:8848` | `NACOS_SERVER_ADDR`                 | 多节点用逗号分隔                                   |
+| `spring.cloud.nacos.discovery.namespace`             | 空                | `NACOS_NAMESPACE`                   | public 命名空间的 ID 是空串，不要写 `public`           |
+| `spring.cloud.nacos.discovery.username` / `password` | 空                | `NACOS_USERNAME` / `NACOS_PASSWORD` | 服务端未开启鉴权时留空                                |
+| `spring.cloud.nacos.discovery.group`                 | `SFC`            | `REGISTRY_GROUP`                    | 必须与各微服务一致                                  |
+| `spring.cloud.nacos.discovery.cluster-name`          | `DEFAULT`        | `NACOS_CLUSTER_NAME`                | 同一服务内实例的再分组                                |
+| `spring.cloud.nacos.discovery.ip`                    | 空（自动探测）          | `ADVERTISE_ADDRESS`                 | 本机对外可达地址；容器多网络部署必须显式指定                     |
+
+### 3.3 系统配置（`sys.*`）
+
+| 配置项                                                    | 默认值                                           | 环境变量                                                     | 说明                                             |
+|--------------------------------------------------------|-----------------------------------------------|----------------------------------------------------------|------------------------------------------------|
+| `sys.jwt-secret`                                       | 空                                             | `SFC_JWT_SECRET`                                         | **必填**，必须恰好 32 字符；缺失或长度不符时启动失败                 |
+| `sys.redis.enabled`                                    | `true`                                        | `REDIS_ENABLED`                                          | 设为 `false` 可在不启动 Redis 的情况下运行，需同步调整下列 provider |
+| `sys.oidc.enabled`                                     | `false`                                       | `OIDC_ENABLED`                                           | 内置 OIDC/OAuth2 授权服务器开关；端点路径使用代码默认值，无需配置        |
+| `sys.service.cache-provider`                           | `redis`                                       | `CACHE_PROVIDER`                                         | 缓存实现，可选 `local`（进程内缓存）                         |
+| `sys.service.lock-provider`                            | `redisson`                                    | `LOCK_PROVIDER`                                          | 资源锁实现，可选 `local`（仅当前实例内生效）                     |
+| `sys.service.mq-provider`                              | `redis`                                       | `MQ_PROVIDER`                                            | 消息队列实现，可选 `local`（需启用 `sfc-ext-local-mq` 插件）   |
+| `sys.service.rpc-provider`                             | `redis`                                       | `RPC_PROVIDER`                                           | RPC 实现，可选 `mq`（基于 MQService）                   |
+| `sys.store.archive-encoding`                           | 空（系统默认编码）                                     | `ARCHIVE_ENCODING`                                       | 压缩文件操作使用的编码                                    |
+| `sys.store.type`                                       | `local`                                       | `STORE_TYPE`                                             | 存储类型；`minio` / `hdfs` 需安装对应扩展插件                |
+| `sys.store.root`                                       | `store`                                       | `STORE_ROOT`                                             | 私有网盘、缩略图、缓存、临时文件等根目录                           |
+| `sys.store.public-root`                                | `public`                                      | `PUBLIC_ROOT`                                            | 公共网盘根目录（仅在 UNIQUE 存储模式下生效）                     |
+| `sys.store.minio.access-key` / `secret-key` / `bucket` | `xyy` / `xyy123456` / `xyy`                   | `MINIO_ACCESS_KEY` / `MINIO_SECRET_KEY` / `MINIO_BUCKET` | 安装 `sfc-ext-minio-store` 且 `type=minio` 时生效    |
+| `sys.store.hdfs.url` / `root` / `user`                 | `hdfs://localhost:9000` / `/xyy2` / `xiaotao` | `HDFS_URL` / `HDFS_ROOT` / `HDFS_USER`                   | 安装 `sfc-ext-hadoop-store` 且 `type=hdfs` 时生效    |
+
+### 3.4 内部接口与任务 Worker
+
+| 配置项                                    | 默认值    | 环境变量                            | 说明                                          |
+|----------------------------------------|--------|---------------------------------|---------------------------------------------|
+| `sfc.internal.key`                     | 空      | `SFC_INTERNAL_KEY`              | **必填**（单机部署也必须配置），不少于 32 字符；core 与所有微服务必须一致 |
+| `sfc.task.worker.role`                 | `CORE` | —                               | core 节点内嵌 Worker 的角色，固定为 `CORE`             |
+| `sfc.task.worker.max-concurrent-tasks` | `64`   | `SFC_TASK_MAX_CONCURRENT_TASKS` | 单实例最大并发执行任务数                                |
+| `sfc.task.worker.claim-wait-seconds`   | `10`   | —                               | 无任务可认领时的长轮询等待秒数                             |
+
+## 4. 环境变量完整表
+
+所有环境变量都可以直接覆盖对应配置项，无需修改任何 yml；默认值即 `application.yml` 中的取值。
+
+| 分类         | 环境变量                               | 对应配置项                                               | 默认值                               |
+|------------|------------------------------------|-----------------------------------------------------|-----------------------------------|
+| 数据库        | `DB_HOST`                          | `spring.datasource.url`                             | `127.0.0.1`                       |
+| 数据库        | `DB_NAME`                          | `spring.datasource.url`                             | `xyy`                             |
+| 数据库        | `DB_USER`                          | `spring.datasource.username`                        | `root`                            |
+| 数据库        | `DB_PASSWORD`                      | `spring.datasource.password`                        | `test`                            |
+| 数据库        | `JDBC_PARAMETER`                   | `spring.datasource.url` 的查询参数                       | `useSSL=false&serverTimezone=UTC` |
+| Redis      | `REDIS_HOST`                       | `spring.data.redis.host`                            | `127.0.0.1`                       |
+| Redis      | `REDIS_PORT`                       | `spring.data.redis.port`                            | `6379`                            |
+| Redis      | `REDIS_DB`                         | `spring.data.redis.database`                        | `0`                               |
+| Redis      | `REDIS_ENABLED`                    | `sys.redis.enabled`                                 | `true`                            |
+| 服务         | `SERVER_PORT`                      | `server.port`                                       | `8087`                            |
+| 服务         | `SERVICE_NAME`                     | `spring.application.name`                           | `sfc-core`                        |
+| local 注册中心 | `SFC_LOCAL_ENABLED`                | `spring.cloud.sfc-local.registry.enabled`           | `true`                            |
+| local 注册中心 | `SFC_LOCAL_REGISTRY_PASSWORD`      | `spring.cloud.sfc-local.registry.password`          | 空（develop 下 `114514`）             |
+| local 注册中心 | `LOCAL_REGISTRY_HEARTBEAT_TIMEOUT` | `spring.cloud.sfc-local.registry.heartbeat-timeout` | `30s`                             |
+| local 注册中心 | `LOCAL_REGISTRY_CLEANUP_INTERVAL`  | `spring.cloud.sfc-local.registry.cleanup-interval`  | `10s`                             |
+| Nacos      | `NACOS_ENABLED`                    | `spring.cloud.nacos.discovery.enabled`              | `false`                           |
+| Nacos      | `NACOS_SERVER_ADDR`                | `spring.cloud.nacos.discovery.server-addr`          | `127.0.0.1:8848`                  |
+| Nacos      | `NACOS_NAMESPACE`                  | `spring.cloud.nacos.discovery.namespace`            | 空                                 |
+| Nacos      | `NACOS_USERNAME`                   | `spring.cloud.nacos.discovery.username`             | 空                                 |
+| Nacos      | `NACOS_PASSWORD`                   | `spring.cloud.nacos.discovery.password`             | 空                                 |
+| Nacos      | `REGISTRY_GROUP`                   | `spring.cloud.nacos.discovery.group`                | `SFC`                             |
+| Nacos      | `NACOS_CLUSTER_NAME`               | `spring.cloud.nacos.discovery.cluster-name`         | `DEFAULT`                         |
+| Nacos      | `ADVERTISE_ADDRESS`                | `spring.cloud.nacos.discovery.ip`                   | 空（自动探测）                           |
+| 密钥         | `SFC_JWT_SECRET`                   | `sys.jwt-secret`                                    | 空（**必填**，恰好 32 字符）                |
+| 密钥         | `SFC_INTERNAL_KEY`                 | `sfc.internal.key`                                  | 空（**必填**，不少于 32 字符）               |
+| 服务实现       | `CACHE_PROVIDER`                   | `sys.service.cache-provider`                        | `redis`                           |
+| 服务实现       | `LOCK_PROVIDER`                    | `sys.service.lock-provider`                         | `redisson`                        |
+| 服务实现       | `MQ_PROVIDER`                      | `sys.service.mq-provider`                           | `redis`                           |
+| 服务实现       | `RPC_PROVIDER`                     | `sys.service.rpc-provider`                          | `redis`                           |
+| 存储         | `ARCHIVE_ENCODING`                 | `sys.store.archive-encoding`                        | 空（系统默认编码）                         |
+| 存储         | `STORE_TYPE`                       | `sys.store.type`                                    | `local`                           |
+| 存储         | `STORE_ROOT`                       | `sys.store.root`                                    | `store`                           |
+| 存储         | `PUBLIC_ROOT`                      | `sys.store.public-root`                             | `public`                          |
+| 存储         | `MINIO_ACCESS_KEY`                 | `sys.store.minio.access-key`                        | `xyy`                             |
+| 存储         | `MINIO_SECRET_KEY`                 | `sys.store.minio.secret-key`                        | `xyy123456`                       |
+| 存储         | `MINIO_BUCKET`                     | `sys.store.minio.bucket`                            | `xyy`                             |
+| 存储         | `HDFS_URL`                         | `sys.store.hdfs.url`                                | `hdfs://localhost:9000`           |
+| 存储         | `HDFS_ROOT`                        | `sys.store.hdfs.root`                               | `/xyy2`                           |
+| 存储         | `HDFS_USER`                        | `sys.store.hdfs.user`                               | `xiaotao`                         |
+| 任务         | `SFC_TASK_MAX_CONCURRENT_TASKS`    | `sfc.task.worker.max-concurrent-tasks`              | `64`                              |
+| OIDC       | `OIDC_ENABLED`                     | `sys.oidc.enabled`                                  | `false`                           |
+
+## 5. 本地开发
+
+### 5.1 以 develop profile 启动
+
+```shell
+# 在仓库根目录启动
+java -jar sfc-core/target/sfc-core.jar --spring.profiles.active=develop
+# 或通过环境变量
+SPRING_PROFILES_ACTIVE=develop java -jar sfc-core/target/sfc-core.jar
 ```
 
-完整配置见 [附录1: config.yml](#1configyml)
+develop profile 相对内置默认值的差异（完整见 `sfc-core/src/main/config/application-develop.yml`）：
 
-### JWT 会话密钥（必须配置）
+- 数据源改用 SQLite：`jdbc:sqlite:./xyy.db`（文件位于启动工作目录），`spring.jpa.database=default` 并打印 SQL；
+- 模板缓存关闭，`com.sfc` / `com.xiaotao` / `com.saltedfishcloud` 等日志级别为 `debug`；
+- 缓存与资源锁改用进程内实现（`cache-provider=local`、`lock-provider=local`），RPC 走 MQ（`rpc-provider=mq`）；
+- 存储根目录使用默认值（`store` / `public`）；如需把开发数据与发布数据隔离，可在 `config-local.yml` 中覆盖为
+  `store/dev/root` 与 `store/dev/public`（原 `application-develop-mysql.yml` 的默认值）；
+- 内置开发用 JWT 默认值（可用 `SFC_JWT_SECRET` 覆盖），local 注册中心外部注册密码默认 `114514`；
+- 自动导入仓库根 `./config-local.yml`（不存在时忽略）。
+
+在 IDE 中运行 `SaltedfishcloudApplication` 时，把运行配置的 **Working directory** 设为仓库根，并添加启动参数
+`--spring.profiles.active=develop`（或环境变量 `SPRING_PROFILES_ACTIVE=develop`）。
+
+### 5.2 config-local.yml：个人本地覆盖
+
+`config-local.yml` 位于仓库根，仅在 develop profile 下由 `application-develop.yml` 自动导入；该文件已在 `.gitignore` 中，*
+*不要提交**（首次使用自行创建即可）。示例：
+
+```yaml
+# 仓库根 config-local.yml
+
+# 1) 本地调试切 MySQL + Redis（不写则使用 SQLite + 进程内缓存/锁）
+spring:
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://127.0.0.1:3306/xyy?useSSL=false&serverTimezone=UTC
+    username: root
+    password: test
+  data:
+    redis:
+      host: 127.0.0.1
+      port: 6379
+sys:
+  service:
+    cache-provider: redis
+    lock-provider: redisson
+    rpc-provider: redis
+
+# 2) 开发时直接加载本地插件工程（路径相对仓库根）
+plugin:
+  extra-resource:
+    - sfc-ext/sfc-ext-demo
+```
+
+> `./config-local.yml` 相对启动工作目录解析：只有以仓库根为工作目录启动时才会被自动导入。
+
+### 5.3 不依赖 MySQL / Redis 运行
+
+- 本地开发：直接使用 `--spring.profiles.active=develop`（内置 SQLite + 进程内缓存/锁），无需启动 MySQL 与 Redis。
+- 正式部署不推荐关闭 Redis；如确需，设置 `REDIS_ENABLED=false`，并把 `CACHE_PROVIDER` / `LOCK_PROVIDER` 改为 `local`、
+  `MQ_PROVIDER` 改为 `local`（需启用 `sfc-ext-local-mq` 插件）、`RPC_PROVIDER` 改为 `mq`。`pre-release/config.yml`
+  的注释中有对应示例。
+- 注意：MQ 默认仍为 `redis`；完全离线运行需启用 `sfc-ext-local-mq` 插件，并把 `mq-provider` 改为 `local`（`rpc-provider` 保持
+  `mq`，即基于本地 MQ 实现）。
+
+## 6. JWT 会话密钥（必须配置）
 
 用户登录凭证与文件直链的签名/验签密钥来自配置项 `sys.jwt-secret`（环境变量 `SFC_JWT_SECRET`），
 **不再保存在数据库配置表中，也不再首次启动时随机生成**。要求：
@@ -86,11 +259,7 @@ sys:
   jwt-secret: ${SFC_JWT_SECRET:}
 ```
 
-> **升级提示**：旧版本把密钥保存在数据库配置项 `sys.safe.token`（管理后台【系统设置 → 常规 → 系统安全密钥】），
-> 该配置项已废弃并被忽略，管理后台不再展示。升级后请自行生成一个 32 字符密钥，同时注入 core 与网关；
-> 更换密钥会使所有已签发的登录凭证与文件直链失效（用户需重新登录）。
-
-### 内部接口密钥（单机部署也必须配置）
+## 7. 内部接口密钥（单机部署也必须配置）
 
 `/api/internal/**` 是服务间内部接口，调用凭证由 `sfc.internal.key`（环境变量 `SFC_INTERNAL_KEY`）签发与校验，
 配置项不在 `sys.` 节点下。**即使是单机部署、未启用任何微服务，也必须配置该密钥**：core 节点内嵌的任务 Worker
@@ -108,260 +277,23 @@ sfc:
     key: ${SFC_INTERNAL_KEY:}
 ```
 
-## 附录1：config.yml默认内容
-```yaml
-# 用户自定义程序配置文件
+## 8. 附录
 
-server:
-  port: 8087
-spring:
-  application:
-    name: ${SERVICE_NAME:sfc-core}
-  jpa:
-    database: mysql
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: "jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?${JDBC_PARAMETER:-useSSL=false&serverTimezone=UTC}"
-    username: ${DB_USER:root}
-    password: ${DB_PASSWORD:test}
-  data:
-    redis:
-      host: ${REDIS_HOST:127.0.0.1}
-      port: ${REDIS_PORT:6379}
-      database: ${REDIS_DB:0}
-#    password:
-  cloud:
-    # 服务注册与发现（local 与 Nacos 应二选一，由部署配置人工确保）
-    sfc-local:
-      discovery:
-        enabled: false
-      registry:
-        enabled: ${SFC_LOCAL_ENABLED:true}
-        # 外部服务注册密码。留空表示禁用外部注册接口
-        password: ${SFC_LOCAL_REGISTRY_PASSWORD:}
-        # 心跳超时时间，超过该时间未续约的实例会被移除
-        heartbeat-timeout: ${LOCAL_REGISTRY_HEARTBEAT_TIMEOUT:30s}
-        # 过期实例清理任务执行间隔
-        cleanup-interval: ${LOCAL_REGISTRY_CLEANUP_INTERVAL:10s}
-    nacos:
-      discovery:
-        # 是否启用 Nacos 注册中心，默认 false（使用 core 进程内 local 注册中心）
-        enabled: ${NACOS_ENABLED:false}
-        # 服务端地址，多节点用逗号分隔
-        server-addr: ${NACOS_SERVER_ADDR:127.0.0.1:8848}
-        # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
-        namespace: ${NACOS_NAMESPACE:}
-        # 鉴权用户名与密码，服务端未开启鉴权时留空
-        username: ${NACOS_USERNAME:}
-        password: ${NACOS_PASSWORD:}
-        # 分组，必须与各微服务的 spring.cloud.nacos.discovery.group 一致
-        group: ${REGISTRY_GROUP:SFC}
-        # 集群名，用于同一服务内实例的再分组
-        cluster-name: ${NACOS_CLUSTER_NAME:DEFAULT}
-        # 本机对外可达地址（host 或 IP，不含端口）；留空自动探测
-        # ⚠️ 容器化多网络部署（容器接入多个 Docker 网络）时必须显式指定：自动探测按网卡顺序取
-        #    第一个非回环地址，不保证落在所有调用方都能访问的网络上。推荐填写 compose 服务名
-        #    （如 sfc-core），共享该网络的服务可经 Docker 内置 DNS 解析；单网络/非容器部署可留空。
-        ip: ${ADVERTISE_ADDRESS:}
-        # 注销后不额外等待，实例立即从注册中心移除
-        graceful-shutdown-wait-time: 0
+### 8.1 完整默认值与部署模板
 
-sys:
-  # JWT 会话密钥（用户登录凭证与文件直链的签名/验签）。必须恰好 32 个字符，例如 `openssl rand -hex 16`。
-  # ⚠️ 网关 sfc-gateway 必须注入完全相同的 SFC_JWT_SECRET；缺失或长度不符时 core 启动失败（fail-fast）。
-  jwt-secret: ${SFC_JWT_SECRET:}
-  redis:
-    # Redis 是否启用，默认为 true。设置为 false 可以在不启动 Redis 的情况下运行系统
-    # 注意：禁用Redis会影响缓存（cache-provider需设置为local）、资源锁（lock-provider需设置为local）、消息队列（mq-provider需设置为local）、RPC等功能
-    enabled: ${REDIS_ENABLED:true}
-  service:
-    # 缓存provider，默认 redis，可选 local（程序内缓存）
-    cache-provider: ${CACHE_PROVIDER:redis}
-    # 资源锁 provider，默认 redisson，可选 local（仅当前服务实例内生效，且不注入 Redisson）
-    lock-provider: ${LOCK_PROVIDER:redisson}
-    # MQ provider，默认 redis
-    # 启用 sfc-ext-local-mq 插件时，可选local。使用local仅支持单 JVM 进程内消息语义
-    mq-provider: ${MQ_PROVIDER:redis}
-    # RPC provider，默认 redis，可选 mq（基于 MQService 实现）
-    rpc-provider: ${RPC_PROVIDER:redis}
-    # 服务调用客户端（以服务名作为 host 的 RestClient：服务发现 + 轮询负载均衡）
-    client:
-      # 连接超时；留空使用默认值 5s，0 或负值表示不限制
-      connect-timeout: ${SFC_CLIENT_CONNECT_TIMEOUT:5s}
-      # 读取超时；留空使用默认值 60s，0 或负值表示不限制（大文件传输可放宽）
-      read-timeout: ${SFC_CLIENT_READ_TIMEOUT:60s}
-    # 控制面代理（阶段 8）：登录用户经【独立网关 sfc-gateway】调用微服务接口，路径形态 /api/ext/{serviceName}/**
-    # ⚠️ core 不参与代理链路：凭证验签、路径校验、服务名白名单、api 前缀解析与转发全部在网关进程内；
-    #    代理侧配置（core 服务名、监听端口、缺省 api 前缀、密钥环境变量名）在
-    #    microservices/sfc-gateway 工程自己的 application.yml 内，不占用 sys. 前缀。
-    #    注：网关【不】管控请求体大小（无上限配置项），请求体多大由承载业务的服务自己决定。
-    # ⚠️ 框架期采用【信任模式】：网关本地验签得到 uid 后注入 X-Sfc-Uid，微服务直接信任；
-    #    因此微服务与 core 的内部接口只允许内网可达，上公网前必须先完成服务间鉴权（阶段 5）。
-    #    已落地的一层兜底：/api/internal/** 只允许微服务间调用——各服务用同一份共享密钥
-    #    （sfc.internal.key ← 环境变量 SFC_INTERNAL_KEY，由 sfc-auth SDK 提供）为每次调用自签 HS256 JWT，
-    #    core 侧校验「签名 + 有效期（含时钟偏移）+ 必需声明」，网关侧直接拒绝该前缀。
-    #    该兜底不区分服务身份、不做防重放，仍不能替代阶段 5。
-    #    此处曾有的 sys.service.gateway.* 与 POST /api/gateway/resolve 已整体删除，不要再补回来。
-    local-cache:
-      # 本地缓存默认过期时间（毫秒），默认 15 分钟
-      default-expire-ms: ${LOCAL_CACHE_DEFAULT_EXPIRE_MS:900000}
-      # 本地缓存最大数量，超过后按最旧写入顺序淘汰
-      max-cache-size: ${LOCAL_CACHE_MAX_CACHE_SIZE:4096}
-      # 是否启用本地缓存持久化，启用后会定时异步刷盘，并在系统关闭时再次落盘
-      persist-enabled: ${LOCAL_CACHE_PERSIST_ENABLED:true}
-      # 本地缓存持久化文件路径，系统启动时会尝试从该文件恢复缓存内容
-      persist-file-path: ${LOCAL_CACHE_PERSIST_FILE_PATH:./localcache.data}
-    local-mq:
-      # 本地消息队列的历史消息记录最长长度，默认为 4096。过大的值可能会导致OOM
-      max-queue-size: 4096
-      # 淘汰目标比例，消息数超出 max-queue-size 时淘汰至 max-queue-size * evict-target-ratio，默认 0.85
-      evict-target-ratio: 0.85
-  store:
-    # 压缩文件操作使用的文件编码格式，默认使用系统默认编码，Linux: UTF-8，Windows: GBK
-    archive-encoding: ${ARCHIVE_ENCODING:}
+- `application.yml` 完整默认值见 `sfc-core/src/main/config/application.yml`；
+- `config.yml` 部署覆盖模板见 `pre-release/config.yml`（打包后复制为 `release/config.yml`）；
+- 本地开发差异见 `sfc-core/src/main/config/application-develop.yml`；个人覆盖写在仓库根 `config-local.yml`（gitignore）。
 
-    # 存储服务类型，可选hdfs（需要hdfs拓展）或local
-    type: ${STORE_TYPE:local}
+### 8.2 关键项速查
 
-    # 除公共网盘外，各类资源根目录存储路径（缩略图、缓存、临时文件、私人网盘数据、用户头像、按哈希组织的文件集合等数据）
-    root: ${STORE_ROOT:store}
-
-    # 单独的公共网盘根目录路径
-    # 仅在 管理员后台-系统-基础配置-存储模式 设置为 UNIQUE(默认) 时有效。（注：切换存储模式会触发全网盘数据重新组织，中途出错可能会导致数据丢失和损坏，请谨慎切换并做好数据备份）
-    public-root: ${PUBLIC_ROOT:public}
-
-    # minio存储配置
-    # 安装了 sfc-ext-minio-store 插件后，sys.store.type设置为minio后生效
-    minio:
-      access-key: ${MINIO_ACCESS_KEY:xyy}
-      secret-key: ${MINIO_SECRET_KEY:xyy123456}
-      bucket: ${MINIO_BUCKET:xyy}
-
-    # hdfs存储配置
-    # 安装了 sfc-ext-hadoop-store 插件后，sys.store.type设置为hdfs后生效
-    # 注意：该插件未在jdk25中进行测试，使用时请确保hadoop版本和jdk版本兼容，且hadoop环境配置正确，否则可能会导致程序无法启动或运行时异常
-    hdfs:
-      url: ${HDFS_URL:hdfs://localhost:9000}
-      root: ${HDFS_ROOT:/xyy2}
-      user: ${HDFS_USER:xiaotao}
-
-# 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
-# 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致；本节点不在 sys. 下，但同样需要在各部署配置中同步。
-sfc:
-  internal:
-    # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。留空 = 未配置：服务端拒绝全部 /api/internal/** 请求
-    # （fail-closed，启动打印 ERROR），客户端也无法签发调用凭证；不得少于 32 个字符，例如 `openssl rand -hex 16`。
-    # ⚠️ core 单机部署（未启用微服务）也必须配置该密钥：内嵌 Worker 通过内部 HTTP 与调度面交互，
-    #    未配置时无法签发调用凭证，启动日志打印 ERROR 并自动禁用认领。
-    key: ${SFC_INTERNAL_KEY:}
-    # 本服务名（写入调用凭证的 iss，便于接收方审计/白名单）
-    service-name: sfc-core
-    # 是否在本进程启用服务端校验过滤器，默认 true（Servlet 应用自动装配）
-    server-enabled: true
-  # 任务 Worker（内嵌执行者）配置：core 节点以 CORE 角色通过服务发现 + 内部 HTTP 与异步任务调度面交互。
-  task:
-    worker:
-      # 本实例的执行者角色：CORE = core 节点，SERVICE = 微服务实例
-      role: CORE
-      # 单实例最大并发执行任务数；普通任务受该上限限制，紧急任务（immediate=true）不受限制
-      max-concurrent-tasks: ${SFC_TASK_MAX_CONCURRENT_TASKS:64}
-      # 没有可认领任务时的长轮询等待秒数，越小则空闲期的请求越频繁
-      claim-wait-seconds: 10
-
-```
-
-## 附录2：application.yml默认内容
-```yaml
-server:
-  port: 8087
-  servlet:
-    encoding:
-      charset: utf-8
-      enabled: true
-      force: false
-  tomcat:
-    remoteip:
-      remote-ip-header: X-Real-IP
-
-spring:
-  cloud:
-    # 服务注册与发现（local 与 Nacos 应二选一，由部署配置人工确保）：
-    #   local：core 进程内注册表（默认启用），由 sfc-local.registry.enabled 控制
-    #   nacos：由 nacos.discovery.enabled 控制；启用 Nacos 时需 SFC_LOCAL_ENABLED=false
-    # sfc-local.discovery.enabled 固定 false：core 是 local 注册中心服务端，不启用 SDK 客户端
-    sfc-local:
-      discovery:
-        enabled: false
-      registry:
-        enabled: ${SFC_LOCAL_ENABLED:true}
-    nacos:
-      discovery:
-        enabled: ${NACOS_ENABLED:false}
-  jpa:
-    database: mysql
-    open-in-view: false
-    hibernate:
-      ddl-auto: update
-    properties:
-      hibernate:
-        order_inserts: true
-        enable_lazy_load_no_trans: true
-        jdbc:
-          batch_size: 200
-
-  datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-    username: root
-    password: test
-    hikari:
-      transaction-isolation: TRANSACTION_READ_COMMITTED
-  data:
-    redis:
-      host: 127.0.0.1
-      port: 6379
-      lettuce:
-        pool:
-          min-idle: 0
-          max-idle: 8
-          max-active: 8
-  servlet:
-    multipart:
-      # 单文件上限需大于最大可上传/可保存的文件（离线下载会把下载结果上传到 core）；
-      # multipart 会先落临时文件再写入存储，上传期间需约 2 倍文件大小的空闲磁盘
-      max-file-size: 32768MB
-      max-request-size: 33792MB
-  profiles:
-    active: ^spring-profile^
-  web:
-    resources:
-      add-mappings: false
-logging:
-  file:
-    name: ./log/output.log
-  level:
-    org: warn
-    com: warn
-    com.sfc: info
-    com.xiaotao: info
-    com.saltedfishcloud: info
-#    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
-
-management:
-  health:
-    mail:
-      enabled: false
-app:
-  version: ^project.version^
-
-# 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
-# 该节点不在 sys. 下（配置项前缀由 SDK 固定为 sfc.internal），但同样需要在各部署配置中同步。
-# 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致。
-# ⚠️ core 单机部署也必须配置：内嵌的任务 Worker 通过内部 HTTP 与调度面交互，未配置时会自动禁用认领。
-sfc:
-  internal:
-    # 服务间共享密钥（环境变量 SFC_INTERNAL_KEY）。各项含义与默认值见 sfc-auth/README.md：
-    # key / service-name / token-ttl / clock-skew / server-enabled / allowed-issuers
-    key: ${SFC_INTERNAL_KEY:}
-    server-enabled: true
-```
+| 场景       | 配置项 / 环境变量                                                                                                       | 取值                                       |
+|----------|------------------------------------------------------------------------------------------------------------------|------------------------------------------|
+| 改端口      | `SERVER_PORT`                                                                                                    | 默认 `8087`                                |
+| 连数据库     | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD`                                                                | 默认 `127.0.0.1` / `xyy` / `root` / `test` |
+| 连 Redis  | `REDIS_HOST` / `REDIS_PORT` / `REDIS_DB`                                                                         | 默认 `127.0.0.1` / `6379` / `0`            |
+| 必填密钥 1   | `SFC_JWT_SECRET`（`sys.jwt-secret`）                                                                               | 恰好 32 字符                                 |
+| 必填密钥 2   | `SFC_INTERNAL_KEY`（`sfc.internal.key`）                                                                           | 不少于 32 字符                                |
+| 关闭 Redis | `REDIS_ENABLED=false` + `CACHE_PROVIDER=local` + `LOCK_PROVIDER=local` + `MQ_PROVIDER=local` + `RPC_PROVIDER=mq` | MQ 的 local 需 `sfc-ext-local-mq` 插件       |
+| 存储目录     | `STORE_ROOT` / `PUBLIC_ROOT`                                                                                     | 默认 `store` / `public`                    |
+| 本地开发     | `--spring.profiles.active=develop`                                                                               | SQLite + 进程内缓存/锁                         |

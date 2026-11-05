@@ -119,8 +119,8 @@ sfc-gateway ──(discovery locator: 剥离 /api/service/{serviceId} 并补 /ap
 > `sfc.download.aria2.*` 均为**部署期配置，修改后需重启本服务**；secret 只从部署配置读取，日志与接口不回显。
 > 共享目录与双路径映射见 §4.3；`GET /capabilities?refresh=true` 只刷新 Git 配置，不会清除 aria2 连通性探测的 30 秒缓存。
 
-> 本服务**不读取** core 的 `sys.*` 节点，因此无需同步修改 `application-develop.yml` / `application-product.yml` /
-> `pre-release/config.yml`。
+> 本服务**不读取** core 的 `sys.*` 节点，因此无需同步修改 core 侧的配置文件
+> （`application.yml` / `application-develop.yml` / `pre-release/config.yml`）。
 
 ### 4.2 sfc-core 统一配置（仅 Git 参数，改完无需重启）
 

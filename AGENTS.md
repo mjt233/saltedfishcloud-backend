@@ -51,7 +51,7 @@
 
 - 分页封装示例：`sfc-api/src/main/java/com/xiaotao/saltedfishcloud/utils/PageUtils.java`、`sfc-core-task/src/main/java/com/sfc/task/controller/AsyncTaskController.java`。
 - UID 注解示例（Controller 参数）：`sfc-core/src/main/java/com/xiaotao/saltedfishcloud/controller/ResourceController.java` 的多处方法使用 `@SfcUID` 注解来保证 uid 校验。
-- sfc-core模块中涉及SpringBoot应用参数配置的修改，如果是在`sys.`节点下，需要同步修改`application-develop.yml`、`application-product.yml`和`pre-release/config.yml`中的对应项，不需要修改`application.yml`，`application.yml`下不需要有`sys.`节点。
+- sfc-core 的 SpringBoot 配置采用分层约定：默认值只写在 `sfc-core/src/main/config/application.yml`（全部使用 `${ENV:默认值}` 占位，是唯一的打包默认值来源）；本地开发差异写在 `application-develop.yml`，开发者个人覆盖写在仓库根 `config-local.yml`（已 gitignore）；部署覆盖模板为 `pre-release/config.yml`。新增配置项时按归属只改对应层，不要在多个文件重复整块配置；配置项的含义与默认值以对应 `@ConfigurationProperties` 类为准。
 
 ### Controller 接口规范
 

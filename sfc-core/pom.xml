@@ -17,18 +17,12 @@
     </properties>
 
     <profiles>
-        <profile>
-            <id>develop</id>
-            <properties>
-                <spring-profile>develop</spring-profile>
-            </properties>
-        </profile>
-        <profile>
-            <id>develop-mysql</id>
-            <properties>
-                <spring-profile>develop-mysql</spring-profile>
-            </properties>
-        </profile>
+        <!--
+            前端资源打包：设置环境变量 SFC_FRONT_END_PATH 后自动激活，
+            将前端 dist/** 复制进 sfc-core 的 webapp/。
+            运行环境（develop / 默认）改为运行时通过 spring.profiles.active 或
+            环境变量 SPRING_PROFILES_ACTIVE 选择，不再使用 Maven profile 在打包时烘焙。
+        -->
         <profile>
             <id>frontend-resource</id>
             <activation>
@@ -66,15 +60,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>product</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <spring-profile>product</spring-profile>
-            </properties>
         </profile>
     </profiles>
     <dependencyManagement>

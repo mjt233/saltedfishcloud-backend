@@ -119,11 +119,17 @@ git clone git@github.com:mjt233/saltedfishcloud-backend.git
 
 ## 5. 开发与调试
 
-开发期间，不必将插件构建打包为jar来运行，通过以下步骤可以让系统直接加载插件
+开发期间，不必将插件构建打包为 jar 来运行，通过以下步骤可以让系统直接加载插件
 
-1. maven的profile设置为`develop`，或指定SpringBoot配置文件为`sfc-core/src/main/config/application-develop.yml`（下面简称为
-   `application-develop.yml`）
-2. 修改`application-develop.yml`，为`plugin.extra-resource`添加一项: `sfc-ext/你的插件项目目录`
+1. 以 `develop` profile 启动后端：命令行参数 `--spring.profiles.active=develop`，或环境变量 `SPRING_PROFILES_ACTIVE=develop`。该 profile 使用内置 SQLite 与进程内缓存/锁，无需启动 MySQL（MQ 默认仍使用 Redis）
+2. 在仓库根目录的 `config-local.yml`（该文件已在 `.gitignore` 中、不会提交；仅 develop 下由 `application-develop.yml` 自动导入，因此启动工作目录必须是仓库根）中，为 `plugin.extra-resource` 添加一项插件工程目录：`sfc-ext/你的插件项目目录`
+
+    ```yaml
+    plugin:
+      extra-resource:
+        - sfc-ext/你的插件项目目录
+    ```
+
 3. 如果插件有配置第三方依赖，请务必对插件的maven模块执行`mvn compile`确保依赖库能得到加载，并提示用户在IDE中刷新依赖信息以便后续能使用`build_project`进行验证。
 
 ## 6. 构建插件

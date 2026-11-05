@@ -22,7 +22,7 @@
 1. 构建阶段使用 `maven:3.9.11-amazoncorretto-25-al2023`
 2. 运行阶段使用 `amazoncorretto:25-al2023`
 3. 构建阶段会执行 `mvn -s /tmp/maven-settings.xml install package`
-4. 最终镜像会复制 `release` 目录内容，并默认加载 `conf/config.yml`
+4. 最终镜像会复制 `release` 目录内容，并默认加载 `config.yml`
 
 这意味着即使宿主机没有安装 Maven，也可以直接通过 Docker 完成构建。
 

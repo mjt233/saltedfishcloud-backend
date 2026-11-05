@@ -83,13 +83,23 @@ mvn package
 
 ### 3) 启动服务
 
-先根据实际环境修改配置文件（可参考 `conf/config.yml`），重点确认 MySQL 和 Redis 连接信息，
-并配置 JWT 会话密钥 `sys.jwt-secret`（环境变量 `SFC_JWT_SECRET`，**必须恰好 32 个字符**，未配置时服务启动失败；
-启用微服务网关时两侧必须注入同一值），详见[参数配置](docs/quick-start/config.md)。
+先根据实际环境修改发布目录中的 `config.yml`（可选，模板见 `pre-release/config.yml`；模板项默认全部注释，未取消注释的项取内置默认值），
+重点确认 MySQL 和 Redis 连接信息，并注入两个必填密钥：
+
+- `SFC_JWT_SECRET`：JWT 会话密钥，**必须恰好 32 个字符**（例如 `openssl rand -hex 16`），未配置或长度不符时服务启动失败；启用微服务网关时 core 与网关必须注入同一值。
+- `SFC_INTERNAL_KEY`：内部接口共享密钥，**不少于 32 个字符**；即使单机部署也必须配置（内嵌任务 Worker 依赖它）。
 
 ```bash
-java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
+export SFC_JWT_SECRET='<恰好 32 字符>'
+export SFC_INTERNAL_KEY='<不少于 32 字符>'
+java -jar release/sfc-core.jar --spring.config.import=file:config.yml
 ```
+
+> 想先不装 MySQL / Redis 跑起来？在仓库根执行
+> `java -jar sfc-core/target/sfc-core.jar --spring.profiles.active=develop`
+> 即可使用内置 SQLite + 进程内缓存/锁（数据落在启动目录的 `xyy.db` 与 `store/`），无需启动 MySQL 与 Redis。
+> 此时 `SFC_INTERNAL_KEY` 仍必须注入，否则内嵌任务 Worker 会禁用认领。
+> 配置加载顺序、环境变量与本地覆盖文件 `config-local.yml` 见[参数配置](docs/quick-start/config.md)。
 
 系统默认由 JPA 自动创建/更新表结构。
 

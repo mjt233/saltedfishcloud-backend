@@ -53,6 +53,8 @@ log/**
 *.db
 settings.local.json
 .flattened-pom.xml
+# 开发者个人本地覆盖配置（application-develop.yml 通过 spring.config.import 自动导入）
+config-local.yml
 
 .env
 data

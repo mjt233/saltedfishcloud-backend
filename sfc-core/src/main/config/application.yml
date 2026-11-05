@@ -1,27 +1,63 @@
+# ============================================================================
+# sfc-core 内置默认配置（打包进 jar，是唯一的默认值来源）
+#
+# 加载顺序（优先级由低到高）：
+#   本文件 → application-develop.yml（--spring.profiles.active=develop）
+#          → ./config-local.yml（开发个人覆盖，仅 develop 下自动导入）
+#          → 外部 config.yml（--spring.config.import=file:config.yml）
+#          → 环境变量 / 命令行参数
+#
+# 本文件中所有 ${ENV:默认值} 均可用同名环境变量覆盖；
+# 各配置组说明与环境变量完整列表见 docs/quick-start/config.md。
+# ============================================================================
+
 server:
-  port: 8087
+  port: "${SERVER_PORT:8087}"
   tomcat:
     remoteip:
       remote-ip-header: X-Real-IP
 
-springdoc:
-  enable-kotlin: false
 spring:
+  application:
+    name: "${SERVICE_NAME:sfc-core}"
+
+  # 服务注册与发现（local 与 Nacos 二选一，由部署配置人工确保）：
+  #   local：core 进程内注册表（默认启用），由 spring.cloud.sfc-local.registry.enabled 控制（SFC_LOCAL_ENABLED）
+  #   nacos：由 spring.cloud.nacos.discovery.enabled 控制（NACOS_ENABLED，默认关闭）；启用 Nacos 时需 SFC_LOCAL_ENABLED=false
+  # sfc-local.discovery.enabled 固定 false：core 是 local 注册中心服务端，不启用 SDK 客户端
   cloud:
-    # 服务注册与发现（local 与 Nacos 应二选一，由部署配置人工确保）：
-    #   local：core 进程内注册表（默认启用），由 sfc-local.registry.enabled 控制（环境变量 SFC_LOCAL_ENABLED）
-    #   nacos：由 nacos.discovery.enabled 控制（环境变量 NACOS_ENABLED，默认关闭）；启用 Nacos 时需 SFC_LOCAL_ENABLED=false
-    # sfc-local.discovery.enabled 固定 false：core 是 local 注册中心服务端，不启用 SDK 客户端
     sfc-local:
       discovery:
         enabled: false
       registry:
-        enabled: ${SFC_LOCAL_ENABLED:true}
+        enabled: "${SFC_LOCAL_ENABLED:true}"
+        # 外部服务注册密码。留空表示禁用外部注册接口
+        password: "${SFC_LOCAL_REGISTRY_PASSWORD:}"
+        # 心跳超时时间，超过该时间未续约的实例会被移除
+        heartbeat-timeout: "${LOCAL_REGISTRY_HEARTBEAT_TIMEOUT:30s}"
+        # 过期实例清理任务执行间隔
+        cleanup-interval: "${LOCAL_REGISTRY_CLEANUP_INTERVAL:10s}"
     nacos:
       discovery:
-        enabled: ${NACOS_ENABLED:false}
-  application:
-    name: sfc-core
+        enabled: "${NACOS_ENABLED:false}"
+        # 服务端地址，多节点用逗号分隔
+        server-addr: "${NACOS_SERVER_ADDR:127.0.0.1:8848}"
+        # 命名空间 ID。留空表示 public 命名空间（它的 ID 是空串，不要写 public）
+        namespace: "${NACOS_NAMESPACE:}"
+        # 鉴权用户名与密码，服务端未开启鉴权时留空
+        username: "${NACOS_USERNAME:}"
+        password: "${NACOS_PASSWORD:}"
+        # 分组，必须与各微服务的 spring.cloud.nacos.discovery.group 一致
+        group: "${REGISTRY_GROUP:SFC}"
+        # 集群名，用于同一服务内实例的再分组
+        cluster-name: "${NACOS_CLUSTER_NAME:DEFAULT}"
+        # 本机对外可达地址（host 或 IP，不含端口）；留空自动探测。
+        # ⚠️ 容器化多网络部署时必须显式指定：自动探测不保证落在所有调用方都能访问的网络上，
+        #    推荐填 compose 服务名（如 sfc-core）。单网络/非容器部署可留空。
+        ip: "${ADVERTISE_ADDRESS:}"
+        # 注销后不额外等待，实例立即从注册中心移除
+        graceful-shutdown-wait-time: 0
+
   jpa:
     database: mysql
     open-in-view: false
@@ -38,34 +74,39 @@ spring:
 
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
-    url: jdbc:mysql://127.0.0.1/d_xyy?useSSL=false&serverTimezone=UTC
-    username: root
-    password: test
+    url: "jdbc:mysql://${DB_HOST:127.0.0.1}/${DB_NAME:xyy}?${JDBC_PARAMETER:useSSL=false&serverTimezone=UTC}"
+    username: "${DB_USER:root}"
+    password: "${DB_PASSWORD:test}"
     hikari:
       transaction-isolation: TRANSACTION_READ_COMMITTED
       initialization-fail-timeout: 180000
+
   data:
     redis:
-      host: 127.0.0.1
-      port: 6379
+      host: "${REDIS_HOST:127.0.0.1}"
+      port: "${REDIS_PORT:6379}"
+      database: "${REDIS_DB:0}"
       lettuce:
         pool:
           min-idle: 0
           max-idle: 8
           max-active: 8
+
   servlet:
     encoding:
       charset: utf-8
       enabled: true
       force: false
     multipart:
+      # 单文件上限需大于最大可上传/可保存的文件（离线下载会把下载结果上传到 core）；
+      # multipart 会先落临时文件再写入存储，上传期间需约 2 倍文件大小的空闲磁盘
       max-file-size: 32768MB
       max-request-size: 33792MB
-  profiles:
-    active: ^spring-profile^
+
   web:
     resources:
       add-mappings: false
+
 logging:
   file:
     name: ./log/output.log
@@ -75,58 +116,67 @@ logging:
     com.sfc: info
     com.xiaotao: info
     com.saltedfishcloud: info
-#    com.xiaotao.saltedfishcloud.SaltedfishcloudApplication: warn
 
-management:
-  health:
-    mail:
-      enabled: false
 app:
   version: ^project.version^
   build-date: ^maven.build.timestamp^
 
 sys:
-  # OIDC/OAuth2 授权服务器配置
+  # JWT 会话密钥：用于用户登录凭证与文件直链的签名/验签，必须恰好 32 个字符。
+  # 未配置或长度不符时应用启动失败；启用网关时 sfc-gateway 必须注入完全相同的值。
+  jwt-secret: "${SFC_JWT_SECRET:}"
+  redis:
+    # Redis 是否启用。设为 false 可在不启动 Redis 的情况下运行（缓存/锁/MQ/RPC provider 需相应改为 local/mq）
+    enabled: "${REDIS_ENABLED:true}"
+  # OIDC/OAuth2 授权服务器。端点路径均使用 OidcServerProperty 的代码默认值，无需在此配置
   oidc:
-    # 是否启用内置 OIDC 授权服务器
-    enabled: true
+    enabled: "${OIDC_ENABLED:false}"
+  service:
+    # 缓存 provider：redis（默认）/ local（进程内缓存）
+    cache-provider: "${CACHE_PROVIDER:redis}"
+    # 资源锁 provider：redisson（默认）/ local（仅当前服务实例内生效，且不注入 Redisson）
+    lock-provider: "${LOCK_PROVIDER:redisson}"
+    # MQ provider：redis（默认）/ local（需 sfc-ext-local-mq 插件，仅单 JVM 进程内消息语义）
+    mq-provider: "${MQ_PROVIDER:redis}"
+    # RPC provider：redis（默认）/ mq（基于 MQService 实现）
+    rpc-provider: "${RPC_PROVIDER:redis}"
+  store:
+    # 压缩文件操作使用的文件编码格式，留空使用系统默认编码（Linux: UTF-8，Windows: GBK）
+    archive-encoding: "${ARCHIVE_ENCODING:}"
+    # 存储服务类型：local（默认）/ minio、hdfs（需对应扩展插件）
+    type: "${STORE_TYPE:local}"
+    # 除公共网盘外，各类资源根目录存储路径（缩略图、缓存、临时文件、私人网盘数据、用户头像等）
+    root: "${STORE_ROOT:store}"
+    # 单独的公共网盘根目录路径。仅在 管理员后台-系统-基础配置-存储模式 设置为 UNIQUE(默认) 时有效
+    # （注：切换存储模式会触发全网盘数据重新组织，中途出错可能会导致数据丢失和损坏，切换前请做好数据备份）
+    public-root: "${PUBLIC_ROOT:public}"
+    # 安装了 sfc-ext-minio-store 插件后，sys.store.type 设置为 minio 后生效
+    minio:
+      access-key: "${MINIO_ACCESS_KEY:xyy}"
+      secret-key: "${MINIO_SECRET_KEY:xyy123456}"
+      bucket: "${MINIO_BUCKET:xyy}"
+    # 安装了 sfc-ext-hadoop-store 插件后，sys.store.type 设置为 hdfs 后生效
+    # 注意：该插件未在 JDK25 中测试，使用时请确保 hadoop 版本与 JDK 兼容且环境配置正确
+    hdfs:
+      url: "${HDFS_URL:hdfs://localhost:9000}"
+      root: "${HDFS_ROOT:/xyy2}"
+      user: "${HDFS_USER:xiaotao}"
 
-    # OAuth2 授权端点路径（第三方应用发起授权请求的入口，引导用户进入授权的页面）
-    authorization-endpoint: /oauth2/authorize
-
-    # OAuth2 令牌端点路径（用户授权确认后，第三方应用根据授权码换取access token和refresh token的端点）
-    token-endpoint: /oauth2/token
-
-    # OAuth2 设备授权端点路径（第三方客户端发起设备授权请求，拿到user_code、device_code、verification_uri_complete、verification_uri和expires_in）
-    device-authorization-endpoint: /oauth2/device_authorization
-
-    # OAuth2 设备核验端点路径（用户提交 user_code 并确认授权）
-    device-verification-endpoint: /oauth2/device_verification
-
-    # OAuth2 设备授权成功后重定向地址
-    device-verification-success-uri: /oauth?grant_type=user_code&success=true
-
-    # OAuth2 设备授权失败后重定向地址（如 user_code 无效）
-    device-verification-error-uri: /oauth?grant_type=user_code&error=invalid_user_code
-
-    # OIDC 用户信息端点路径
-    user-info-endpoint: /oauth2/userinfo
-
-    # JWK Set 端点路径（公钥发布）
-    jwk-set-endpoint: /oauth2/jwks
-
-    # 令牌吊销端点路径
-    revocation-endpoint: /oauth2/revoke
-
-    # 令牌内省端点路径
-    introspection-endpoint: /oauth2/introspect
-
-    # OIDC 退出端点路径
-    logout-endpoint: /connect/logout
-
-    # OAuth2 授权确认页面路径（授权码流程中用户确认 scope）
-    consent-page: /oauth
-
-    # 设备授权确认页面路径（用户输入 user_code 及确认授权的页面）
-    device-consent-page: /oauth?grant_type=user_code
-
+# 内部接口（服务间调用）鉴权 SDK（sfc-auth）配置：/api/internal/** 只允许微服务间调用。
+# 密钥必须与所有微服务侧的 SFC_INTERNAL_KEY 完全一致。
+sfc:
+  internal:
+    # 服务间共享密钥。留空 = 未配置：服务端拒绝全部 /api/internal/** 请求（fail-closed），
+    # 客户端也无法签发调用凭证；不得少于 32 个字符，例如 `openssl rand -hex 16`。
+    # ⚠️ core 单机部署（未启用微服务）也必须配置：内嵌 Worker 通过内部 HTTP 与调度面交互，
+    #    未配置时无法签发调用凭证，启动日志打印 ERROR 并自动禁用认领。
+    key: "${SFC_INTERNAL_KEY:}"
+  # 任务 Worker（内嵌执行者）：core 节点以 CORE 角色通过服务发现 + 内部 HTTP 与调度面交互
+  task:
+    worker:
+      # 本实例的执行者角色：CORE = core 节点，SERVICE = 微服务实例
+      role: CORE
+      # 单实例最大并发执行任务数；普通任务受该上限限制，紧急任务（immediate=true）不受限制
+      max-concurrent-tasks: "${SFC_TASK_MAX_CONCURRENT_TASKS:64}"
+      # 没有可认领任务时的长轮询等待秒数，越小则空闲期的请求越频繁
+      claim-wait-seconds: 10

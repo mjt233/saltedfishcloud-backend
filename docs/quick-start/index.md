@@ -36,14 +36,11 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 ---
 
-!!! info
+!!! info "配置与默认值"
 
+    默认值集中在 jar 内置的 `application.yml` 中（所有配置项均支持环境变量覆盖）；发布目录中的 `config.yml` 是**可选的部署覆盖文件**，模板（`pre-release/config.yml`）默认全部注释，按需取消注释即生效，未取消注释的项取内置默认值。
 
-    配置文件`config.yml`的配置内容与spring的`application.yml`完全一致，且会覆盖默认的`application.yml`·`的内容。
-
-    `config.yml`中未配置的项将取`application.yml`的配置项作为默认值
-
-    具体配置项说明见[参数配置](./config.md)
+    本地开发使用 `--spring.profiles.active=develop`（内置 SQLite + 进程内缓存/锁），个人覆盖写在仓库根 `config-local.yml`。完整的配置加载顺序、环境变量与常用配置组见[参数配置](./config.md)。
 
 
 ## 3. 完成
@@ -54,7 +51,7 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 这个页面，出现该页面说明程序运行成功😆
 
-> 若已把前端产物打包进来（设置环境变量 `SFC_FRONT_END_PATH` 后执行 `mvn package -Pdevelop`，会把前端 `dist/**` 复制进 `sfc-core` 的 `webapp/`），浏览器看到的就是完整前端界面，而不是上面这句占位文案。
+> 若已把前端产物打包进来（设置环境变量 `SFC_FRONT_END_PATH` 后执行 `mvn package`，该环境变量会自动激活前端资源打包 profile，把前端 `dist/**` 复制进 `sfc-core` 的 `webapp/`），浏览器看到的就是完整前端界面，而不是上面这句占位文案。
 
 ---
 
