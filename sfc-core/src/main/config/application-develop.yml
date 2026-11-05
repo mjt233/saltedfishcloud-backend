@@ -44,6 +44,8 @@ sys:
     rpc-provider: mq
 
 plugin:
+  # 开发模式下可设置为false 关闭插件前端资源的自动加载
+  use-auto-load-resource: false
   extra-resource:
 #    - sfc-ext/sfc-ext-sftp-store
 #    - sfc-ext/sfc-ext-quick-share
