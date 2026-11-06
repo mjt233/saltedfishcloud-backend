@@ -28,7 +28,9 @@ import java.util.UUID;
  *
  * <p><b>配置读取：</b>RPC 地址与令牌来自本服务的部署期配置（{@link Aria2Properties}，对应
  * {@code application.yml} 的 {@code sfc.download.aria2} 节点或 {@code SFC_DOWNLOAD_ARIA2_*} 环境
- * 变量）。配置在服务启动时绑定，修改后需重启本服务才生效。</p>
+ * 变量），配置在服务启动时绑定，修改后需重启本服务才生效。P2P 开关、进度轮询间隔、无进度超时与种子
+ * 体积上限由 {@code sfc-core} 统一配置管理（{@link com.sfc.download.model.property.Aria2Property}），
+ * 与本类无关。</p>
  *
  * <p><b>令牌约定：</b>aria2 的 {@code --rpc-secret} 通过 JSON-RPC 参数列表首项
  * {@code "token:<secret>"} 传递；未配置令牌时不传该项。</p>

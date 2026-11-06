@@ -56,12 +56,16 @@ public class Aria2Workspace {
     private static final AtomicBoolean SHARED_STALE_CLEANED = new AtomicBoolean(false);
 
     /**
-     * aria2 部署期配置。
+     * aria2 部署期配置（仅 RPC 地址、令牌与共享目录）。
      */
     private final Aria2Properties aria2Properties;
 
     /**
      * 输出生效的 aria2 部署配置，并在共享目录配置非法时给出可读的 WARN 提示。
+     *
+     * <p>只输出部署期字段（rpc-url、令牌掩码、共享目录映射）；P2P 开关、进度轮询间隔、无进度超时与
+     * 种子体积上限属于 core 统一配置，由 {@link com.sfc.download.config.SfcDownloadConfigService}
+     * 按 TTL 懒加载，<b>不在启动期访问 core</b>，避免 core 未就绪时拖慢启动或产生误导性告警。</p>
      *
      * <p>日志只输出令牌是否已配置（{@code ***} / {@code (未设置)}），绝不输出令牌明文。共享目录配置
      * 非法不影响服务启动，只会让 MAGNET / TORRENT 能力在能力声明与创建任务阶段被判定为不可用。</p>
@@ -69,11 +73,13 @@ public class Aria2Workspace {
     @PostConstruct
     public void logEffectiveConfiguration() {
         String secret = SfcStringUtils.hasText(aria2Properties.getSecret()) ? "***" : "(未设置)";
-        log.info("{}aria2 部署配置生效: enabled={}, rpcUrl={}, secret={}, pollInterval={}ms, "
-                        + "stallTimeout={}s, torrentMaxSize={}MB, mapping={}",
-                LOG_PREFIX, Boolean.TRUE.equals(aria2Properties.getEnabled()), effectiveRpcUrl(), secret,
-                aria2Properties.getPollInterval(), aria2Properties.getStallTimeout(),
-                aria2Properties.getTorrentMaxSize(), describeMapping());
+        log.info("{}aria2 部署配置生效: rpcUrl={}, secret={}, mapping={}（P2P 开关 / 轮询间隔 / 无进度超时 / "
+                        + "种子体积上限由 core 统一配置维护）",
+                LOG_PREFIX, effectiveRpcUrl(), secret, describeMapping());
+        log.info("{}aria2 运行参数（download.aria2.*）已迁移至 core 统一配置，部署环境变量 "
+                        + "SFC_DOWNLOAD_ARIA2_ENABLED / POLL_INTERVAL / STALL_TIMEOUT / TORRENT_MAX_SIZE 不再生效；"
+                        + "P2P 开关请在 core 后台「插件配置 → 离线下载 → aria2 P2P 下载」中设置",
+                LOG_PREFIX);
         String invalid = validate();
         if (SfcStringUtils.hasText(invalid)) {
             log.warn("{}aria2 共享目录配置无效（MAGNET/TORRENT 能力将不可用，不影响服务启动）: {}",
@@ -218,7 +224,7 @@ public class Aria2Workspace {
     /**
      * 把 aria2 报告的产物路径反向映射为本服务可见的本地路径。
      *
-     * <p>未启用共享目录时直接返回 {@link Path#of(String)}（与改造前一致）；启用时要求路径以
+     * <p>未启用共享目录时直接返回 {@code Path.of(raw)}（与改造前一致）；启用时要求路径以
      * {@code <remote-dir>/} 为前缀（{@code remote-dir} 留空时按 {@code shared-dir} 的同路径处理），
      * 取相对部分后按 {@link Path} 分段解析到共享根之下，避免 Windows 盘符解析问题。</p>
      *

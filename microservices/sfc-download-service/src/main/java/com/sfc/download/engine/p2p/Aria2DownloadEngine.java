@@ -8,6 +8,7 @@ import com.sfc.common.model.ConfigNode;
 import com.sfc.common.utils.SfcMapperHolder;
 import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.download.config.Aria2Properties;
+import com.sfc.download.config.SfcDownloadConfigService;
 import com.sfc.download.config.SfcDownloadInternalProperties;
 import com.sfc.download.constant.DownloadOptionKeys;
 import com.sfc.download.constant.DownloadTaskConstants;
@@ -16,6 +17,7 @@ import com.sfc.download.engine.DownloadContext;
 import com.sfc.download.engine.DownloadEngine;
 import com.sfc.download.engine.DownloadType;
 import com.sfc.download.model.DownloadTaskParams;
+import com.sfc.download.model.property.Aria2Property;
 import com.sfc.download.util.DownloadFileUtils;
 import com.sfc.download.util.DownloadProxyUtils;
 import com.sfc.download.util.DownloadTaskNameUtils;
@@ -139,7 +141,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
     private static final long DEFAULT_POLL_INTERVAL_MILLIS = 1000L;
 
     /**
-     * 未配置无进度超时时使用的默认值（秒）。
+     * 未配置或非法（负数）无进度超时时使用的默认值（秒）；配置为 0 表示不限。
      */
     private static final long DEFAULT_STALL_TIMEOUT_SECONDS = 300L;
 
@@ -248,9 +250,16 @@ public class Aria2DownloadEngine implements DownloadEngine {
     private final Aria2Client aria2Client;
 
     /**
-     * aria2 部署期配置（开关、RPC 地址、轮询间隔、共享目录等；启动时绑定，修改后需重启）。
+     * aria2 部署期配置（仅 RPC 地址、令牌与共享目录；启动时绑定，修改后需重启）。
      */
     private final Aria2Properties aria2Properties;
+
+    /**
+     * core 统一配置（aria2 运行参数：P2P 开关、进度轮询间隔、无进度超时与种子体积上限）。
+     *
+     * <p>按配置缓存 TTL（默认 5 秒）自动刷新，修改后无需重启本服务。</p>
+     */
+    private final SfcDownloadConfigService configService;
 
     /**
      * aria2 共享工作区：负责任务目录创建与「本服务 ↔ aria2」双向路径映射。
@@ -370,21 +379,21 @@ public class Aria2DownloadEngine implements DownloadEngine {
      *
      * <p>判定顺序：</p>
      * <ol>
-     *   <li>部署配置中的 {@code sfc.download.aria2.enabled} 为 false → 明确提示通过部署配置开启；</li>
+     *   <li>core 统一配置中的 {@code download.aria2.enabled} 为 false → 提示到 core 后台插件配置开启；</li>
      *   <li>共享目录配置非法 → 返回「共享目录不可用 + 原因」；</li>
      *   <li>调用 {@code aria2.getVersion} 探活，失败 → 返回「RPC 不可达 + 地址 + 原因」。</li>
      * </ol>
      *
-     * <p>探活结果按 {@code sfc.download.capability.cache-seconds} 缓存，避免每次创建任务与查询能力
-     * 都打一次 RPC。</p>
+     * <p>开关读取统一配置快照（TTL 内缓存，core 不可用时沿用最后一次成功值或注解默认值）；探活结果按
+     * {@code sfc.download.capability.cache-seconds} 缓存，避免每次创建任务与查询能力都打一次 RPC。</p>
      *
      * @return 不可用原因；aria2 已启用且共享目录与 RPC 均正常时返回 {@code null}
      */
     @Override
     public String unavailableReason() {
-        if (!Boolean.TRUE.equals(aria2Properties.getEnabled())) {
-            return "aria2 未启用：请通过部署配置 sfc.download.aria2.enabled=true"
-                    + "（环境变量 SFC_DOWNLOAD_ARIA2_ENABLED）开启，并配置 RPC 地址与令牌";
+        if (!Boolean.TRUE.equals(configService.getAria2().getEnabled())) {
+            return "aria2 未启用：请在 sfc-core 后台「插件配置 → 离线下载 → aria2 P2P 下载」中开启"
+                    + "「启用 P2P 下载」，并配置 aria2 RPC 地址与令牌";
         }
 
         long now = System.currentTimeMillis();
@@ -405,7 +414,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * <p>只做「提交前即可判定」的校验，不发起网络请求：</p>
      * <ul>
      *   <li>{@link DownloadOptionKeys#ARIA2_OPTIONS} 必须是合法的 JSON 对象文本；</li>
-     *   <li>Base64 种子内容不得超过 {@code sfc.download.aria2.torrent-max-size}（MB）。</li>
+     *   <li>Base64 种子内容不得超过 {@code download.aria2.torrent-max-size}（MB，core 统一配置）。</li>
      * </ul>
      *
      * @param params 下载任务参数
@@ -422,7 +431,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
         if (!SfcStringUtils.hasText(params.torrentBase64)) {
             return;
         }
-        long maxBytes = maxTorrentBytes(aria2Properties);
+        long maxBytes = maxTorrentBytes(configService.getAria2());
         long actualBytes = estimateBase64Bytes(params.torrentBase64);
         if (actualBytes > maxBytes) {
             throw new SfcJsonException(400, "种子文件超过上限 " + (maxBytes / BYTES_PER_MB) + " MB");
@@ -456,12 +465,18 @@ public class Aria2DownloadEngine implements DownloadEngine {
     public List<DownloadArtifact> execute(DownloadContext context) {
         DownloadTaskParams params = context.getParams();
         Path tempDir = context.getTempDir();
+        // 任务开始时取一次统一配置快照，保证本次任务的轮询/超时/种子体积上限使用同一份配置
+        Aria2Property aria2Config = configService.getAria2();
+        log.debug("{}aria2 运行参数: downloadId={}, enabled={}, pollInterval={}ms, stallTimeout={}, torrentMaxSize={}MB",
+                LOG_PREFIX, context.getDownloadId(), Boolean.TRUE.equals(aria2Config.getEnabled()),
+                aria2Config.getPollInterval(), describeStallTimeout(aria2Config.getStallTimeout()),
+                aria2Config.getTorrentMaxSize());
         Map<String, String> options = buildAria2Options(context, tempDir);
         String aria2Dir = options.get("dir");
         // 跨容器部署时排障最关键的信息就是这层映射，执行开始即输出一次到任务日志
         context.log("aria2 下载目录映射: " + aria2Workspace.describeMapping());
 
-        Aria2Session session = new Aria2Session(submit(context, params, options));
+        Aria2Session session = new Aria2Session(submit(context, params, options, aria2Config));
         context.log("已提交 aria2 下载任务: gid=" + session.primaryGid());
         log.info("{}aria2 任务已提交: downloadId={}, gid={}, type={}, aria2Dir={}, localDir={}",
                 LOG_PREFIX, context.getDownloadId(), session.primaryGid(), params.type, aria2Dir, tempDir);
@@ -470,7 +485,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
         context.registerCanceller(() -> session.gids().forEach(aria2Client::forceRemove));
 
         try {
-            Map<String, Object> status = awaitCompletion(context, session);
+            Map<String, Object> status = awaitCompletion(context, session, aria2Config);
             List<DownloadArtifact> artifacts = collectArtifacts(context, tempDir, status);
             context.log("aria2 下载完成，文件数 " + artifacts.size());
             log.info("{}aria2 下载完成: downloadId={}, gid={}, 文件数={}",
@@ -496,17 +511,19 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * 没有时先按 URL 拉取 {@code .torrent} 再以 Base64 提交。具体形态<b>只取任务参数中显式指定的
      * {@code type}</b>，不做任何猜测或降级。</p>
      *
-     * @param context 执行上下文
-     * @param params  任务参数
-     * @param options 已装配好的 aria2 选项
+     * @param context     执行上下文
+     * @param params      任务参数
+     * @param options     已装配好的 aria2 选项
+     * @param aria2Config 本次任务使用的 aria2 运行参数快照（提供种子体积上限）
      * @return aria2 分配的 GID
      * @throws SfcJsonException 类型不是 MAGNET / TORRENT 或拉取种子失败时抛出
      */
-    private String submit(DownloadContext context, DownloadTaskParams params, Map<String, String> options) {
+    private String submit(DownloadContext context, DownloadTaskParams params, Map<String, String> options,
+                          Aria2Property aria2Config) {
         if (params.type == DownloadType.TORRENT) {
             String base64 = SfcStringUtils.hasText(params.torrentBase64)
                     ? params.torrentBase64.trim()
-                    : fetchTorrentBase64(context, params.url);
+                    : fetchTorrentBase64(context, params.url, aria2Config);
             return aria2Client.addTorrent(base64, options);
         }
         if (params.type == DownloadType.MAGNET) {
@@ -520,15 +537,17 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * 按 URL 拉取 {@code .torrent} 文件内容并编码为 Base64。
      *
      * <p>响应体流式写入任务临时目录下的临时文件，写入过程中强制
-     * {@code sfc.download.aria2.torrent-max-size} 上限；校验通过后读取文件内容并编码为 Base64，
-     * 临时文件在方法返回前删除。代理取自任务参数的代理快照（HTTP / SOCKS 均支持），未配置代理时直连。</p>
+     * {@code download.aria2.torrent-max-size}（core 统一配置）上限；校验通过后读取文件内容并编码为
+     * Base64，临时文件在方法返回前删除。代理取自任务参数的代理快照（HTTP / SOCKS 均支持），
+     * 未配置代理时直连。</p>
      *
-     * @param context 执行上下文
-     * @param url     种子文件地址
+     * @param context     执行上下文
+     * @param url         种子文件地址
+     * @param aria2Config 本次任务使用的 aria2 运行参数快照（提供种子体积上限）
      * @return 种子内容的 Base64 编码
      * @throws SfcJsonException 地址为空、拉取失败、内容为空、超过体积上限或临时文件读写失败时抛出
      */
-    private String fetchTorrentBase64(DownloadContext context, String url) {
+    private String fetchTorrentBase64(DownloadContext context, String url, Aria2Property aria2Config) {
         if (!SfcStringUtils.hasText(url)) {
             throw new SfcJsonException(400, "种子下载需要 .torrent 文件地址或种子文件内容（torrentBase64）");
         }
@@ -539,7 +558,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
         context.log("开始获取种子文件: " + target + "，代理: " + proxyDescription);
         context.checkInterrupted();
 
-        long maxBytes = maxTorrentBytes(aria2Properties);
+        long maxBytes = maxTorrentBytes(aria2Config);
         Path torrentFile;
         try {
             torrentFile = Files.createTempFile(context.getTempDir(), TORRENT_TEMP_FILE_PREFIX, TORRENT_SUFFIX);
@@ -724,15 +743,18 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * 「当前需要等待的 gid 集合」，元数据 gid 完成后丢弃它、改为跟踪 {@code followedBy} 指向的内容 gid，
      * 只有全部 gid 都终止才算任务结束。</p>
      *
-     * @param context 执行上下文
-     * @param session 本次任务的会话（含已跟踪的全部 gid）
+     * @param context     执行上下文
+     * @param session     本次任务的会话（含已跟踪的全部 gid）
+     * @param aria2Config 本次任务使用的 aria2 运行参数快照
      * @return 内容 gid 的完成状态快照
      * @throws SfcTaskInterruptedException 任务被中断时抛出
-     * @throws SfcJsonException           aria2 报错、跟随层级异常、停滞超时或 RPC 失败时抛出
+     * @throws SfcJsonException           aria2 报错、跟随层级异常、停滞超时（配置为 0 即不限，不会触发）或
+     *                                    RPC 失败时抛出
      */
-    private Map<String, Object> awaitCompletion(DownloadContext context, Aria2Session session) {
-        long pollIntervalMillis = positive(aria2Properties.getPollInterval(), DEFAULT_POLL_INTERVAL_MILLIS);
-        long stallTimeoutMillis = positive(aria2Properties.getStallTimeout(), DEFAULT_STALL_TIMEOUT_SECONDS) * 1000L;
+    private Map<String, Object> awaitCompletion(DownloadContext context, Aria2Session session,
+                                                Aria2Property aria2Config) {
+        long pollIntervalMillis = positive(aria2Config.getPollInterval(), DEFAULT_POLL_INTERVAL_MILLIS);
+        Long stallTimeoutMillis = resolveStallTimeoutMillis(aria2Config.getStallTimeout());
         long lastProgressAt = System.currentTimeMillis();
         long lastLoadedSum = -1L;
         int followDepth = 0;
@@ -847,7 +869,8 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 lastLoadedSum = loadedSum;
                 lastProgressAt = System.currentTimeMillis();
             }
-            if (System.currentTimeMillis() - lastProgressAt > stallTimeoutMillis) {
+            if (stallTimeoutMillis != null
+                    && System.currentTimeMillis() - lastProgressAt > stallTimeoutMillis) {
                 throw new SfcJsonException(504,
                         "aria2 下载超时: " + (stallTimeoutMillis / 1000L) + " 秒无进度（可能没有可用节点）");
             }
@@ -1119,14 +1142,43 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 计算种子文件允许的最大字节数。
      *
-     * @param config aria2 部署配置
+     * @param config aria2 运行参数（core 统一配置快照）
      * @return 最大字节数
      */
-    private static long maxTorrentBytes(Aria2Properties config) {
+    private static long maxTorrentBytes(Aria2Property config) {
         long maxMb = config.getTorrentMaxSize() == null || config.getTorrentMaxSize() <= 0
                 ? DEFAULT_TORRENT_MAX_SIZE_MB
                 : config.getTorrentMaxSize();
         return maxMb * BYTES_PER_MB;
+    }
+
+    /**
+     * 解析无进度超时（秒）为毫秒值。
+     *
+     * <p>配置为 {@code 0} 表示<b>不限</b>，返回 {@code null}（调用方跳过停滞检测）；{@code null} 或负数
+     * 视为未配置 / 非法值，回落到 {@link #DEFAULT_STALL_TIMEOUT_SECONDS}；正数按秒换算为毫秒。</p>
+     *
+     * @param seconds 配置的无进度超时（秒），允许为 {@code null}
+     * @return 超时毫秒数；{@code null} 表示不做无进度检测
+     */
+    private static Long resolveStallTimeoutMillis(Integer seconds) {
+        if (seconds == null || seconds < 0) {
+            return DEFAULT_STALL_TIMEOUT_SECONDS * 1000L;
+        }
+        return seconds == 0 ? null : seconds * 1000L;
+    }
+
+    /**
+     * 把无进度超时配置转换为便于日志展示的文本。
+     *
+     * @param seconds 配置的无进度超时（秒），允许为 {@code null}
+     * @return 「不限」、默认值说明或「N 秒」
+     */
+    private static String describeStallTimeout(Integer seconds) {
+        if (seconds == null || seconds < 0) {
+            return DEFAULT_STALL_TIMEOUT_SECONDS + "s（默认）";
+        }
+        return seconds == 0 ? "不限" : seconds + "s";
     }
 
     /**

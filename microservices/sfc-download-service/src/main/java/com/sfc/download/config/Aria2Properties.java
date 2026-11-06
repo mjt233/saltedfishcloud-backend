@@ -6,23 +6,21 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 /**
- * aria2（P2P 下载）部署期配置。
+ * aria2（P2P 下载）部署期连接与共享目录配置。
  *
- * <p>全部字段来自本服务的<b>部署配置</b>（{@code application.yml} 的 {@code sfc.download.aria2} 节点，
- * 或对应的 {@code SFC_DOWNLOAD_ARIA2_*} 环境变量），不再存放于 {@code sfc-core} 的系统配置表：
- * </p>
- * <ul>
- *   <li>这些参数描述的是部署环境（RPC 地址、共享卷路径、令牌等），与单个业务请求无关；</li>
- *   <li>仅在本服务启动时绑定一次，<b>修改后必须重启本服务</b>才生效；</li>
- *   <li>Git 克隆的业务参数仍由 core 后台「插件配置」面板维护（见
- *       {@link com.sfc.download.model.property.GitProperty}），与本类不同源，避免出现「两处取值、
- *       排障时无法判断谁生效」的双数据源问题。</li>
- * </ul>
+ * <p>本类只保留与部署环境相关的参数：RPC 地址、令牌，以及跨容器部署时的共享目录映射。全部字段来自
+ * 本服务的<b>部署配置</b>（{@code application.yml} 的 {@code sfc.download.aria2} 节点，或对应的
+ * {@code SFC_DOWNLOAD_ARIA2_*} 环境变量），启动时绑定一次，<b>修改后必须重启本服务</b>才生效。</p>
  *
- * <p><b>令牌安全：</b>{@link #getSecret()} 标注了 {@link ToString#Exclude}，任何日志、接口响应与
+ * <p><b>运行参数不在这里：</b>P2P 总开关、进度轮询间隔、无进度超时与种子体积上限已迁移到
+ * {@code sfc-core} 的统一配置（{@link com.sfc.download.model.property.Aria2Property}，管理员在后台
+ * 「插件配置」面板维护，改完最长 5 秒生效，无需重启本服务），避免出现「两处取值、排障时无法判断谁生效」
+ * 的双数据源问题。</p>
+ *
+ * <p><b>令牌安全：</b>{@link #getSecret()} 标注了 {@code @ToString.Exclude}，任何日志、接口响应与
  * 诊断信息都不得输出令牌明文。</p>
  *
- * @see SfcDownloadInternalProperties
+ * @see com.sfc.download.model.property.Aria2Property
  * @see com.sfc.download.engine.p2p.Aria2Workspace
  */
 @Data
@@ -34,15 +32,6 @@ public class Aria2Properties {
      * RPC 地址为空时使用的默认地址（与 aria2c 默认监听端口一致）。
      */
     public static final String DEFAULT_RPC_URL = "http://127.0.0.1:6800/jsonrpc";
-
-    /**
-     * P2P 下载总开关（部署期配置，修改后需重启）。
-     *
-     * <p>默认 {@code false}。关闭时磁力链（MAGNET）与种子（TORRENT）两种下载类型在创建任务阶段即被
-     * 拒绝，能力声明接口也会把它们标记为不可用。可通过环境变量 {@code SFC_DOWNLOAD_ARIA2_ENABLED}
-     * 开启。</p>
-     */
-    private Boolean enabled = Boolean.FALSE;
 
     /**
      * aria2 JSON-RPC 的完整地址（部署期配置，修改后需重启）。
@@ -65,30 +54,6 @@ public class Aria2Properties {
      */
     @ToString.Exclude
     private String secret = "";
-
-    /**
-     * 下载进度轮询间隔（毫秒，部署期配置，修改后需重启）。
-     *
-     * <p>默认 1000。向 aria2 查询下载进度的间隔：过大则进度卡顿，过小则增加 RPC 压力。可通过环境变量
-     * {@code SFC_DOWNLOAD_ARIA2_POLL_INTERVAL} 覆盖。</p>
-     */
-    private Integer pollInterval = 1000;
-
-    /**
-     * 无进度超时（秒，部署期配置，修改后需重启）。
-     *
-     * <p>默认 300。连续该时长内 aria2 上报的已下载字节数没有增长，则判定任务失败，避免种子无资源时
-     * 任务长期占用执行槽位。可通过环境变量 {@code SFC_DOWNLOAD_ARIA2_STALL_TIMEOUT} 覆盖。</p>
-     */
-    private Integer stallTimeout = 300;
-
-    /**
-     * 种子内容上限（MB，部署期配置，修改后需重启）。
-     *
-     * <p>默认 2。TORRENT 类型允许通过 Base64 直接提交种子文件内容，该上限用于防止超大的请求体被
-     * 写入异步任务参数。可通过环境变量 {@code SFC_DOWNLOAD_ARIA2_TORRENT_MAX_SIZE} 覆盖。</p>
-     */
-    private Integer torrentMaxSize = 2;
 
     /**
      * 本服务容器内的共享根目录（部署期配置，修改后需重启）。

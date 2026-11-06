@@ -51,9 +51,9 @@
 
 - `index.umd.js` / `style.css` 随本服务发布，仍然通过 core 的 `GET /api/plugin/autoLoad.js` 合并加载
   （core 按注册中心 metadata `sfc.plugin.autoload` 从服务 `/static/**` 拉取），主前端加载链路不变。
-- 本服务仍提供**插件配置面板**：core 后台「插件配置 → 离线下载」只保留「Git 克隆」参数分组与「SSH 凭据管理」
-  template 菜单；**aria2 不再出现在面板中**，其全部参数为部署期配置（`sfc.download.aria2.*` / 环境变量，
-  修改后需重启），由部署端维护。
+- 本服务仍提供**插件配置面板**：core 后台「插件配置 → 离线下载」包含「Git 克隆」与「aria2 P2P 下载」两个参数
+  分组，以及「SSH 凭据管理」template 菜单；统一配置改完最长 5 秒生效。aria2 的 RPC 地址 / 令牌 / 共享目录仍为
+  部署期配置（`sfc.download.aria2.*` / 环境变量，修改后需重启），由部署端维护。
 - 前端构建方面（前端仓库侧人工处理）：旧构建脚本把产物复制到 `sfc-ext/sfc-ext-download/src/main/assert/static/`，
   该目录已随插件删除；需改为输出到 `microservices/sfc-download-service/src/main/resources/static/`。
 
@@ -87,7 +87,7 @@
 
 | 方法 | 网关路径 | 说明 |
 |---|---|---|
-| GET | `/api/service/sfc-download-service/task/download/capabilities` | 查询支持的下载类型与可用性（未登录时信封 `code=401`，**HTTP 仍为 200**）。可选参数 `refresh=true` 强制刷新 core 统一配置（Git 参数）快照；aria2 参数为部署期配置（修改需重启），`refresh` 不改变 aria2 连通性探测的 30 秒缓存。每项含 `type/name/engineId/available/reason/options` |
+| GET | `/api/service/sfc-download-service/task/download/capabilities` | 查询支持的下载类型与可用性（未登录时信封 `code=401`，**HTTP 仍为 200**）。可选参数 `refresh=true` 强制刷新 core 统一配置（Git 与 aria2 运行参数）快照；aria2 的 RPC/令牌/共享目录为部署期配置（修改需重启），`refresh` 不改变 aria2 连通性探测的 30 秒缓存。每项含 `type/name/engineId/available/reason/options` |
 | GET | `/api/service/sfc-download-service/task/download/detect-type?url=` | 按下载地址推断类型（需登录）；成功时 `data` 为类型编码字符串（如 `"GIT"`），无法识别时 `data=null`（仍为 `code=200`） |
 
 ### 6.2 创建任务请求体的增量字段

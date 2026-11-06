@@ -5,6 +5,11 @@
     "typeRef": "com.sfc.download.model.property.GitProperty"
   },
   {
+    "name": "download-aria2",
+    "title": "aria2 P2P 下载",
+    "typeRef": "com.sfc.download.model.property.Aria2Property"
+  },
+  {
     "name": "download-ssh",
     "title": "SSH 凭据管理",
     "nodes": [

@@ -8,12 +8,14 @@ import com.sfc.common.model.json.SfcJsonResult;
 import com.sfc.common.utils.PropertyUtils;
 import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.common.utils.SfcTypeUtils;
+import com.sfc.download.model.property.Aria2Property;
 import com.sfc.download.model.property.GitProperty;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -21,9 +23,9 @@ import java.util.Map;
 /**
  * {@link SfcDownloadConfigService} 的默认实现：读取 {@code sfc-core} 统一配置并绑定到配置实体。
  *
- * <p>当前只绑定 Git 克隆的业务参数；aria2 的全部参数已迁移到部署期配置
- * （{@link Aria2Properties}，来自 {@code application.yml} / 环境变量，修改后需重启），不再经过本类。
- * </p>
+ * <p>当前绑定 Git 克隆默认参数与 aria2 运行参数（P2P 开关、进度轮询间隔、无进度超时、种子体积上限）；
+ * aria2 的 RPC 地址、令牌与共享目录仍为部署期配置（{@link Aria2Properties}，来自 {@code application.yml} /
+ * 环境变量，修改后需重启），不经过本类。</p>
  *
  * <p>日志口径：进入降级态时记一条 WARN，恢复时记一条 INFO，降级期间的持续失败只记 DEBUG，
  * 避免每 5 秒刷一条告警。</p>
@@ -103,6 +105,14 @@ public class SfcDownloadConfigServiceImpl implements SfcDownloadConfigService {
      * {@inheritDoc}
      */
     @Override
+    public Aria2Property getAria2() {
+        return current().aria2();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void refresh() {
         synchronized (refreshLock) {
             // 强制刷新：无视降级抑制窗口重新尝试一次；失败时保留已有快照不动
@@ -163,14 +173,16 @@ public class SfcDownloadConfigServiceImpl implements SfcDownloadConfigService {
         try {
             Map<String, String> values = fetchConfigValues();
             GitProperty git = new GitProperty();
+            Aria2Property aria2 = new Aria2Property();
             bind(git, values);
+            bind(aria2, values);
             if (degraded) {
                 degraded = false;
                 retryAfterMillis = 0L;
                 log.info("{}sfc-core 统一配置已恢复可用", LOG_PREFIX);
             }
             log.debug("{}统一配置快照已刷新，本次读取到 {} 个配置项", LOG_PREFIX, values.size());
-            return new Snapshot(git, System.currentTimeMillis() + ttl);
+            return new Snapshot(git, aria2, System.currentTimeMillis() + ttl);
         } catch (RuntimeException e) {
             boolean firstEnterDegraded = !degraded;
             degraded = true;
@@ -200,9 +212,11 @@ public class SfcDownloadConfigServiceImpl implements SfcDownloadConfigService {
         synchronized (refreshLock) {
             if (fallbackSnapshot == null) {
                 GitProperty git = new GitProperty();
+                Aria2Property aria2 = new Aria2Property();
                 // 传入空 Map：所有字段都会回落到 @ConfigProperty#defaultValue()
                 bind(git, Map.of());
-                fallbackSnapshot = new Snapshot(git, Long.MAX_VALUE);
+                bind(aria2, Map.of());
+                fallbackSnapshot = new Snapshot(git, aria2, Long.MAX_VALUE);
                 log.debug("{}已构建兜底配置快照（注解默认值）", LOG_PREFIX);
             }
             return fallbackSnapshot;
@@ -273,24 +287,37 @@ public class SfcDownloadConfigServiceImpl implements SfcDownloadConfigService {
     }
 
     /**
-     * 收集 Git 配置实体的全部配置项名称。
+     * 收集全部统一配置实体的配置项名称（Git 与 aria2 运行参数）。
      *
-     * @return 配置项名称列表
+     * @return 去重后的配置项名称列表
      */
     private static List<String> collectConfigKeys() {
-        return PropertyUtils.getConfigNodeFromEntityClass(GitProperty.class).values().stream()
+        List<String> keys = new ArrayList<>(collectConfigKeys(GitProperty.class));
+        keys.addAll(collectConfigKeys(Aria2Property.class));
+        return List.copyOf(keys.stream().distinct().toList());
+    }
+
+    /**
+     * 收集单个配置实体的全部配置项名称。
+     *
+     * @param entityClass 配置实体类（需标注 {@code @ConfigPropertyEntity}）
+     * @return 配置项名称列表
+     */
+    private static List<String> collectConfigKeys(Class<?> entityClass) {
+        return PropertyUtils.getConfigNodeFromEntityClass(entityClass).values().stream()
                 .flatMap(n -> PropertyUtils.flattenNodes(Collections.singleton(n)).stream())
                 .map(ConfigNode::getName)
                 .toList();
     }
 
     /**
-     * 配置快照。
+     * 统一配置快照。
      *
      * @param git      Git 配置
+     * @param aria2    aria2 运行参数
      * @param expireAt 快照过期时间（毫秒时间戳）；兜底快照使用 {@link Long#MAX_VALUE}
      */
-    private record Snapshot(GitProperty git, long expireAt) {
+    private record Snapshot(GitProperty git, Aria2Property aria2, long expireAt) {
 
         /**
          * 判断快照是否仍在有效期内。

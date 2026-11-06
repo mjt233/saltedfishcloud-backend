@@ -6,6 +6,9 @@ import org.springframework.stereotype.Component;
 
 /**
  * 本服务的内部调优配置（部署期配置，来自 {@code application.yml} 的 {@code sfc.download} 节点）。
+ *
+ * <p>不包含业务参数：Git 克隆默认参数与 aria2 运行参数统一由 {@link SfcDownloadConfigService}
+ * 从 core 读取，本类只负责配置读取与能力探测自身的缓存时长。</p>
  */
 @Data
 @Component
@@ -13,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class SfcDownloadInternalProperties {
 
     /**
-     * Git 统一配置读取相关的内部参数。
+     * 统一配置读取相关的内部参数。
      */
     private Config config = new Config();
 
@@ -23,21 +26,21 @@ public class SfcDownloadInternalProperties {
     private Capability capability = new Capability();
 
     /**
-     * Git 统一配置读取参数。
+     * 统一配置读取参数。
      */
     @Data
     public static class Config {
 
         /**
-         * Git 统一配置快照的缓存有效期（毫秒）。
-         *
-         * <p>管理员在 core 后台修改 Git 配置后，最长经过该时长即在本服务生效（无需重启）。
-         * 取值为 {@code <= 0} 时回落到默认值 5000 毫秒。</p>
+         * 统一配置快照的默认缓存有效期（毫秒）。
          */
         public static final long DEFAULT_REFRESH_INTERVAL_MILLIS = 5000L;
 
         /**
-         * Git 配置快照缓存有效期（毫秒），默认 5 秒。
+         * 统一配置（Git 与 aria2 运行参数共用一份快照）的缓存有效期（毫秒）。
+         *
+         * <p>管理员在 core 后台修改配置后，最长经过该时长即在本服务生效（无需重启）。
+         * 取值为 {@code <= 0} 时回落到默认值 5000 毫秒。</p>
          */
         private long refreshIntervalMillis = DEFAULT_REFRESH_INTERVAL_MILLIS;
     }

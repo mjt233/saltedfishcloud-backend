@@ -91,7 +91,8 @@ services:
       SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
       # RPC 地址使用 compose 服务名 aria2；shared-dir/remote-dir 对应同一宿主目录：
       #   宿主机 ./data/download/shared → 本服务 /shared/download、aria2 容器 /downloads。
-      SFC_DOWNLOAD_ARIA2_ENABLED: "true"
+      # P2P 开关 / 进度轮询间隔 / 无进度超时 / 种子体积上限由 core 后台「插件配置 → 离线下载 →
+      # aria2 P2P 下载」统一配置（首次部署后需由管理员在 core 后台开启），改完最长 5 秒生效。
       SFC_DOWNLOAD_ARIA2_RPC_URL: http://aria2:6800/jsonrpc
       SFC_DOWNLOAD_ARIA2_SECRET: ${ARIA2_RPC_SECRET:-sfc-aria2-dev-secret}
       SFC_DOWNLOAD_ARIA2_SHARED_DIR: /shared/download

@@ -12,9 +12,10 @@ import lombok.Data;
  * 本服务经 {@link com.sfc.download.config.SfcDownloadConfigService} 读取；修改后按配置缓存 TTL
  * （默认 5 秒）生效，无需重启本服务。</p>
  *
- * <p><b>与 aria2 配置的区别：</b>aria2 的全部参数属于部署期配置
- * （{@link com.sfc.download.config.Aria2Properties}，来自 {@code application.yml} / 环境变量），
- * 不在 core 配置表中维护，修改后需重启本服务。</p>
+ * <p><b>与 aria2 配置的分界：</b>aria2 的 RPC 地址、令牌与共享目录属于部署期配置
+ * （{@link com.sfc.download.config.Aria2Properties}，来自 {@code application.yml} / 环境变量，
+ * 修改后需重启本服务）；aria2 的运行参数（P2P 开关、进度轮询间隔、无进度超时、种子体积上限）与本类一样
+ * 由 {@code sfc-core} 统一配置管理（见 {@link com.sfc.download.model.property.Aria2Property}）。</p>
  *
  * <p><b>配置项命名：</b>前缀 {@code download.git} + KEBAB_CASE 字段名，
  * 最终 key 形如 {@code download.git.keep-git-dir}。</p>

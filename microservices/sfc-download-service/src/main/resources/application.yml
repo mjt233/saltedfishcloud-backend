@@ -106,24 +106,22 @@ sfc:
       # 离线下载属于 IO 密集型任务，并发上限不必与 CPU 核数对齐，按宿主机带宽/磁盘能力设置为 8
       max-concurrent-tasks: 8
   # 本服务内部调优与部署期配置（修改后需重启生效）。
-  # ⚠️ aria2 的全部参数都是部署期配置，见下方 download.aria2 节点（均可用 SFC_DOWNLOAD_ARIA2_* 环境变量
-  #    覆盖），修改后需重启本服务；Git 克隆的业务参数仍由 sfc-core 系统配置管理（管理员后台「插件配置」
-  #    面板 → 存 core 配置表 → 本服务经 SfcDownloadConfigService 读取），刻意不在 yml 里重复声明，
-  #    避免「两处取值、排障时无法判断谁生效」的双数据源问题。
+  # ⚠️ aria2 的部署期参数仅为 RPC 连接与共享目录（见下方 download.aria2）；P2P 开关、进度轮询间隔、
+  #    无进度超时与种子体积上限已迁移到 sfc-core 统一配置（管理员后台「插件配置」面板 → 存 core 配置表 →
+  #    本服务经 SfcDownloadConfigService 读取，改完最长 5 秒生效，无需重启）。
+  #    Git 克隆的业务参数同样由 sfc-core 统一配置管理，刻意不在 yml 里重复声明，避免「两处取值、
+  #    排障时无法判断谁生效」的双数据源问题。
   download:
     config:
-      # Git 统一配置快照缓存时长（毫秒）：管理员在 core 后台改完 Git 配置后，最长该时长即生效，无需重启
+      # 统一配置（Git 与 aria2 运行参数共用一份快照）缓存时长（毫秒）：改完配置后，最长该时长即生效，无需重启
       refresh-interval-millis: 5000
     capability:
       # 下载类型能力（例如 aria2 是否可达）的探测结果缓存时长（秒）
       cache-seconds: 30
     aria2:
-      # aria2 全部参数均为部署期配置（改后需重启）；Git 参数仍在 core 后台「插件配置」面板
-      enabled: "${SFC_DOWNLOAD_ARIA2_ENABLED:false}"
+      # 仅 RPC 地址、令牌与共享目录为部署期配置（改后需重启）；
+      # P2P 开关 / 轮询间隔 / 无进度超时 / 种子体积上限在 core 后台「插件配置」面板维护
       rpc-url: "${SFC_DOWNLOAD_ARIA2_RPC_URL:http://127.0.0.1:6800/jsonrpc}"
       secret: "${SFC_DOWNLOAD_ARIA2_SECRET:}"
-      poll-interval: "${SFC_DOWNLOAD_ARIA2_POLL_INTERVAL:1000}"
-      stall-timeout: "${SFC_DOWNLOAD_ARIA2_STALL_TIMEOUT:300}"
-      torrent-max-size: "${SFC_DOWNLOAD_ARIA2_TORRENT_MAX_SIZE:2}"
       shared-dir: "${SFC_DOWNLOAD_ARIA2_SHARED_DIR:}"
       remote-dir: "${SFC_DOWNLOAD_ARIA2_REMOTE_DIR:}"

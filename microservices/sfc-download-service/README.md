@@ -12,7 +12,7 @@
 | 下载能力 | 仅 HTTP/HTTPS | HTTP / GIT（HTTP(S) + SSH 克隆）/ MAGNET / TORRENT（+ ED2K 占位），按 `DownloadEngine` 可扩展 |
 | 网盘读写 | 直接调用宿主 `DiskFileSystem` | 经 `sfc-remote-client` 回调 core 的 `/api/internal/file/v2/**` |
 | 下载代理 | 直接读宿主 `proxy` 表 | 经 core 内部接口 `/api/internal/proxy/available` 解析（创建时快照）；HTTP(S) / SSH 的 Git 克隆同样生效 |
-| 业务配置 | 宿主配置项 | Git 参数仍由 **sfc-core 统一配置**（后台「插件配置」面板）管理，本服务经 `SfcCoreConfigFeignClient` 读取；aria2 全部参数为**部署期配置**（本服务 `application.yml` / 环境变量），修改后需重启 |
+| 业务配置 | 宿主配置项 | Git 参数与 aria2 运行参数（开关 / 进度轮询间隔 / 无进度超时 / 种子体积上限）由 **sfc-core 统一配置**（后台「插件配置」面板）管理，本服务经 `SfcCoreConfigFeignClient` 读取，改完最长 5 秒生效；aria2 的 RPC 地址、令牌与共享目录仍为**部署期配置**（本服务 `application.yml` / 环境变量），修改后需重启 |
 | 前端资源 | core 从插件 jar 的 `static/` 读取 | core 按注册中心 metadata `sfc.plugin.autoload` 从本服务 `/static/**` 拉取合并 |
 | 数据 | 宿主 `xyy.db` 的 `download_task` | 本服务 `download.db`；**历史数据不迁移** |
 
@@ -34,14 +34,14 @@ sfc-gateway ──(discovery locator: 剥离 /api/service/{serviceId} 并补 /ap
                                                                               │         ├─ Aria2DownloadEngine    磁力/种子（JSON-RPC；aria2 为外部部署进程）
                                                                               │         └─ Ed2kDownloadEngine     占位，恒不可用
                                                                               ├─ DownloadSaveService       单文件 / 目录树递归落盘
-                                                                              ├─ SfcDownloadConfigService  Git 统一配置读取（TTL 5s）
+                                                                              ├─ SfcDownloadConfigService  统一配置读取（Git + aria2 运行参数，TTL 5s）
                                                                               ├─ SshCredentialService      用户 SSH 凭据（明文存 ssh_credential，接口不回显）
                                                                               ├─ SshHostKeyService         主机密钥 TOFU 信任记录（ssh_host_key，全局共享）
                                                                               └─ download.db（download_task + ssh_credential + ssh_host_key）
                                                                                       ▲
                                     /api/internal/task/{submit,query,cancel} ─────────┤（sfc-task-worker SDK）
                                     /api/internal/proxy/available         ───────────┤（sfc-remote-client SDK）
-                                    /api/internal/config/batchGet         ───────────┤（Git 统一配置）
+                                    /api/internal/config/batchGet         ───────────┤（Git 与 aria2 运行参数统一配置）
                                     /api/internal/file/v2/{list,mkdirs,upload} ──────┘（落盘）
                                                                                       │
                                                                                       ▼
@@ -69,10 +69,10 @@ sfc-gateway ──(discovery locator: 剥离 /api/service/{serviceId} 并补 /ap
   ⚠️ **可保存的单文件大小受 core 的 `spring.servlet.multipart.max-file-size` 约束**（默认 32GiB），
   且 multipart 会先在 core 侧落临时文件再写入存储，上传期间 core 需约 2 倍文件大小的空闲磁盘；
   超过该上限时任务会以 `413 Content Too Large` 失败（需调大 core 该配置）。
-- **配置来源（Git 与 aria2 分离）**：Git 运行参数仍由 core 统一配置面板管理，本服务按 5 秒 TTL 缓存读取；
-  core 不可用时回落为配置实体上的注解默认值（只 WARN 一次），不影响 HTTP / Git 下载。aria2 的开关、RPC 地址、
-  令牌、轮询/超时、种子体积上限与共享目录全部是**部署期配置**（`sfc.download.aria2.*` / `SFC_DOWNLOAD_ARIA2_*`），
-  修改后需重启本服务，不再读取 core 配置表。
+- **配置来源（统一配置 + 部署配置）**：Git 运行参数与 aria2 运行参数（P2P 开关、进度轮询间隔、无进度超时、
+  种子体积上限，`download.aria2.*`）由 core 统一配置面板管理，本服务按 5 秒 TTL 缓存读取，改完无需重启；
+  core 不可用时回落为配置实体上的注解默认值（只 WARN 一次），不影响 HTTP / Git 下载。aria2 的 RPC 地址、
+  令牌与共享目录仍属于**部署期配置**（`sfc.download.aria2.*` / `SFC_DOWNLOAD_ARIA2_*`），修改后需重启本服务。
 - **前端资源**：core 的 `GET /api/plugin/autoLoad.js` 会把本服务 `/static/index.umd.js`、`/static/style.css`
   合并返回（与插件期行为一致，前端加载链路不变）。
 
@@ -105,29 +105,27 @@ sfc-gateway ──(discovery locator: 剥离 /api/service/{serviceId} 并补 /ap
 | `metadata.sfc.plugin.info` | `/api/meta/pluginInfo` | 供 core 后台拉取本服务的配置面板（local/nacos 两处都要配） |
 | `sfc.task.worker.max-concurrent-tasks` | `8` | 并发下载槽位数（IO 密集型，按带宽/磁盘能力调整） |
 | `sfc.task.worker.enabled` | `true` | 关闭后不认领任务，也不暴露中断端点 |
-| `sfc.download.config.refresh-interval-millis` | `5000` | core 统一配置（Git 参数）快照缓存时长（毫秒），即后台改 Git 配置后的最长生效延迟 |
+| `sfc.download.config.refresh-interval-millis` | `5000` | 统一配置（Git + aria2 运行参数）快照缓存时长（毫秒），即后台改配置后的最长生效延迟 |
 | `sfc.download.capability.cache-seconds` | `30` | 下载能力探测（aria2 连通性）结果缓存时长（秒） |
-| `sfc.download.aria2.enabled` | `false` | 环境变量 `SFC_DOWNLOAD_ARIA2_ENABLED`；P2P 总开关，关闭时 MAGNET / TORRENT 在创建任务阶段被 400 拒绝 |
 | `sfc.download.aria2.rpc-url` | `http://127.0.0.1:6800/jsonrpc` | 环境变量 `SFC_DOWNLOAD_ARIA2_RPC_URL`；aria2 JSON-RPC 地址。跨容器部署填容器网络地址（如 `http://aria2:6800/jsonrpc`） |
 | `sfc.download.aria2.secret` | 空 | 环境变量 `SFC_DOWNLOAD_ARIA2_SECRET`；与 `aria2c --rpc-secret` 一致，只从部署配置读取，日志 / 接口不回显；建议用环境变量 / docker secrets 注入，禁止提交明文 |
-| `sfc.download.aria2.poll-interval` | `1000` | 环境变量 `SFC_DOWNLOAD_ARIA2_POLL_INTERVAL`；进度轮询间隔（毫秒） |
-| `sfc.download.aria2.stall-timeout` | `300` | 环境变量 `SFC_DOWNLOAD_ARIA2_STALL_TIMEOUT`；无进度超时（秒） |
-| `sfc.download.aria2.torrent-max-size` | `2` | 环境变量 `SFC_DOWNLOAD_ARIA2_TORRENT_MAX_SIZE`；Base64 种子内容上限（MB） |
 | `sfc.download.aria2.shared-dir` | 空（不启用） | 环境变量 `SFC_DOWNLOAD_ARIA2_SHARED_DIR`；下载服务容器内共享根目录（已挂载的绝对路径）。留空 = 与改造前一致（aria2 与下载服务同机 / 同文件系统）；仅 MAGNET / TORRENT 使用 |
 | `sfc.download.aria2.remote-dir` | 空（= `shared-dir`） | 环境变量 `SFC_DOWNLOAD_ARIA2_REMOTE_DIR`；aria2 容器内同一共享根目录的 POSIX 绝对路径。留空表示两容器挂载点路径一致 |
 
-> `sfc.download.aria2.*` 均为**部署期配置，修改后需重启本服务**；secret 只从部署配置读取，日志与接口不回显。
-> 共享目录与双路径映射见 §4.3；`GET /capabilities?refresh=true` 只刷新 Git 配置，不会清除 aria2 连通性探测的 30 秒缓存。
+> `sfc.download.aria2.rpc-url` / `secret` / `shared-dir` / `remote-dir` 是**部署期配置，修改后需重启本服务**；
+> aria2 的运行参数（开关 / 轮询间隔 / 无进度超时 / 种子体积上限）在 core 后台「插件配置」面板维护，
+> 改完最长 5 秒生效（见 §4.2）。secret 只从部署配置读取，日志与接口不回显。
+> 共享目录与双路径映射见 §4.3；`GET /capabilities?refresh=true` 只刷新统一配置快照，不会清除 aria2 连通性探测的 30 秒缓存。
 
 > 本服务**不读取** core 的 `sys.*` 节点，因此无需同步修改 core 侧的配置文件
 > （`application.yml` / `application-develop.yml` / `pre-release/config.yml`）。
 
-### 4.2 sfc-core 统一配置（仅 Git 参数，改完无需重启）
+### 4.2 sfc-core 统一配置（Git + aria2 运行参数，改完无需重启）
 
-Git 的运行期参数不在 yml 中，统一存放在 core 的系统配置表：
+Git 与 aria2 的运行期参数不在 yml 中，统一存放在 core 的系统配置表：
 
-- 入口：core 后台「插件配置」→「离线下载」→「Git 克隆」分组（由注册中心 metadata `sfc.plugin.info` 发现，
-  经 `GET /api/meta/pluginInfo` 渲染表单）；
+- 入口：core 后台「插件配置」→「离线下载」→「Git 克隆」与「aria2 P2P 下载」分组（由注册中心 metadata
+  `sfc.plugin.info` 发现，经 `GET /api/meta/pluginInfo` 渲染表单）；
 - 生效：本服务按 5 秒 TTL 读取，**最长 5 秒生效**。
 
 配置面板还保留「**SSH 凭据管理**」菜单：声明为 `inputType=template` 的组件
@@ -135,28 +133,29 @@ Git 的运行期参数不在 yml 中，统一存放在 core 的系统配置表�
 与（仅管理员）SSH 主机密钥信任记录，**不占用统一配置 key**；组件契约见
 [`docs/git-proxy-ssh-clone-frontend-guide.md`](docs/git-proxy-ssh-clone-frontend-guide.md)。
 
+Git 克隆参数：
+
 | 配置 key | 默认值 | 说明 |
 |---|---|---|
 | `download.git.default-depth` | `0` | 默认克隆深度，`0` = 全量 |
 | `download.git.keep-git-dir` | `false` | 是否保留 `.git`，默认删除 |
 | `download.git.connect-timeout` | `30` | JGit 连接超时（秒） |
 
-> **配置面板不再有 aria2 分组**：aria2 的全部参数已迁至部署期配置（见 §4.1）；面板只保留「Git 克隆」参数分组
-> 与「SSH 凭据管理」template 菜单。
+aria2 运行参数：
 
-**旧 `download.aria2.*` 配置迁移**：core 配置表中的 `download.aria2.*` 已不再读取（数据保留无害），
-请按下表迁移到本服务 `application.yml` 或环境变量，然后**重启服务**：
-
-| 旧 core 配置 key | 新部署配置 | 环境变量 |
+| 配置 key | 默认值 | 说明 |
 |---|---|---|
-| `download.aria2.enabled` | `sfc.download.aria2.enabled` | `SFC_DOWNLOAD_ARIA2_ENABLED` |
-| `download.aria2.rpc-url` | `sfc.download.aria2.rpc-url` | `SFC_DOWNLOAD_ARIA2_RPC_URL` |
-| `download.aria2.secret` | `sfc.download.aria2.secret` | `SFC_DOWNLOAD_ARIA2_SECRET` |
-| `download.aria2.poll-interval` | `sfc.download.aria2.poll-interval` | `SFC_DOWNLOAD_ARIA2_POLL_INTERVAL` |
-| `download.aria2.stall-timeout` | `sfc.download.aria2.stall-timeout` | `SFC_DOWNLOAD_ARIA2_STALL_TIMEOUT` |
-| `download.aria2.torrent-max-size` | `sfc.download.aria2.torrent-max-size` | `SFC_DOWNLOAD_ARIA2_TORRENT_MAX_SIZE` |
+| `download.aria2.enabled` | `false` | P2P 总开关；关闭时 MAGNET / TORRENT 在创建任务阶段被 400 拒绝 |
+| `download.aria2.poll-interval` | `1000` | 进度轮询间隔（毫秒） |
+| `download.aria2.stall-timeout` | `300` | 无进度超时（秒）；`0` 表示不限（永久等待，任务会一直占用下载并发位，需手动中断） |
+| `download.aria2.torrent-max-size` | `2` | Base64 种子内容上限（MB） |
 
-> 迁移 secret 后建议清空 core 配置表中的旧值，避免敏感信息继续留在数据库里（旧值本身已不再被读取）。
+> **运行参数与部署期的分界**：以上 4 项在 core 面板维护（改完最长 5 秒生效）；aria2 的
+> `rpc-url` / `secret` / `shared-dir` / `remote-dir` 仍是部署期配置（见 §4.1），修改后需重启本服务。
+>
+> 升级说明：旧的部署配置 `sfc.download.aria2.enabled` / `poll-interval` / `stall-timeout` /
+> `torrent-max-size`（及对应 `SFC_DOWNLOAD_ARIA2_*` 环境变量）已**不再读取**；若 core 配置表中仍保留历史
+> `download.aria2.*` 旧值，升级后会自动重新生效，否则使用上表默认值（`enabled=false`，需管理员在面板开启）。
 
 **SSH 克隆与 SSH 凭据管理没有统一配置项**：凭据 / 主机信任记录只存放在本服务 `download.db`，
 Git 的克隆行为仍由上述 `download.git.*` 控制。
@@ -208,9 +207,10 @@ Git 的克隆行为仍由上述 `download.git.*` 控制。
    `user-agent`、`referer`）。
 6. aria2 内容下载不支持 SOCKS 代理：SOCKS 会被忽略并记录日志，HTTP 代理会转为 `all-proxy` 传给 aria2；
    通过 URL 提交种子任务时，`.torrent` 文件由本服务按任务代理拉取（HTTP / SOCKS 均支持），
-   流式落盘并按 `sfc.download.aria2.torrent-max-size` 限制体积。
-7. **改配置需重启**：`sfc.download.aria2.*` 是部署期配置，修改后需重启本服务；`GET /capabilities?refresh=true`
-   只刷新 Git 配置，aria2 连通性探测缓存 30 秒。
+   流式落盘并按 `download.aria2.torrent-max-size`（core 统一配置）限制体积。
+7. **配置生效方式**：aria2 运行参数（开关 / 轮询间隔 / 无进度超时 / 种子体积上限）在 core 后台面板维护，
+   改完最长 5 秒生效；`rpc-url` / `secret` / `shared-dir` / `remote-dir` 是部署期配置，修改后需重启本服务。
+   `GET /capabilities?refresh=true` 会强制刷新统一配置快照，但 aria2 连通性探测缓存 30 秒不变。
 
 ## 五、对外接口（经网关默认动态路由）
 
@@ -315,10 +315,10 @@ $env:SFC_INTERNAL_KEY = '<core 的 sfc.internal.key，≥32 字符>'
    `MAGNET`/`TORRENT` 在 aria2 未启用时不可用且带原因，`ED2K` 恒不可用
 5. 类型推断：`GET /api/task/download/detect-type?url=https%3A%2F%2Fgithub.com%2Fa%2Fb.git` 返回 `"GIT"`，
    传入无法识别的串时返回 `data=null`（仍为 `code=200`）
-6. 配置面板：core 后台「插件配置」出现「离线下载」节点，**只剩「Git 克隆」参数分组 +「SSH 凭据管理」
-   template 菜单**（组件 `download-ssh-credential-manager`），不再有 aria2 分组；Git 配置修改后 ≤5 秒在
-   `capabilities` 中体现。aria2 由部署期配置（`sfc.download.aria2.*` / `SFC_DOWNLOAD_ARIA2_*`）控制，
-   **修改后需重启本服务**；aria2 连通性探测另有 30 秒缓存
+6. 配置面板：core 后台「插件配置」出现「离线下载」节点，含「Git 克隆」与「aria2 P2P 下载」参数分组，
+   以及「SSH 凭据管理」template 菜单（组件 `download-ssh-credential-manager`）；两者的统一配置修改后
+   ≤5 秒在 `capabilities` 中体现。aria2 的 `rpc-url` / `secret` / 共享目录由部署期配置
+   （`sfc.download.aria2.*` / `SFC_DOWNLOAD_ARIA2_*`）控制，**修改后需重启本服务**；aria2 连通性探测另有 30 秒缓存
 7. 前端资源：core `GET /api/plugin/autoLoad.js` 内容包含本服务 bundle
 8. 端到端：创建下载（必须带 `type`）→ core `/api/asyncTask/listRecord` 可见 → 文件出现在目标网盘目录（重名 `.1`）→
    列表状态/进度与 core 一致 → 中断生效
@@ -339,7 +339,7 @@ $env:SFC_INTERNAL_KEY = '<core 的 sfc.internal.key，≥32 字符>'
 1. **删除旧的插件 jar**：运行目录 `ext/sfc-ext-download.jar`（及 `release/ext-available/` 下的同名产物）必须删除/不再拷贝。
    否则 core 仍会加载旧插件 → 同一 `offline-download` 任务出现两个执行者、前端资源被重复加载。
 2. **`SFC_INTERNAL_KEY` 两端一致**：core 与服务必须配置同一份密钥，否则本服务无法提交/查询/取消任务，
-   也无法读取 core 的统一配置（Git 参数）；aria2 参数来自本服务部署配置，不依赖 core。
+   也无法读取 core 的统一配置（Git 与 aria2 运行参数）；aria2 的 RPC 地址 / 令牌 / 共享目录仍来自本服务部署配置。
 3. **前端 URL 手动调整**：旧路径 `/api/task/download/**` 在插件下线后会落到 core 兜底路由并 404；
    前端改用 `/api/service/sfc-download-service/task/download/**`（详见
    [`docs/frontend-adaptation-checklist.md`](docs/frontend-adaptation-checklist.md)）；
@@ -351,7 +351,8 @@ $env:SFC_INTERNAL_KEY = '<core 的 sfc.internal.key，≥32 字符>'
    `git://` 地址不支持代理（携带代理创建任务返回 400）。
 6. **aria2 部署方式**：见 §4.3。同机部署可不配共享目录；跨容器部署必须挂载同一共享卷并配置
    `shared-dir` / `remote-dir`（漏挂时能力探测报共享目录不存在，产物读取/清理失败）。不部署 aria2 时保持
-   `sfc.download.aria2.enabled=false`（默认值），磁力链与种子会在创建任务阶段被 400 拒绝（而不是产生必然失败的异步任务）。
+   `download.aria2.enabled=false`（core 统一配置的默认值），磁力链与种子会在创建任务阶段被 400 拒绝
+   （而不是产生必然失败的异步任务）。
 7. **SSH 密钥与数据库权限**：SSH 私钥 / 口令 / 密码以**明文**存放在本服务 `download.db`，请限制该文件的访问权限
    （仅服务运行账号可读写），并按敏感数据要求做好备份/清理；接口不回显、日志已打码。本服务**不读取**宿主机
    `~/.ssh`（密钥、`known_hosts`、`config` 均不读取），SSH 认证完全由用户凭据驱动。
@@ -379,9 +380,10 @@ $env:SFC_INTERNAL_KEY = '<core 的 sfc.internal.key，≥32 字符>'
   不回显；但环境变量在 `docker inspect`、compose 文件与 shell 历史中可能可见，生产环境应使用 docker secrets
   或受控的部署配置，禁止把明文提交到仓库。
 - 任务执行**不支持断点续传/自动重试**：失败即失败；core 的故障转移重试会从头重新下载。
-- **Git 统一配置降级**：core 不可达时 Git 参数回落为注解默认值（全量克隆、删除 `.git`），只 WARN 一次；
-  HTTP / Git 下载本身不受影响。aria2 配置来自本服务部署配置、**不依赖 core**，core 故障期间 P2P 可用性只取决于
-  aria2 是否可达（`enabled` + RPC + 共享目录）。
+- **统一配置降级**：core 不可达时 Git 与 aria2 运行参数均回落为注解默认值（Git：全量克隆、删除 `.git`；
+  aria2：`enabled=false`、轮询 1000 毫秒、无进度超时 300 秒、种子上限 2 MB），只 WARN 一次；HTTP / Git 下载
+  本身不受影响。aria2 的 RPC 地址 / 令牌 / 共享目录来自本服务部署配置；若 core 从未成功返回过配置，
+  兜底的 `enabled=false` 会让 P2P 在 core 恢复前保持不可用。
 - **落盘失败不回滚**：目录树落盘中途失败时已上传文件保留，错误信息提示已成功数量；空目录不保留。
 - **SQLite 并发写**：多个任务同时收尾会并发回写 `download_task`。当前已做两层加固：
   datasource URL 启用 `journal_mode=WAL` + `busy_timeout=5000`，

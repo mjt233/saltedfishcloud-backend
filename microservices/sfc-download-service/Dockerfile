@@ -19,20 +19,18 @@
 #   改用 Nacos 注册中心：
 #     -e SFC_LOCAL_ENABLED=false -e NACOS_ENABLED=true -e NACOS_SERVER_ADDR=<nacos 地址>:8848
 #
-# P2P（aria2）为可选的部署期配置，修改后需重启容器：
-#   · 同机部署：只需 -e SFC_DOWNLOAD_ARIA2_ENABLED=true（rpc-url 默认 http://127.0.0.1:6800/jsonrpc，
-#     secret 与 aria2c --rpc-secret 保持一致）；
-#   · 跨容器部署：与 aria2 容器挂载【同一共享卷】，并显式配置两侧路径映射，例如：
-#       -v /host/shared:/shared/download \
-#       -e SFC_DOWNLOAD_ARIA2_ENABLED=true \
-#       -e SFC_DOWNLOAD_ARIA2_RPC_URL=http://aria2:6800/jsonrpc \
-#       -e SFC_DOWNLOAD_ARIA2_SECRET=<与 aria2c --rpc-secret 一致的令牌> \
-#       -e SFC_DOWNLOAD_ARIA2_SHARED_DIR=/shared/download \
-#       -e SFC_DOWNLOAD_ARIA2_REMOTE_DIR=/downloads
+# P2P（aria2）配置分两类：
+#   · 运行参数（P2P 开关 / 进度轮询间隔 / 无进度超时 / 种子体积上限）由 sfc-core 后台「插件配置」面板
+#     统一管理（首次部署后需由管理员在 core 后台开启 P2P），改完最长 5 秒生效，无需重启容器；
+#   · 连接与共享目录为部署期配置，修改后需重启容器：
+#       -e SFC_DOWNLOAD_ARIA2_RPC_URL=http://127.0.0.1:6800/jsonrpc    # 同机默认值；跨容器填 aria2 容器地址
+#       -e SFC_DOWNLOAD_ARIA2_SECRET=<与 aria2c --rpc-secret 一致的令牌>
+#       -e SFC_DOWNLOAD_ARIA2_SHARED_DIR=/shared/download             # 跨容器部署时与 aria2 共享同一卷
+#       -e SFC_DOWNLOAD_ARIA2_REMOTE_DIR=/downloads                   # aria2 容器内同一共享卷的挂载路径
 #     ⚠️ secret 建议用 docker secrets / 受控环境变量注入，禁止把明文提交到仓库。
 #
-# 配置来源：Git 业务参数由 core 管理端「插件配置」统一管理（改完 ≤5 秒生效）；
-#          aria2 全部参数由部署配置（环境变量 / application.yml）控制，修改后需重启容器。
+# 配置来源：Git 业务参数与 aria2 运行参数由 core 管理端「插件配置」统一管理（改完 ≤5 秒生效）；
+#           aria2 的 RPC 地址 / 令牌 / 共享目录由部署配置（环境变量 / application.yml）控制，修改后需重启容器。
 
 # ============================== 构建阶段 ==============================
 FROM maven:3.9.11-amazoncorretto-25-al2023 AS build
