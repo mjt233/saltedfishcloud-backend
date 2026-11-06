@@ -14,6 +14,9 @@ spring:
   #   常用变量：SFC_LOCAL_REGISTRY_ADDR / SFC_LOCAL_REGISTRY_PASSWORD / SFC_LOCAL_REGISTRY_HOST /
   #            NACOS_SERVER_ADDR / NACOS_GROUP / NACOS_NAMESPACE / NACOS_USERNAME / NACOS_PASSWORD
   cloud:
+    loadbalancer:
+      cache:
+        ttl: 10s
     sfc-local:
       discovery:
         enabled: ${SFC_LOCAL_ENABLED:true}
