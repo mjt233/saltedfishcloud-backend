@@ -4,6 +4,7 @@ import com.xiaotao.saltedfishcloud.service.config.version.Version;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import lombok.Data;
+import lombok.ToString;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.InitializingBean;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,12 +29,40 @@ public class SysProperties implements InitializingBean {
     @Value("${app.build-date}")
     private String buildDate;
 
+    /**
+     * JWT 会话密钥（配置项 {@code sys.jwt-secret}，推荐通过环境变量 {@code SFC_JWT_SECRET} 注入）。
+     * <p>用于用户登录凭证与文件直链的签名/验签，必须恰好 32 个字符；未配置或长度不符时应用启动失败，
+     * 避免与网关（sfc-gateway）使用不同密钥导致验签漂移。密钥原文不允许打印到日志。</p>
+     */
+    @ToString.Exclude
+    private String JWT_SECRET;
+
+    /**
+     * Redis 相关配置。
+     */
+    private Redis redis = new Redis();
+
     private Store store;
     /**
      * 系统服务相关配置。
      */
     private Service service = new Service();
 
+
+    /**
+     * Redis 相关配置。
+     */
+    @Data
+    public static class Redis {
+        /**
+         * 是否启用 Redis，配置项 {@code sys.redis.enabled}。
+         * <p>默认值为 {@code true}；设置为 {@code false} 时允许在不启动 Redis 的情况下运行系统。</p>
+         * <p>注意：禁用 Redis 会影响缓存（{@code sys.service.cache-provider} 需设置为 {@code local}）、
+         * 资源锁（{@code sys.service.lock-provider} 需设置为 {@code local}）、消息队列
+         * （{@code sys.service.mq-provider} 需设置为 {@code local}）以及 RPC 等功能。</p>
+         */
+        private boolean enabled = true;
+    }
 
     @Data
     public static class Store {
@@ -75,6 +104,20 @@ public class SysProperties implements InitializingBean {
 
     @Data
     public static class Service {
+        /**
+         * 缓存服务提供者，配置项 {@code sys.service.cache-provider}。<br>
+         * redis：使用 Redis 实现缓存（默认值）；<br>
+         * local：使用进程内本地缓存。
+         */
+        private String cacheProvider = "redis";
+
+        /**
+         * 资源锁服务提供者，配置项 {@code sys.service.lock-provider}。<br>
+         * redisson：使用 Redisson 实现分布式资源锁（默认值）；<br>
+         * local：使用仅当前服务实例内生效的本地可重入锁（不注入 Redisson）。
+         */
+        private String lockProvider = "redisson";
+
         /**
          * 消息队列服务提供者，可选 redis 或 local。
          */

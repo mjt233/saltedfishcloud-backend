@@ -1,7 +1,7 @@
 package com.sfc.nwt.model.po;
 
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
@@ -18,7 +18,7 @@ import java.util.Date;
 @Table(indexes = {
         @Index(name = "idx_wol_device_uid", columnList = "uid")
 })
-public class WolDevice extends AuditModel {
+public class WolDevice extends SfcAuditModel {
 
     /**
      * 设备命名

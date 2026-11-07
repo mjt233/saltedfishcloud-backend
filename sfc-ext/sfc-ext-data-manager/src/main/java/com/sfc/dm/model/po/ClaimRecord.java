@@ -1,6 +1,6 @@
 package com.sfc.dm.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Index;
 import jakarta.persistence.Table;
@@ -17,7 +17,7 @@ import lombok.Setter;
         @Index(name = "idx_claim_record_invalid_data_id", columnList = "invalidDataId"),
         @Index(name = "idx_claim_record_uid", columnList = "uid")
 })
-public class ClaimRecord extends AuditModel {
+public class ClaimRecord extends SfcAuditModel {
     /**
      * 关联的失效数据记录ID
      */

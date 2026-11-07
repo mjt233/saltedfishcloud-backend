@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.common;
 
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 
 import java.util.List;
 import java.util.Map;

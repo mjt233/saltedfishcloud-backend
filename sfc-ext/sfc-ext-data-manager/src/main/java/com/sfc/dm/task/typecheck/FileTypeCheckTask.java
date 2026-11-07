@@ -1,6 +1,5 @@
 package com.sfc.dm.task.typecheck;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sfc.dm.enums.InvalidDataStatus;
 import com.sfc.dm.model.dto.FileTypeCheckResult;
 import com.sfc.dm.model.po.InvalidDataRecord;
@@ -10,7 +9,7 @@ import com.sfc.task.AsyncTask;
 import com.sfc.task.prog.ProgressRecord;
 import com.xiaotao.saltedfishcloud.service.file.StoreServiceFactory;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.StreamUtils;
 import lombok.Setter;
@@ -153,9 +152,9 @@ public class FileTypeCheckTask implements AsyncTask {
             if (result != null) {
                 record.setFileType(result.getTypeId());
                 if (result.getDetail() != null && result.getDetail().getMetadata() != null) {
-                    record.setMetadata(MapperHolder.toJson(result.getDetail().getMetadata()));
+                    record.setMetadata(SfcMapperHolder.toJson(result.getDetail().getMetadata()));
                 }
-                record.setTypeCheckResult(MapperHolder.toJson(result));
+                record.setTypeCheckResult(SfcMapperHolder.toJson(result));
                 record.setNeedIdentify(false);
                 return result;
             }

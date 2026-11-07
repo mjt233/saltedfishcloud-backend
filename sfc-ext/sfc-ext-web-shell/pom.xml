@@ -27,12 +27,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.xiaotao</groupId>
-            <artifactId>sfc-rpc-api</artifactId>
-            <version>1.0.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.jetbrains.pty4j</groupId>
             <artifactId>pty4j</artifactId>
             <version>0.13.12</version>

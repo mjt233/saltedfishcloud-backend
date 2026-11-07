@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -20,7 +20,7 @@ import java.net.Proxy;
 @Table(name = "proxy", indexes = {
         @Index(name = "i_uid", columnList = "uid,name")
 })
-public class ProxyInfo extends AuditModel {
+public class ProxyInfo extends SfcAuditModel {
     @NotEmpty
     private String name;
 

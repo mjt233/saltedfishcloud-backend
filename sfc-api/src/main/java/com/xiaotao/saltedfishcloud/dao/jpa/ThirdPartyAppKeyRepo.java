@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface ThirdPartyAppKeyRepo extends BaseRepo<ThirdPartyAppKey> {
+public interface ThirdPartyAppKeyRepo extends SfcBaseRepo<ThirdPartyAppKey> {
     List<ThirdPartyAppKey> findByAppId(Long appId);
 }

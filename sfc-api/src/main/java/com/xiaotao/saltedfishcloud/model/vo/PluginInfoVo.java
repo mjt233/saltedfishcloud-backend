@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.model.vo;
 
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.PluginInfo;
 import lombok.Getter;
 import lombok.Setter;
 

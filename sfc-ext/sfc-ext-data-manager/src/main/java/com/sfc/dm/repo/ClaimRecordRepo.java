@@ -1,7 +1,7 @@
 package com.sfc.dm.repo;
 
 import com.sfc.dm.model.po.ClaimRecord;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * 认领记录Repository
  */
-public interface ClaimRecordRepo extends BaseRepo<ClaimRecord> {
+public interface ClaimRecordRepo extends SfcBaseRepo<ClaimRecord> {
     /**
      * 按失效数据ID查询所有认领记录
      */

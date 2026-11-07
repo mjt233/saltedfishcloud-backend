@@ -1,5 +1,6 @@
 package com.xiaotao.saltedfishcloud.model;
 
+import com.sfc.common.model.ConfigNode;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

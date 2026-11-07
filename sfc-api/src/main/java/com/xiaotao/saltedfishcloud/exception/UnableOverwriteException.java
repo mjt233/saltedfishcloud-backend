@@ -1,6 +1,8 @@
 package com.xiaotao.saltedfishcloud.exception;
 
-public class UnableOverwriteException extends JsonException {
+import com.sfc.common.exception.SfcJsonException;
+
+public class UnableOverwriteException extends SfcJsonException {
     public UnableOverwriteException(String message) {
         super(message);
     }

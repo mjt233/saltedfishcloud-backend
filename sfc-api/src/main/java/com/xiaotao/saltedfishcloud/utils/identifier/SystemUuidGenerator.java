@@ -7,6 +7,7 @@ import org.hibernate.generator.EventType;
 import org.hibernate.generator.EventTypeSets;
 import org.hibernate.generator.GeneratorCreationContext;
 
+import java.lang.reflect.Member;
 import java.util.EnumSet;
 import java.util.UUID;
 
@@ -47,11 +48,16 @@ public class SystemUuidGenerator
 
     /**
      * 接收标记注解配置。本生成器无需额外配置参数，故为空实现。
+     * <p>
+     * 注意：Spring Boot 4.0.x 携带的 Hibernate 7.2 中
+     * {@code AnnotationBasedGenerator.initialize(A, Member, GeneratorCreationContext)}
+     * 是抽象方法（Hibernate 7.4 起才改为默认方法并新增两参重载），故此处必须实现三参数版本。
      *
-     * @param config         {@code @SystemUuidGenerator} 标记注解
+     * @param config          {@code @SystemUuidGenerator} 标记注解
+     * @param member          使用该生成器的字段或方法
      * @param creationContext 生成器创建上下文
      */
     @Override
-    public void initialize(com.xiaotao.saltedfishcloud.annotations.id.SystemUuidGenerator config, GeneratorCreationContext creationContext) {
+    public void initialize(com.xiaotao.saltedfishcloud.annotations.id.SystemUuidGenerator config, Member member, GeneratorCreationContext creationContext) {
     }
 }

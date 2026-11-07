@@ -1,54 +1,73 @@
 package com.xiaotao.saltedfishcloud.service.plugin;
 
+import com.sfc.cloud.constants.SfcServiceMetaKey;
+import com.sfc.cloud.data.id.SfcIdUtil;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.ConfigNode;
+import com.sfc.common.model.PluginInfo;
+import com.sfc.common.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.common.SystemOverviewItemProvider;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
 import com.xiaotao.saltedfishcloud.exception.PluginNotFoundException;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
 import com.xiaotao.saltedfishcloud.ext.PluginProperty;
 import com.xiaotao.saltedfishcloud.ext.PluginService;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
 import com.xiaotao.saltedfishcloud.model.vo.PluginInfoVo;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
 import com.xiaotao.saltedfishcloud.utils.ResourceUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.PathResource;
+import org.springframework.cloud.client.discovery.DiscoveryClient;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StreamUtils;
+import org.springframework.util.StringUtils;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@RequiredArgsConstructor
 @Slf4j
 public class PluginServiceImpl implements PluginService, SystemOverviewItemProvider {
     private final static String LOG_PREFIX = "[插件服务]";
     private final PluginManager pluginManager;
+    private final DiscoveryClient discoveryClient;
+    private final PluginProperty pluginProperty;
+    private final RestClient restClient;
 
-    @Autowired
-    private PluginProperty pluginProperty;
+    /**
+     * 创建插件服务。
+     *
+     * @param pluginManager    插件管理器
+     * @param discoveryClient  服务发现客户端，用于枚举微服务与读取实例元数据
+     * @param pluginProperty   插件配置
+     * @param restClient       微服务调用客户端（已挂载 Spring Cloud LoadBalancer，按服务名选实例）
+     */
+    public PluginServiceImpl(PluginManager pluginManager,
+                             DiscoveryClient discoveryClient,
+                             PluginProperty pluginProperty,
+                             RestClient restClient) {
+        this.pluginManager = pluginManager;
+        this.discoveryClient = discoveryClient;
+        this.pluginProperty = pluginProperty;
+        this.restClient = restClient;
+    }
 
     @Override
     public Resource getPluginFile(String name) throws IOException {
         PluginInfo pluginInfo = pluginManager.getPluginInfo(name);
         if (pluginInfo == null) {
-            throw new JsonException("插件不存在");
+            throw new SfcJsonException("插件不存在");
         }
         return new UrlResource(pluginInfo.getUrl());
     }
@@ -74,7 +93,7 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
     @Override
     public Resource getPluginStaticResource(String name, String path) throws PluginNotFoundException {
-        return pluginManager.getPluginResource(name, StringUtils.appendPath("static", path));
+        return pluginManager.getPluginResource(name, SfcStringUtils.appendPath("static", path));
     }
 
     @Override
@@ -96,13 +115,13 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
         // 若关闭了自动加载资源，则返回空字符串
         if(Boolean.FALSE.equals(pluginProperty.getUseAutoLoadResource())) {
-            return ResourceUtils.stringToResource("").setResponseFilename(fileName);
+            return ResourceUtils.stringToResource("/* 已关闭自动加载资源 */").setResponseFilename(fileName);
         }
 
         // todo 缓存
         StringBuilder mergeResult = new StringBuilder();
 
-        // 获取所有插件，筛选出配置了自动加载的插件
+        // 获取所有随sfc-core主进程加载的插件中，筛选出配置了自动加载的插件
         this.listPlugins()
                 .stream()
                 .filter(e -> e.getAutoLoad() != null && !e.getAutoLoad().isEmpty())
@@ -125,6 +144,48 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
                             });
 
                 });
+
+
+        // 获取在微服务网络中注册的所有插件服务
+        discoveryClient.getServices()
+                .stream()
+                .map(serviceName -> discoveryClient.getInstances(serviceName).stream().findAny())
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .forEach(serviceInstance -> {
+                    // 未在服务发现的元数据中声明自动加载端点的跳过处理
+                    String autoload = Optional
+                            .ofNullable(serviceInstance.getMetadata())
+                            .orElseGet(Collections::emptyMap)
+                            .get(SfcServiceMetaKey.PLUGIN_AUTOLOAD);
+                    if (!StringUtils.hasText(autoload)) {
+                        return;
+                    }
+                    Arrays.stream(autoload.split(","))
+                            .filter(e -> e.endsWith(suffix))
+                            .forEach(endpoint -> {
+                                try {
+                                    // 以「服务名」作为 host 书写目标地址，由 Spring Cloud LoadBalancer
+                                    // 在请求发出前选出真实实例并重写 scheme/host/port，不再手工解析实例地址
+                                    String path = endpoint.startsWith("/") ? endpoint : "/" + endpoint;
+                                    URI uri = UriComponentsBuilder.newInstance()
+                                            .scheme("http")
+                                            .host(serviceInstance.getServiceId())
+                                            .path(path)
+                                            .build()
+                                            .toUri();
+                                    String body = restClient.get()
+                                            .uri(uri)
+                                            .retrieve()
+                                            .toEntity(String.class)
+                                            .getBody();
+                                    mergeResult.append("/* ").append(serviceInstance.getServiceId()).append(" */\n");
+                                    mergeResult.append(body).append("\n");
+                                } catch (Exception e) {
+                                    log.error("{}从微服务插件{}拉取资源{}失败", LOG_PREFIX, serviceInstance.getServiceId(), endpoint, e);
+                                }
+                            });
+                });
         return ResourceUtils.stringToResource(mergeResult.toString())
                 .setResponseFilename(fileName);
     }
@@ -132,8 +193,8 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
     @Override
     public PluginInfoVo uploadPlugin(Resource resource) throws IOException {
         // 临时保存
-        long tempId = IdUtil.getId();
-        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
+        long tempId = SfcIdUtil.getId();
+        Path tempPath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
         ResourceUtils.saveToFile(resource, tempPath);
 
         // 解析插件
@@ -146,11 +207,11 @@ public class PluginServiceImpl implements PluginService, SystemOverviewItemProvi
 
     @Override
     public void installPlugin(Long tempId, String fileName) throws IOException {
-        Path tempPath = Paths.get(StringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
+        Path tempPath = Paths.get(SfcStringUtils.appendPath(PathUtils.getTempDirectory(), tempId + ".jar"));
         if (!Files.exists(tempPath)) {
             throw new IllegalArgumentException("无效的临时id");
         }
-        PathResource pathResource = new PathResource(tempPath){
+        Resource pathResource = new FileSystemResource(tempPath){
             @Override
             public String getFilename() {
                 return fileName;

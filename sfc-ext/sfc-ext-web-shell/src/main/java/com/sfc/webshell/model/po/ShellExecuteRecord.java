@@ -1,6 +1,6 @@
 package com.sfc.webshell.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.Length;
@@ -21,7 +21,7 @@ import jakarta.validation.constraints.NotBlank;
 @Table(indexes = {
         @Index(name = "idx_shell_execute_record_uid", columnList = "uid")
 })
-public class ShellExecuteRecord extends AuditModel {
+public class ShellExecuteRecord extends SfcAuditModel {
     /**
      * 执行的命令
      */

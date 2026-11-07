@@ -1,7 +1,11 @@
 package com.xiaotao.saltedfishcloud.service.mail;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.xiaotao.saltedfishcloud.annotations.*;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigSelectOption;
+import com.sfc.common.enums.ConfigKeyNameStrategy;
 import lombok.Data;
 import org.springframework.util.StringUtils;
 

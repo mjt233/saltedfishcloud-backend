@@ -6,7 +6,7 @@ import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.service.file.thumbnail.ThumbnailService;
 import com.xiaotao.saltedfishcloud.utils.ObjectUtils;
-import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import com.sfc.common.utils.PropertyUtils;
 import lombok.RequiredArgsConstructor;
 
 import java.io.IOException;

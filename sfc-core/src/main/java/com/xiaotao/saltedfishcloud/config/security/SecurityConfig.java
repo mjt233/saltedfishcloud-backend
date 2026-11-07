@@ -3,7 +3,7 @@ package com.xiaotao.saltedfishcloud.config.security;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
 import com.xiaotao.saltedfishcloud.dao.redis.TokenService;
 import com.xiaotao.saltedfishcloud.helper.Md5PasswordEncoder;
-import com.xiaotao.saltedfishcloud.model.json.JsonResultImpl;
+import com.sfc.common.model.json.SfcJsonResult;
 import com.xiaotao.saltedfishcloud.service.log.LogRecordManager;
 import com.xiaotao.saltedfishcloud.service.user.UserService;
 import org.springframework.context.annotation.Bean;
@@ -86,7 +86,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint((request, response, authException) -> {
                     response.setContentType("application/json;charset=utf-8");
                     response.setStatus(403);
-                    response.getWriter().print(JsonResultImpl.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
+                    response.getWriter().print(SfcJsonResult.getInstance(403, null, "拒绝访问，权限不足或登录已过期/无效"));
                 })
         );
 
@@ -95,7 +95,11 @@ public class SecurityConfig {
                 .requestMatchers(
                         "/","/static-extension.json", "/api/oauth/callback/**","/ext/**",
                         "/assets/**", "/oauth/assets/**", "/oauth/index.html", "/oauth", "/oauth/",
-                        "/static/**", "/api/static/**", "/favicon.ico", "/index.*"
+                        "/static/**", "/api/static/**", "/favicon.ico", "/index.*",
+                        // 容器错误页转发路径：错误分发（如 multipart 超限触发的 413）不属于业务接口鉴权范围。
+                        // 若不放行，错误页请求会再次被认证入口点拦截，把真实的 413/500 伪装成 403“拒绝访问”，
+                        // 既误导调用方，也让服务端日志更难定位问题（见 SecurityConfig#filterChain）
+                        "/error"
                 )
                 .permitAll()
                 .requestMatchers(getAnonymousUrls(requestMappingHandlerMapping)).permitAll()
@@ -113,7 +117,8 @@ public class SecurityConfig {
         final CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(Collections.singletonList("*"));
         configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "POST", "PUT", "DELETE", "PATCH"));configuration.setAllowCredentials(true);
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "X-User-Agent", "Content-Type", "Token"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "X-User-Agent", "Content-Type", "Token",
+                com.sfc.cloud.local.registry.SfcLocalRegistryConstants.PASSWORD_HEADER));
         final UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;

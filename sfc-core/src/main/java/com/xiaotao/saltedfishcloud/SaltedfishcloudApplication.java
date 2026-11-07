@@ -1,13 +1,14 @@
 package com.xiaotao.saltedfishcloud;
 
 import com.sfc.archive.annocation.EnableArchive;
+import com.sfc.cloud.auth.annotation.EnableSfcInternalAuth;
 import com.sfc.rpc.annotation.EnableRpc;
 import com.sfc.task.annocation.EnableAsyncTask;
 import com.xiaotao.saltedfishcloud.ext.DefaultPluginManager;
 import com.xiaotao.saltedfishcloud.init.PluginInitializer;
 import com.xiaotao.saltedfishcloud.init.DataMigrateAndCheckInitializer;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import emergency.EmergencyApplication;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
@@ -19,7 +20,6 @@ import org.springframework.boot.context.metrics.buffering.BufferingApplicationSt
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.ApplicationListener;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -48,6 +48,7 @@ import java.util.function.Supplier;
 @EnableAsyncTask
 @EnableArchive
 @EnableRpc
+@EnableSfcInternalAuth
 @Indexed
 public class SaltedfishcloudApplication {
 
@@ -114,8 +115,8 @@ public class SaltedfishcloudApplication {
         long used = runtime.totalMemory() - runtime.freeMemory();
         log.info("启动耗时：{}s 最大内存：{} 占用内存：{} 使用率：{}%",
                 (System.currentTimeMillis() - beginTime) / 1000.0,
-                StringUtils.getFormatSize(total),
-                StringUtils.getFormatSize(used),
+                SfcStringUtils.getFormatSize(total),
+                SfcStringUtils.getFormatSize(used),
                 (used * 100 / total)
         );
     }

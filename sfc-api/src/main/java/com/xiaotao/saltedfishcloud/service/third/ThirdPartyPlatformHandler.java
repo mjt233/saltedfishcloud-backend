@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.service.third;
 
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAuthPlatform;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyPlatformUser;
 

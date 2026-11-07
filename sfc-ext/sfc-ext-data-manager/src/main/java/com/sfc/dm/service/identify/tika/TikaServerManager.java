@@ -1,7 +1,7 @@
 package com.sfc.dm.service.identify.tika;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import com.xiaotao.saltedfishcloud.utils.OSInfo;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,7 +16,6 @@ import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
@@ -287,7 +286,7 @@ public class TikaServerManager {
      * 解析 Tika 返回的 JSON 元数据
      */
     private Map<String, Object> parseMetadataJson(String json, Set<String> fields) throws JsonProcessingException {
-        return MapperHolder.parseJsonToMap(json);
+        return SfcMapperHolder.parseJsonToMap(json);
     }
 
     /**

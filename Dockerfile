@@ -35,4 +35,4 @@ COPY ./pre-release/config.yml .
 EXPOSE 8087
 VOLUME [ "/saltedfish/store" ]
 HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 CMD curl -f http://localhost:8087/api/hello/feature || exit 1
-CMD java -jar sfc-core.jar --spring.config.import=file:config.yml
+CMD ["java", "-jar", "sfc-core.jar", "--spring.config.import=file:config.yml"]

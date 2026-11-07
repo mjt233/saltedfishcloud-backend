@@ -4,7 +4,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 import com.xiaotao.saltedfishcloud.constant.ByteSize;
 import com.xiaotao.saltedfishcloud.enums.OidcClientType;
 import com.xiaotao.saltedfishcloud.enums.OidcTokenEndpointAuthMethod;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
@@ -21,7 +21,7 @@ import org.hibernate.validator.constraints.URL;
 })
 @Data
 @EqualsAndHashCode(callSuper = true)
-public class ThirdPartyApp extends AuditModel {
+public class ThirdPartyApp extends SfcAuditModel {
 
     /**
      * 应用名称

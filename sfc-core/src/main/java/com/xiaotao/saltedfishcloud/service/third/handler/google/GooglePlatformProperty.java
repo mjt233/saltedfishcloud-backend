@@ -1,8 +1,8 @@
 package com.xiaotao.saltedfishcloud.service.third.handler.google;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigKeyNameStrategy;
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
+import com.sfc.common.enums.ConfigKeyNameStrategy;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
 import lombok.Data;
 
 @Data

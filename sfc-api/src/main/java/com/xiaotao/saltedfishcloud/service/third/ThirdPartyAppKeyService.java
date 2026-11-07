@@ -2,13 +2,13 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
-import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.sfc.cloud.data.service.SfcCrudService;
 import org.springframework.lang.Nullable;
 
 import java.util.Collection;
 import java.util.List;
 
-public interface ThirdPartyAppKeyService extends CrudService<ThirdPartyAppKey> {
+public interface ThirdPartyAppKeyService extends SfcCrudService<ThirdPartyAppKey> {
     List<ThirdPartyAppKeyVo> listKeyByAppId(Long appId);
 
     /**

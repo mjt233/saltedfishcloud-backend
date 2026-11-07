@@ -6,15 +6,25 @@
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
-        <version>4.1.0</version>
+        <version>4.0.8</version>
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <modules>
-        <module>sfc-archive</module>
+        <module>sfc-auth</module>
+        <module>sfc-local-registry-client</module>
+        <!--
+            sfc-common：宿主与微服务共用的轻量共享库（不继承本 pom，自带 BOM）。
+            sfc-common-data：在 sfc-common 之上叠加 JPA 基座的共享数据访问模块（同样不继承本 pom）。
+            两者由本 <modules> 聚合，仅为让单次 reactor 构建能按依赖顺序解析它们；
+            "独立开发" 的硬标准（零宿主依赖、自带构建配置）不受影响。
+        -->
+        <module>sfc-common</module>
+        <module>sfc-common-data</module>
         <module>sfc-api</module>
-        <module>sfc-task</module>
-        <module>sfc-rpc</module>
+        <!-- 异步任务框架实现：契约在 sfc-api，实现独立成模块，被 sfc-core 依赖 -->
+        <module>sfc-core-task</module>
         <module>sfc-ext</module>
+        <module>microservices</module>
         <module>sfc-core</module>
     </modules>
     <groupId>com.xiaotao</groupId>
@@ -34,25 +44,31 @@
     </licenses>
 
     <properties>
-        <revision>3.1.2</revision>
+        <revision>3.2.0</revision>
         <!--  前端项目路径通过环境变量 SFC_FRONT_END_PATH 提供，配置后在 package 时自动打包到 webapp -->
         <java.version>25</java.version>
         <!--   系统核心api模块版本     -->
         <api.version>${revision}</api.version>
-        <task.version>1.0.0</task.version>
-        <rpc.version>1.0.0</rpc.version>
+        <!--
+            任务执行者 SDK 版本。sfc-task-worker（microservices/ 下）未继承本 pom，
+            其模块 pom 的 <version> 需与此处保持一致。
+        -->
+        <task.worker.version>1.0.0</task.worker.version>
+        <!--   内部接口鉴权 SDK 版本。sfc-auth 未继承本 pom，其 <version> 需与 microservices/pom.xml 中的 auth.version 保持一致     -->
+        <auth.version>1.0.0</auth.version>
+        <!--   local 注册中心客户端 SDK 版本。该模块未继承本 pom，其 <version> 需与模块 pom 保持一致   -->
+        <local.registry.version>1.0.0</local.registry.version>
+        <!--
+            共享基座版本。sfc-common（轻量：常量/信封/异常/工具/分页）与 sfc-common-data（JPA 基座）
+            均**不继承本 pom**，其 <version> 需与此处保持一致。
+        -->
+        <sfc.common.version>1.0.0</sfc.common.version>
         <oshi.version>6.4.0</oshi.version>
         <skipTests>true</skipTests>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
     </properties>
     <dependencies>
-        <!-- 升级期间临时使用，迁移完成后移除 -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-properties-migrator</artifactId>
-            <scope>runtime</scope>
-        </dependency>
         <dependency>
             <groupId>com.squareup.okhttp3</groupId>
             <artifactId>okhttp</artifactId>
@@ -70,7 +86,7 @@
         <dependency>
             <groupId>org.redisson</groupId>
             <artifactId>redisson-spring-boot-starter</artifactId>
-            <version>4.6.1</version>
+            <version>4.5.0</version>
         </dependency>
         <dependency>
             <groupId>org.springframework.boot</groupId>

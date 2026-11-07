@@ -28,16 +28,19 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 
 > 项目首次启动后会自动初始化数据库
 
+!!! warning "首次启动前必须配置 JWT 会话密钥"
+
+    用户登录凭证与文件直链的签名密钥来自 `sys.jwt-secret`（环境变量 `SFC_JWT_SECRET`），
+    必须**恰好 32 个字符**（例如 `openssl rand -hex 16`）；未配置或长度不符时 **core 启动失败（fail-fast）**。
+    可在 `config.yml` 中写入 `sys.jwt-secret: ${SFC_JWT_SECRET:}` 后注入环境变量，详见[参数配置](./config.md)。
+
 ---
 
-!!! info
+!!! info "配置与默认值"
 
+    默认值集中在 jar 内置的 `application.yml` 中（所有配置项均支持环境变量覆盖）；发布目录中的 `config.yml` 是**可选的部署覆盖文件**，模板（`pre-release/config.yml`）默认全部注释，按需取消注释即生效，未取消注释的项取内置默认值。
 
-    配置文件`config.yml`的配置内容与spring的`application.yml`完全一致，且会覆盖默认的`application.yml`·`的内容。
-
-    `config.yml`中未配置的项将取`application.yml`的配置项作为默认值
-
-    具体配置项说明见[参数配置](./config.md)
+    本地开发使用 `--spring.profiles.active=develop`（内置 SQLite + 进程内缓存/锁），个人覆盖写在仓库根 `config-local.yml`。完整的配置加载顺序、环境变量与常用配置组见[参数配置](./config.md)。
 
 
 ## 3. 完成
@@ -47,6 +50,33 @@ java -jar sfc-core.jar --spring.config.import=file:config.yml
 **咸鱼云网盘后端正在运行...**
 
 这个页面，出现该页面说明程序运行成功😆
+
+> 若已把前端产物打包进来（设置环境变量 `SFC_FRONT_END_PATH` 后执行 `mvn package`，该环境变量会自动激活前端资源打包 profile，把前端 `dist/**` 复制进 `sfc-core` 的 `webapp/`），浏览器看到的就是完整前端界面，而不是上面这句占位文案。
+
+---
+
+## 4. 微服务模式（可选）：再加一个独立网关
+
+咸鱼云的微服务改造引入了**独立进程的网关** `sfc-gateway`（`microservices/sfc-gateway`，Spring Cloud Gateway）作为**整站唯一入口**：浏览器只与它同源对话，由它把 SPA、`/api/**`、WebSocket 与 OIDC 透传到 `sfc-core`，并把 `/api/ext/**` 代理到各个微服务。**用户凭证由网关自己验签**（密钥经环境变量注入），core 不参与代理链路。
+
+```powershell
+# 前置：Nacos 已启动，且 sfc-core 与目标微服务已注册（group=SFC / namespace=public）
+# ⚠️ 必须先把 JWT 会话密钥注入环境变量，否则 core 与网关启动即失败（fail-fast）
+#    该密钥由部署者自行生成并同时注入 core 与网关（每个部署独立，不落代码库）：
+#    openssl rand -hex 16  # 生成恰好 32 个字符
+$env:SFC_JWT_SECRET = '<32 字符的 JWT 会话密钥，core 与网关必须完全一致>'
+java -Xmx512m -jar microservices/sfc-gateway/target/sfc-gateway-1.0.0.jar
+# 浏览器访问 http://127.0.0.1:8081/（网关），而不是直连 core 的 8087
+```
+
+| 要点 | 说明 |
+|---|---|
+| 端口 | 网关默认 **8081**，core 仍是 8087（网关在本机时会避让 Nacos 控制台的 8080） |
+| 构建命令 | **独立构建**：`mvn -f microservices/pom.xml clean package -DskipTests`（聚合器一次构建共享库 `sfc-common` 与网关；只构建网关用 `-pl :sfc-gateway -am`）。本目录的工程都不继承 root pom。⚠️ 它当前也在 root `<modules>` 中，因此根目录 `mvn package` 会一并构建；但它的产物**不打进 `release/` 目录**，是独立发布的进程 |
+| ⚠️ 密钥（必做） | core 与网关用**同一环境变量 `SFC_JWT_SECRET`**（core 侧配置项为 `sys.jwt-secret`），取值必须**完全一致**且恰好 32 字符：漂移的症状是"登录正常，但 `/api/ext/**` 全量 403/7005" |
+| 回退路径 | 不启动网关时，直连 `http://127.0.0.1:8087/` 一切照旧（网关只是入口，不是必需品） |
+| ⚠️ 部署约束 | 微服务与 core 的内部接口**只允许内网可达**：框架期采用**信任模式**（网关本地验签后注入明文头 `X-Sfc-Uid`，微服务不校验），且**凭证原值会透传给微服务**（微服务不得打印凭证）；**上公网前必须先完成服务间鉴权**。已落地一层兜底：`/api/internal/**` 只允许微服务间调用——各服务用共享密钥 `SFC_INTERNAL_KEY`（`sfc.internal.key`）自签 HS256 JWT，core 侧校验签名/有效期，网关侧直接拒绝该前缀；该兜底不区分服务身份、**不做防重放**，替代不了服务间鉴权 |
+| 配置 | 网关自己的配置在 `microservices/sfc-gateway/src/main/resources/application.yml`（不使用 `sys.` 前缀）；**core 侧没有任何代理配置**——`sys.service.gateway.*` 与 `POST /api/gateway/resolve` 已随"网关独立验签"一并删除（见[参数配置](./config.md)） |
 
 > 注：如果你是通过release页面下载的已经打包编译好的程序，此时应该可以直接访问到完整的功能页面。
 

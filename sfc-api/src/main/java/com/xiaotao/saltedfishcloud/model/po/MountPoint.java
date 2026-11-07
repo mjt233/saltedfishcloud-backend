@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
-import com.xiaotao.saltedfishcloud.validator.annotations.UID;
+import com.sfc.cloud.data.model.SfcAuditModel;
+import com.sfc.cloud.data.validation.SfcUID;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import lombok.*;
@@ -26,9 +26,9 @@ import java.util.Objects;
 @AllArgsConstructor
 @NoArgsConstructor
 @Validated
-public class MountPoint extends AuditModel {
+public class MountPoint extends SfcAuditModel {
 
-    @UID
+    @SfcUID
     private Long uid;
 
     /**

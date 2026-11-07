@@ -1,0 +1,14 @@
+{
+  "name": "sfc-download",
+  "alias": "离线下载",
+  "describe": "提供 HTTP/HTTPS、Git 克隆、磁力链与种子（aria2）离线下载能力，文件自动保存到网盘指定目录。",
+  "loadType": "merge",
+  "type": "service",
+  "author": "xiaotao233",
+  "apiVersion": "3.1.2",
+  "version": "1.0.0",
+  "autoLoad": [
+    "index.umd.js",
+    "style.css"
+  ]
+}

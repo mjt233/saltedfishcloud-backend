@@ -1,9 +1,9 @@
 package com.saltedfishcloud.ext.ftpserver;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
-import com.xiaotao.saltedfishcloud.utils.TypeUtils;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
+import com.sfc.common.utils.SfcTypeUtils;
 import lombok.Data;
 
 @Data
@@ -59,10 +59,10 @@ public class FTPServerProperty {
     private String passivePort = "20000-30000";
 
     public void setFtpEnable(Object ftpEnable) {
-        this.ftpEnable = TypeUtils.toBoolean(ftpEnable);
+        this.ftpEnable = SfcTypeUtils.toBoolean(ftpEnable);
     }
 
     public void setControlPort(Object controlPort) {
-        this.controlPort = TypeUtils.toNumber(Integer.class, controlPort);
+        this.controlPort = SfcTypeUtils.toNumber(Integer.class, controlPort);
     }
 }

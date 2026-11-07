@@ -6,7 +6,7 @@ import com.sfc.ext.webdav.model.resource.*;
 import com.sfc.ext.webdav.service.WebDavAuthService;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import com.xiaotao.saltedfishcloud.utils.SpringContextUtils;
-import com.xiaotao.saltedfishcloud.validator.UIDValidator;
+import com.sfc.cloud.data.validation.SfcUIDValidator;
 import io.milton.http.Auth;
 import io.milton.http.Request;
 import io.milton.http.SecurityManager;
@@ -139,7 +139,11 @@ public class SfcSecurityManager implements SecurityManager {
         } else {
             requireUid = item.getUid();
         }
-        return UIDValidator.validate(authUser, requireUid, true);
+        // 共享基座的身份 SPI 只接受 uid + 是否管理员（不引入对宿主 UserPrincipal 的依赖），
+        // 因此就地解包；authUser 可能为 null，用三元表达式保留"未登录"语义（与宿主 3 参重载一致）。
+        Long currentUid = authUser == null ? null : authUser.getId();
+        boolean currentIsAdmin = authUser != null && authUser.isAdmin();
+        return SfcUIDValidator.validate(currentUid, currentIsAdmin, requireUid, true);
     }
 
     @Override

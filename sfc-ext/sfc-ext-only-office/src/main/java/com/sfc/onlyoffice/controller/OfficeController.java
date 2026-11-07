@@ -5,9 +5,9 @@ import com.onlyoffice.model.documenteditor.Config;
 import com.sfc.onlyoffice.model.OfficeConfigProperty;
 import com.sfc.onlyoffice.service.OfficeService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.dto.ResourceRequest;
-import com.xiaotao.saltedfishcloud.utils.MapperHolder;
+import com.sfc.common.utils.SfcMapperHolder;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -21,8 +21,6 @@ import jakarta.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Scanner;
 
 @Controller
@@ -52,7 +50,7 @@ public class OfficeController {
             ModelAndView modelAndView = new ModelAndView();
             modelAndView.addObject("errMsg", throwable.getMessage());
             modelAndView.setViewName("only-office-templates/office-error");
-            if (!(throwable instanceof JsonException)) {
+            if (!(throwable instanceof SfcJsonException)) {
                 log.error("编辑器加载失败", throwable);
             }
             return modelAndView;
@@ -70,7 +68,7 @@ public class OfficeController {
                                HttpServletRequest request) throws IOException {
         try(Scanner scanner = new Scanner(request.getInputStream()).useDelimiter("\\A")) {
             String body = scanner.hasNext() ? scanner.next() : "";
-            Callback callback = MapperHolder.parseJson(body, Callback.class);
+            Callback callback = SfcMapperHolder.parseJson(body, Callback.class);
             officeService.handleCallback(resourceRequest, callback);
             return "{\"error\":0}";
         }

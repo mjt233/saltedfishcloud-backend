@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.ve.model.po;
 
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.NotFound;
@@ -18,7 +18,7 @@ import org.hibernate.annotations.NotFoundAction;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class EncodeConvertTask extends AuditModel {
+public class EncodeConvertTask extends SfcAuditModel {
 
     /**
      * 任务类型

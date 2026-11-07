@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po;
 
 import com.xiaotao.saltedfishcloud.enums.OpenAuthorizationScope;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -16,7 +16,7 @@ import lombok.EqualsAndHashCode;
         @Index(name = "idx_app_id", columnList = "appId"),
         @Index(name = "idx_app_uid", columnList = "appId,uid"),
 })
-public class ThirdPartyAppAuthorization extends AuditModel {
+public class ThirdPartyAppAuthorization extends SfcAuditModel {
 
     /**
      * 第三方应用id

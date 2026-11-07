@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.test;
 
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.identifier.IdUtil;
+import com.sfc.cloud.data.id.SfcIdUtil;
 import lombok.Getter;
 
 import java.util.ArrayList;
@@ -89,7 +89,7 @@ public class MockFileSystem {
         FileInfo f = new FileInfo().setName(name).setMd5(SecureUtils.getUUID()).setNode(parent);
         f.setSize(-1L);
         f.setUid(0L);
-        f.setId(IdUtil.getId());
+        f.setId(SfcIdUtil.getId());
         return f;
     }
 

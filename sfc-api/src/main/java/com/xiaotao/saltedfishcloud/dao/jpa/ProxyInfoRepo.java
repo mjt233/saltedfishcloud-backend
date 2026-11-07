@@ -1,12 +1,12 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import com.xiaotao.saltedfishcloud.model.po.ProxyInfo;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-public interface ProxyInfoRepo extends BaseRepo<ProxyInfo> {
+public interface ProxyInfoRepo extends SfcBaseRepo<ProxyInfo> {
 	List<ProxyInfo> findAllByOrderByNameAsc();
 
 	ProxyInfo findByName(String name);

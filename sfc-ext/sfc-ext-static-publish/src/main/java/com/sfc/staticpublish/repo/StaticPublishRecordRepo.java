@@ -1,11 +1,11 @@
 package com.sfc.staticpublish.repo;
 
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface StaticPublishRecordRepo extends BaseRepo<StaticPublishRecord> {
+public interface StaticPublishRecordRepo extends SfcBaseRepo<StaticPublishRecord> {
 
     /**
      * 按站点发布名称获取发布记录（发布方式：按主机名）

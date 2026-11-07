@@ -1,8 +1,8 @@
 package com.sfc.quickshare.model;
 
-import com.xiaotao.saltedfishcloud.annotations.ConfigProperty;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertyEntity;
-import com.xiaotao.saltedfishcloud.annotations.ConfigPropertiesGroup;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
 import lombok.Data;
 
 @Data

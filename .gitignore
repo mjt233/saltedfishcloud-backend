@@ -15,6 +15,7 @@ target/
 
 ### IntelliJ IDEA ###
 .idea
+.run
 *.iws
 *.iml
 *.ipr
@@ -52,3 +53,12 @@ log/**
 *.db
 settings.local.json
 .flattened-pom.xml
+# 开发者个人本地覆盖配置（application-develop.yml 通过 spring.config.import 自动导入）
+config-local.yml
+
+.env
+data
+
+# 网关验收脚本的临时产物：大体积测试二进制与会话令牌，绝不入库
+microservices/sfc-gateway/verify/.tmp/
+microservices/sfc-gateway/verify/.token

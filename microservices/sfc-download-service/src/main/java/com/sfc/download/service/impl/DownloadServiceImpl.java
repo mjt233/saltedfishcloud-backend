@@ -1,0 +1,541 @@
+package com.sfc.download.service.impl;
+
+import com.sfc.cloud.data.validation.SfcUIDValidator;
+import com.sfc.cloud.exception.SfcRemoteApiException;
+import com.sfc.cloud.model.SfcFileInfo;
+import com.sfc.cloud.model.SfcProxyInfo;
+import com.sfc.cloud.remote.client.SfcCoreFileClient;
+import com.sfc.cloud.remote.client.SfcCoreProxyClient;
+import com.sfc.cloud.task.worker.SfcTaskWorkerClient;
+import com.sfc.cloud.task.worker.protocol.TaskStateInfo;
+import com.sfc.cloud.task.worker.protocol.TaskSubmitParam;
+import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.model.json.SfcJsonResult;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
+import com.sfc.download.config.SfcDownloadConfigService;
+import com.sfc.download.constant.DownloadTaskConstants;
+import com.sfc.download.engine.DownloadCapability;
+import com.sfc.download.engine.DownloadEngine;
+import com.sfc.download.engine.DownloadEngineRegistry;
+import com.sfc.download.engine.DownloadType;
+import com.sfc.download.identity.SfcCurrentUserSupport;
+import com.sfc.download.model.DownloadTaskParams;
+import com.sfc.download.model.param.TaskType;
+import com.sfc.download.model.po.DownloadTaskInfo;
+import com.sfc.download.model.po.SshCredential;
+import com.sfc.download.model.po.SshCredentialAuthType;
+import com.sfc.download.model.vo.AsyncTaskRef;
+import com.sfc.download.repo.DownloadTaskRepo;
+import com.sfc.download.service.DownloadService;
+import com.sfc.download.service.SshCredentialService;
+import com.sfc.download.util.DownloadFileUtils;
+import com.sfc.download.util.DownloadLogUtils;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.stereotype.Service;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+
+/**
+ * 离线下载服务实现。
+ *
+ * <p><b>与 core 的协作边界：</b></p>
+ * <ul>
+ *   <li>保存路径校验、代理查询、文件上传等网盘能力经 {@code sfc-remote-client} 回调 core；</li>
+ *   <li>任务提交、状态/进度查询、取消经 {@code sfc-task-worker} SDK 走 core 的内部任务接口；</li>
+ *   <li>本服务只保存任务表中的状态<b>镜像</b>；列表查询时用 core 的实时状态校准，
+ *       core 不可用时回退镜像（fail-soft，只记 WARN）。</li>
+ * </ul>
+ *
+ * @see DownloadService
+ */
+@Slf4j
+@Service
+@RequiredArgsConstructor
+public class DownloadServiceImpl implements DownloadService {
+
+    /** 日志前缀 */
+    private static final String LOG_PREFIX = DownloadTaskConstants.LOG_PREFIX;
+
+    /** 单次向 core 查询任务状态的最大数量（core 侧硬限制 500，超出会返回 400） */
+    private static final int MAX_STATE_QUERY_BATCH = 500;
+
+    /** 下载中（非终态）状态集合：等待中 + 运行中 */
+    private static final Collection<Integer> DOWNLOADING_STATUSES = List.of(
+            DownloadTaskConstants.Status.WAITING,
+            DownloadTaskConstants.Status.RUNNING
+    );
+
+    /** 已完成状态集合 */
+    private static final Collection<Integer> FINISH_STATUSES = List.of(
+            DownloadTaskConstants.Status.FINISH
+    );
+
+    /** 失败状态集合：失败 + 取消 + 离线 */
+    private static final Collection<Integer> FAILED_STATUSES = List.of(
+            DownloadTaskConstants.Status.FAILED,
+            DownloadTaskConstants.Status.CANCEL,
+            DownloadTaskConstants.Status.OFFLINE
+    );
+
+    /** 下载任务仓储 */
+    private final DownloadTaskRepo downloadTaskRepo;
+
+    /** core 网盘文件客户端（校验保存路径） */
+    private final SfcCoreFileClient fileClient;
+
+    /** core 代理查询客户端 */
+    private final SfcCoreProxyClient proxyClient;
+
+    /** 用户 SSH 凭据服务（Git SSH 克隆时校验凭据归属） */
+    private final SshCredentialService sshCredentialService;
+
+    /** core 异步任务客户端（提交 / 批量查状态 / 取消） */
+    private final SfcTaskWorkerClient taskWorkerClient;
+
+    /** 下载引擎注册表（类型解析、创建期统一校验、能力声明） */
+    private final DownloadEngineRegistry engineRegistry;
+
+    /** 统一配置访问入口（Git 与 aria2 运行参数；能力接口的 refresh 参数用于强制刷新其缓存） */
+    private final SfcDownloadConfigService configService;
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>执行顺序：统一校验（类型必填 / 能力 / 来源协议 / 引擎参数）→ 校验 SSH 凭据归属（仅 GIT）→
+     * 校验保存路径 → 解析代理（HTTP / GIT / P2P 类型）→ 落库等待中记录 →
+     * 提交 core 异步任务 → 回写异步任务 id。
+     * 提交失败时把任务标记为失败并抛出原异常，避免出现"本地有任务、core 无记录"却仍显示为等待中的假象。</p>
+     *
+     * <p><b>为什么统一校验必须最先做：</b>「引擎未接入」（ed2k）与「外部程序未启用」（aria2 关闭时的
+     * 磁力链 / 种子）这类能力问题，如果先走 core 的保存目录校验，会被「无效的保存路径」抢先挡住，
+     * 导致前端收到的是一个误导性的失败原因；前置校验同时避免了「提交一条必然失败的异步任务」。</p>
+     *
+     * <p><b>类型落库口径：</b>只写调用方显式传入的 {@code params.type}，服务端<b>不做任何推导或降级</b>：
+     * 该字段由 Bean Validation 保证非空，落库值与请求值一致，任务处理器从参数 JSON 中读到的也是同一个值。</p>
+     */
+    @Override
+    public String createTask(DownloadTaskParams params, long creator) {
+        engineRegistry.validate(params);
+        DownloadType type = params.type;
+        log.info("{}收到创建下载任务请求: uid={}, creator={}, type={}, url={}, savePath={}, method={}, proxy={}",
+                LOG_PREFIX, params.uid, creator, type.getCode(), DownloadLogUtils.maskUrl(params.url), params.savePath,
+                params.method, SfcStringUtils.hasText(params.proxy) ? params.proxy : "直连");
+        DownloadEngine engine = engineRegistry.get(type);
+        // 本地校验优先：SSH 凭据归属只查本服务数据库，放在需要回源 core 的保存路径/代理解析之前，
+        // 避免「保存路径无效」这类远端错误抢先掩盖更直接的凭据问题
+        resolveSshCredential(params, creator);
+        validateSavePath(params.uid, params.savePath);
+        resolveProxy(params, creator, type);
+
+        DownloadTaskInfo task = new DownloadTaskInfo();
+        task.setType(type.getCode());
+        task.setUrl(params.url);
+        task.setProxy(params.proxy);
+        task.setUid(params.uid);
+        task.setCreatedBy(creator);
+        task.setSavePath(params.savePath);
+        task.setStatus(DownloadTaskConstants.Status.WAITING);
+        task = downloadTaskRepo.save(task);
+        log.info("{}下载任务已创建: downloadId={}, uid={}, creator={}, type={}, savePath={}",
+                LOG_PREFIX, task.getId(), params.uid, creator, type.getCode(), params.savePath);
+
+        // 任务处理器从参数 JSON 中回读 downloadId，用于执行期回写进度/状态
+        params.downloadId = task.getId();
+        // 创建者快照：执行期记录 SSH 主机密钥「首次信任」时用于审计（客户端传入无效）
+        params.creatorUid = creator;
+        try {
+            Long asyncTaskId = taskWorkerClient.submit(new TaskSubmitParam(
+                    engine.taskName(),
+                    DownloadTaskConstants.TASK_TYPE,
+                    SfcMapperHolder.toJsonNoEx(params),
+                    params.uid,
+                    engine.cpuOverhead(),
+                    false,
+                    false
+            ));
+            task.setTaskId(asyncTaskId);
+            downloadTaskRepo.save(task);
+            log.info("{}已提交异步任务: downloadId={}, taskId={}", LOG_PREFIX, task.getId(), asyncTaskId);
+        } catch (RuntimeException e) {
+            log.error("{}提交离线下载任务失败: downloadId={}, url={}", LOG_PREFIX, task.getId(), params.url, e);
+            downloadTaskRepo.updateFailure(task.getId(), DownloadTaskConstants.Status.FAILED,
+                    e.getMessage(), new Date());
+            throw e;
+        }
+        return String.valueOf(task.getId());
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>纯本地语法推断：委托 {@link DownloadEngineRegistry#detect(String)} 依次询问各引擎，不访问 core、
+     * 不发起网络请求。无法识别时返回 {@code null}（接口层以 {@code data=null} 返回），由前端保持当前选择。</p>
+     */
+    @Override
+    public DownloadType detectType(String url) {
+        DownloadType type = engineRegistry.detect(url);
+        log.debug("{}按下载地址推断类型: url={}, type={}", LOG_PREFIX, url, type == null ? "未识别" : type.getCode());
+        return type;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>权限口径：仅任务创建者或管理员可中断（{@link SfcUIDValidator#validateWithException(long, boolean)}）；
+     * 状态口径：只有等待中 / 运行中的任务可中断。</p>
+     */
+    @Override
+    public void interrupt(Long taskId) {
+        if (taskId == null) {
+            throw new SfcJsonException(400, "下载任务id不能为空");
+        }
+        log.info("{}收到下载任务中断请求: downloadId={}", LOG_PREFIX, taskId);
+        DownloadTaskInfo task = downloadTaskRepo.findById(taskId)
+                .orElseThrow(() -> new SfcJsonException(404, "下载任务不存在: " + taskId));
+        SfcUIDValidator.validateWithException(task.getCreatedBy(), false);
+
+        Integer status = task.getStatus();
+        if (status == null || !DOWNLOADING_STATUSES.contains(status)) {
+            throw new SfcJsonException(400, "只能对下载中或等待中的下载任务操作");
+        }
+        Long asyncTaskId = task.getTaskId();
+        if (asyncTaskId == null) {
+            throw new SfcJsonException(400, "任务尚未提交到异步任务系统，无法中断");
+        }
+        taskWorkerClient.cancel(asyncTaskId);
+        log.info("{}下载任务中断指令已下发: downloadId={}, taskId={}, status={}",
+                LOG_PREFIX, task.getId(), asyncTaskId, status);
+
+        // 等待中的任务不会被执行者感知，core 只会把异步任务置为已取消，这里同步把镜像置为取消；
+        // 运行中的任务由执行者在中断后自行回写状态镜像（避免与执行线程竞争写同一行）
+        if (Objects.equals(DownloadTaskConstants.Status.WAITING, status)) {
+            downloadTaskRepo.updateStatus(task.getId(), DownloadTaskConstants.Status.CANCEL);
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p><b>状态校准逻辑：</b>先按本地状态镜像分页查询，再对「非终态且已提交异步任务」的行批量调用
+     * core 的 {@code queryTasks}，用 core 的实时状态/进度覆盖响应数据，并在状态变化时回写本地镜像。
+     * core 调用失败只记 WARN 并回退镜像（fail-soft），不影响列表可用性。</p>
+     */
+    @Override
+    public Page<DownloadTaskInfo> getTaskList(long uid, int page, int size, TaskType type) {
+        Page<DownloadTaskInfo> tasks = queryPage(uid, type, PageRequest.of(page, size));
+        List<DownloadTaskInfo> content = tasks.getContent();
+        if (content.isEmpty()) {
+            return tasks;
+        }
+
+        // 为每行生成前端契约中的 asyncTaskRecord 快照（先用本地镜像状态，后续校准会覆盖非终态行）
+        content.forEach(task -> task.setAsyncTaskRecord(new AsyncTaskRef(task.getTaskId(), task.getStatus())));
+
+        List<DownloadTaskInfo> activeTasks = content.stream()
+                .filter(task -> task.getTaskId() != null && !isFinalStatus(task.getStatus()))
+                .toList();
+        if (!activeTasks.isEmpty()) {
+            calibrateActiveTasks(activeTasks);
+        }
+        return tasks;
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>代理归属 core，本服务只透传：未登录返回空列表；调用 core 失败时转换为业务异常。</p>
+     */
+    @Override
+    public List<SfcProxyInfo> listAvailableProxy() {
+        Long uid = SfcCurrentUserSupport.getCurrentUid();
+        if (uid == null) {
+            return List.of();
+        }
+        try {
+            SfcJsonResult<List<SfcProxyInfo>> result = proxyClient.listAvailable(uid);
+            if (result == null) {
+                return List.of();
+            }
+            result.requireSuccess();
+            return result.getData() == null ? List.of() : result.getData();
+        } catch (SfcRemoteApiException e) {
+            log.warn("{}获取可用代理列表失败: uid={}, cause={}", LOG_PREFIX, uid, e.getMessage());
+            throw new SfcJsonException(500, "获取可用代理列表失败：" + e.getMsg());
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p><b>参数语义：</b></p>
+     * <ul>
+     *   <li>{@code refresh=false}：直接读取引擎注册表汇总出的能力，走统一配置的本地缓存（默认 5 秒 TTL）；</li>
+     *   <li>{@code refresh=true}：先强制刷新统一配置快照（Git 与 aria2 运行参数），再汇总能力，用于
+     *       「管理员刚在 core 后台改完配置，需要立刻验证」的场景。</li>
+     * </ul>
+     *
+     * <p><b>aria2 配置说明：</b>aria2 运行参数（P2P 开关、进度轮询间隔、无进度超时、种子体积上限）属于
+     * core 统一配置（{@code download.aria2.*}），改完最长 5 秒生效，{@code refresh=true} 会强制刷新；
+     * 而 RPC 地址、令牌与共享目录仍是部署期配置（{@code sfc.download.aria2.*} /
+     * {@code SFC_DOWNLOAD_ARIA2_*}），修改后需重启本服务。</p>
+     *
+     * <p><b>注意：</b>强制刷新不会顺带清空引擎自身的外部依赖探活缓存（aria2 RPC 探活结果按
+     * {@code sfc.download.capability.cache-seconds} 缓存，最多 30 秒自然更新）。因此 {@code refresh=true}
+     * 后立即看到的结果，若探活缓存仍处于「上一次失败」的有效期内，可能仍是不可用状态。</p>
+     */
+    @Override
+    public List<DownloadCapability> listCapabilities(boolean refresh) {
+        if (refresh) {
+            log.info("{}收到刷新下载能力请求，先强制刷新统一配置快照（Git 与 aria2 运行参数）", LOG_PREFIX);
+            configService.refresh();
+        }
+        return engineRegistry.capabilities();
+    }
+
+    // ── 内部实现 ──
+
+    /**
+     * 校验保存路径是否存在且当前用户可访问。
+     *
+     * <p>复用 core 的目录列表接口做校验：拿到目录内容即说明路径存在且可读。
+     * 任何 core 侧的失败（路径不存在、非法路径、无权限）都归一为「无效的保存路径」业务异常。</p>
+     *
+     * @param uid      资源归属用户 uid
+     * @param savePath 保存目录路径
+     * @throws SfcJsonException 路径无效时抛出（HTTP 400 语义）
+     */
+    private void validateSavePath(long uid, String savePath) {
+        try {
+            SfcJsonResult<List<SfcFileInfo>> result = fileClient.list(uid, savePath);
+            if (result == null || !result.isSuccess() || result.getData() == null) {
+                throw new SfcJsonException(400, "无效的保存路径:" + savePath);
+            }
+        } catch (SfcRemoteApiException e) {
+            log.warn("{}校验保存路径失败: uid={}, savePath={}, cause={}", LOG_PREFIX, uid, savePath, e.getMessage());
+            throw new SfcJsonException(400, "无效的保存路径:" + savePath);
+        }
+    }
+
+    /**
+     * 判断指定下载类型是否消费代理配置。
+     *
+     * <p>HTTP 由引擎自行装配代理；磁力链 / 种子由 aria2 的 {@code all-proxy} 选项承载，种子任务以 URL
+     * 提交时 {@code .torrent} 文件由本服务按同一份代理快照拉取（HTTP / SOCKS 均支持）；Git 克隆由 JGit
+     * 按任务注入代理（HTTP(S) 用连接工厂、SSH 用代理数据工厂）。仅 ed2k 引擎尚未接入，不消费代理。</p>
+     *
+     * @param type 下载类型
+     * @return 支持代理返回 {@code true}
+     */
+    private static boolean supportsProxy(DownloadType type) {
+        return type == DownloadType.HTTP
+                || type == DownloadType.GIT
+                || type == DownloadType.MAGNET
+                || type == DownloadType.TORRENT;
+    }
+
+    /**
+     * 按代理名称解析代理节点，并把连接信息快照进任务参数。
+     *
+     * <p>旧插件保存的是代理 id，前端传的是代理名称；新契约统一按名称解析，并在创建任务时把
+     * 类型 / 地址 / 端口快照进参数，避免任务执行时代理配置已被删除。</p>
+     *
+     * <p>当前下载类型不支持代理时（ed2k）直接跳过并清空相关字段，避免把「不会生效的代理」
+     * 写进任务记录而误导使用者。</p>
+     *
+     * @param params  下载参数（{@code proxy} 非空时会被解析并回填快照字段）
+     * @param creator 任务创建者 uid（用于计算该用户可见的代理范围）
+     * @param type    解析后的下载类型
+     * @throws SfcJsonException 代理不存在或 core 调用失败时抛出
+     */
+    private void resolveProxy(DownloadTaskParams params, long creator, DownloadType type) {
+        if (!supportsProxy(type)) {
+            if (SfcStringUtils.hasText(params.proxy)) {
+                log.info("{}当前下载类型不消费代理配置，已忽略: type={}, proxy={}",
+                        LOG_PREFIX, type.getCode(), params.proxy);
+            }
+            params.proxy = null;
+            params.proxyType = null;
+            params.proxyAddress = null;
+            params.proxyPort = null;
+            return;
+        }
+        String proxyName = params.proxy;
+        if (proxyName == null || proxyName.isBlank()) {
+            return;
+        }
+        List<SfcProxyInfo> proxies;
+        try {
+            SfcJsonResult<List<SfcProxyInfo>> result = proxyClient.listAvailable(creator).requireSuccess();
+            proxies = result.getData() == null ? List.of() : result.getData();
+        } catch (SfcRemoteApiException e) {
+            log.warn("{}获取可用代理列表失败: creator={}, cause={}", LOG_PREFIX, creator, e.getMessage());
+            throw new SfcJsonException(500, "获取可用代理列表失败：" + e.getMsg());
+        }
+        String targetName = proxyName.trim();
+        SfcProxyInfo proxy = proxies.stream()
+                .filter(item -> item != null && targetName.equals(item.getName()))
+                .findFirst()
+                .orElseThrow(() -> new SfcJsonException(400, "无效的代理：" + proxyName));
+        params.proxy = proxy.getName();
+        params.proxyType = proxy.getType();
+        params.proxyAddress = proxy.getAddress();
+        params.proxyPort = proxy.getPort();
+    }
+
+    /**
+     * 解析并校验 Git SSH 克隆所选的用户 SSH 凭据。
+     *
+     * <p>任务参数中只保存凭据 id：创建任务时校验「凭据存在且属于当前创建者」，执行期再按 id 读取。
+     * 因此这里只做归属校验并把 id 归一化（避免客户端传负数/非法值），不把任何密钥内容写进任务参数。</p>
+     *
+     * <p>未选择凭据时直接返回；「SSH 地址必须选择凭据」「非 SSH 地址不得携带凭据」这两条跨字段约束
+     * 由 Git 引擎的创建期校验负责，本方法只处理「选择了凭据」的情形。</p>
+     *
+     * <p>除归属校验外，还校验私钥认证的登录用户名：SSH 地址未携带用户名时必须在凭据中配置用户名，
+     * 否则 JGit 会退回服务运行账号登录，导致难以理解的认证失败。</p>
+     *
+     * @param params  下载参数（{@code sshCredentialId} 非空时会被校验并归一化）
+     * @param creator 任务创建者 uid（凭据所有者必须是创建者本人）
+     * @throws SfcJsonException 凭据不存在、不属于当前创建者、下载类型不是 GIT，或私钥认证缺少用户名时抛出
+     */
+    private void resolveSshCredential(DownloadTaskParams params, long creator) {
+        if (params.sshCredentialId == null) {
+            return;
+        }
+        if (params.type != DownloadType.GIT) {
+            throw new SfcJsonException(400, "仅 Git SSH 克隆支持选择 SSH 凭据");
+        }
+        SshCredential credential = sshCredentialService.findOwned(params.sshCredentialId, creator);
+        params.sshCredentialId = credential.getId();
+        // 私钥认证：会话用户名来自仓库地址；地址与凭据都没有用户名时，JGit 会退回「服务运行账号」
+        // 去登录，几乎必然认证失败且原因难懂，这里提前给出可操作提示
+        if (credential.getAuthType() == SshCredentialAuthType.PRIVATE_KEY
+                && !SfcStringUtils.hasText(DownloadFileUtils.parseSshUsername(params.url))
+                && !SfcStringUtils.hasText(credential.getUsername())) {
+            throw new SfcJsonException(400, "SSH 地址未携带用户名，请在 SSH 凭据中配置用户名");
+        }
+    }
+
+    /**
+     * 按筛选类型分页查询下载任务。
+     *
+     * @param uid      任务归属用户 uid
+     * @param type     筛选类型；{@code null} 或 {@link TaskType#ALL} 表示不过滤
+     * @param pageable 分页参数
+     * @return 分页查询结果（按 id 倒序）
+     */
+    private Page<DownloadTaskInfo> queryPage(long uid, TaskType type, Pageable pageable) {
+        if (type == null || type == TaskType.ALL) {
+            return downloadTaskRepo.findByUid(uid, pageable);
+        }
+        Collection<Integer> statuses;
+        if (type == TaskType.DOWNLOADING) {
+            statuses = DOWNLOADING_STATUSES;
+        } else if (type == TaskType.FINISH) {
+            statuses = FINISH_STATUSES;
+        } else {
+            statuses = FAILED_STATUSES;
+        }
+        return downloadTaskRepo.findByUidAndStatusIn(uid, statuses, pageable);
+    }
+
+    /**
+     * 用 core 的实时状态与进度校准非终态下载任务。
+     *
+     * <p>core 调用失败时只记录 WARN 并直接返回（fail-soft）：列表继续使用本地镜像状态，
+     * 保证 core 短暂不可用不会导致前端列表接口整体失败。</p>
+     *
+     * @param activeTasks 需要校准的任务（本地状态非终态且已关联异步任务）
+     */
+    private void calibrateActiveTasks(List<DownloadTaskInfo> activeTasks) {
+        Map<Long, TaskStateInfo> stateMap = new HashMap<>();
+        try {
+            List<Long> taskIds = activeTasks.stream().map(DownloadTaskInfo::getTaskId).toList();
+            for (int from = 0; from < taskIds.size(); from += MAX_STATE_QUERY_BATCH) {
+                int to = Math.min(from + MAX_STATE_QUERY_BATCH, taskIds.size());
+                for (TaskStateInfo state : taskWorkerClient.queryTasks(taskIds.subList(from, to))) {
+                    if (state != null && state.taskId() != null) {
+                        stateMap.put(state.taskId(), state);
+                    }
+                }
+            }
+        } catch (RuntimeException e) {
+            log.warn("{}批量查询异步任务状态失败，回退本地状态镜像: taskIds={}, cause={}",
+                    LOG_PREFIX, activeTasks.stream().map(DownloadTaskInfo::getTaskId).toList(), e.toString());
+            return;
+        }
+        for (DownloadTaskInfo task : activeTasks) {
+            TaskStateInfo state = stateMap.get(task.getTaskId());
+            if (state != null) {
+                applyState(task, state);
+            }
+        }
+    }
+
+    /**
+     * 把 core 返回的任务状态/进度快照应用到下载任务上，并在状态变化时回写本地镜像。
+     *
+     * @param task  下载任务
+     * @param state core 返回的状态与进度快照
+     */
+    private void applyState(DownloadTaskInfo task, TaskStateInfo state) {
+        if (state.loaded() != null) {
+            task.setLoaded(state.loaded());
+        }
+        if (state.total() != null) {
+            task.setSize(state.total());
+        }
+        if (state.speed() != null) {
+            task.setSpeed(state.speed());
+        }
+        if (state.finishDate() != null) {
+            task.setFinishAt(state.finishDate());
+        }
+
+        Integer coreStatus = state.status();
+        Integer localStatus = task.getStatus();
+        if (coreStatus == null || coreStatus.equals(localStatus)) {
+            return;
+        }
+        task.setStatus(coreStatus);
+        task.setAsyncTaskRecord(new AsyncTaskRef(task.getTaskId(), coreStatus));
+        log.info("{}下载任务状态已校准: downloadId={}, taskId={}, 本地状态={}, core状态={}",
+                LOG_PREFIX, task.getId(), task.getTaskId(), localStatus, coreStatus);
+        try {
+            if (isFinalStatus(coreStatus)) {
+                // 终态：把大小/已下载/文件名/结束时间一并落库，避免任务执行实例掉线后镜像长期残缺
+                downloadTaskRepo.updateFinish(task.getId(), coreStatus, task.getSize(), task.getLoaded(),
+                        task.getName(), task.getFinishAt() == null ? new Date() : task.getFinishAt());
+            } else {
+                downloadTaskRepo.updateStatus(task.getId(), coreStatus);
+            }
+        } catch (RuntimeException e) {
+            // 镜像回写失败不影响本次列表返回：权威状态仍在 core，下次查询会再次校准
+            log.warn("{}回写下载任务状态镜像失败: downloadId={}, status={}, cause={}",
+                    LOG_PREFIX, task.getId(), coreStatus, e.toString());
+        }
+    }
+
+    /**
+     * 判断异步任务状态是否为终态。
+     *
+     * @param status 状态值，可为 {@code null}
+     * @return 完成 / 失败 / 取消 / 离线返回 {@code true}
+     */
+    private static boolean isFinalStatus(Integer status) {
+        if (status == null) {
+            return false;
+        }
+        return FINISH_STATUSES.contains(status) || FAILED_STATUSES.contains(status);
+    }
+}

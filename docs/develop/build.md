@@ -62,9 +62,9 @@ sfc-core模块会将打包后的主程序jar包也复制到主模块的`release`
 
 - bash
     ```shell
-    mvn clean package -Pproduct -T $(nproc)
+    mvn clean package -T $(nproc)
     ```
 - powershell
     ```shell
-    mvn clean package -Pproduct -T $env:NUMBER_OF_PROCESSORS
+    mvn clean package -T $env:NUMBER_OF_PROCESSORS
     ```

@@ -1,6 +1,10 @@
 package com.xiaotao.saltedfishcloud.model.config;
 
-import com.xiaotao.saltedfishcloud.annotations.*;
+import com.sfc.common.annotations.ConfigPropertiesGroup;
+import com.sfc.common.annotations.ConfigProperty;
+import com.sfc.common.annotations.ConfigPropertyEntity;
+import com.sfc.common.annotations.ConfigSelectOption;
+import com.sfc.common.enums.ConfigKeyNameStrategy;
 import lombok.Data;
 
 /**
@@ -11,17 +15,10 @@ import lombok.Data;
         prefix = "sys.safe",
         defaultKeyNameStrategy = ConfigKeyNameStrategy.UNDER_SCORE_CASE,
         groups = {
-                @ConfigPropertiesGroup(id = "base", name = "常规"),
                 @ConfigPropertiesGroup(id = "comments", name = "留言与评论")
         }
 )
 public class SysSafeConfig {
-
-    @ConfigProperty(
-            title = "系统安全密钥",
-            describe = "系统的安全密钥，修改后会导致所有用户登录失效、直链失效"
-    )
-    private String token;
 
     @ConfigProperty(
             title = "匿名留言",

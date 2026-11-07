@@ -2,31 +2,29 @@ package com.xiaotao.saltedfishcloud.service;
 
 import com.xiaotao.saltedfishcloud.dao.jpa.ThirdPartyAppKeyRepo;
 import com.xiaotao.saltedfishcloud.event.oauth.ThirdPartyAppDeleteEvent;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.common.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyApp;
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppKey;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppKeyVo;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppKeyService;
 import com.xiaotao.saltedfishcloud.service.third.ThirdPartyAppService;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.common.utils.SfcStringUtils;
 import com.xiaotao.saltedfishcloud.utils.db.JpaLambdaQueryWrapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.lang.Nullable;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
+import com.sfc.cloud.data.service.SfcCrudServiceImpl;
 
 @RequiredArgsConstructor
 @Service
-public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKey, ThirdPartyAppKeyRepo> implements ThirdPartyAppKeyService {
+public class ThirdPartyAppKeyServiceImpl extends SfcCrudServiceImpl<ThirdPartyAppKey, ThirdPartyAppKeyRepo> implements ThirdPartyAppKeyService {
     private final ThirdPartyAppService appService;
 
     @Override
@@ -67,7 +65,7 @@ public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKe
         Objects.requireNonNull(appService.findById(appId), "appId无效");
         String rawKey = SecureUtils.getUUID();
         ThirdPartyAppKey key = new ThirdPartyAppKey();
-        key.setName(StringUtils.hasText(name) ? name : "Default");
+        key.setName(SfcStringUtils.hasText(name) ? name : "Default");
         key.setAppId(appId);
         key.setUid(SecureUtils.getCurrentUid());
         key.setClientSecretHash(SecureUtils.getBCryptPasswordEncoder().encode(rawKey));
@@ -91,7 +89,7 @@ public class ThirdPartyAppKeyServiceImpl extends CrudServiceImpl<ThirdPartyAppKe
     @Override
     public void changeKeyInfo(ThirdPartyAppKeyVo thirdPartyAppKeyVo) {
         ThirdPartyAppKeyRepo repo = getRepository();
-        ThirdPartyAppKey key = repo.findById(thirdPartyAppKeyVo.getId()).orElseThrow(() -> new JsonException("无效的密钥id"));
+        ThirdPartyAppKey key = repo.findById(thirdPartyAppKeyVo.getId()).orElseThrow(() -> new SfcJsonException("无效的密钥id"));
         key.setName(thirdPartyAppKeyVo.getName());
         key.setRemark(thirdPartyAppKeyVo.getRemark());
         key.setUpdateAt(new Date());

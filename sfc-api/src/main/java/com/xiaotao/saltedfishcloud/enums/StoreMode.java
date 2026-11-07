@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.enums;
 
 import com.xiaotao.saltedfishcloud.model.config.SysCommonConfig;
-import com.xiaotao.saltedfishcloud.utils.PropertyUtils;
+import com.sfc.common.utils.PropertyUtils;
 
 public enum StoreMode {
     RAW,UNIQUE;

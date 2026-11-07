@@ -231,8 +231,8 @@ js和css代码将在页面加载完成后、前端应用完成初始化前自动
 #### 验证插件前端资源自动加载
 
 !!! warning "注意"
-    1. 后端使用maven profile 为 `develop` 时，后端是不会自动加载插件的自动加载资源的，如果需要在开发阶段验证插件资源的自动加载效果，需要修改`application-develop.yml`，将`plugin.use-auto-load-resource`设置为`true`  
-    2`plugin.use-auto-load-resource`设置为`true`后，为避免和Vite开发服务自动加载的资源重复加载导致冲突，建议在开发阶段将插件的自动加载资源配置项注释掉或删除，或将主模块前端项目整个集成进`sfc-core/src/main/resources/webapp`中直接通过后端的Web服务访问。
+    1. `plugin.use-auto-load-resource` 默认为 `true`（后端会自动加载插件的 `autoLoad` 资源）；如需在开发阶段关闭，可在仓库根 `config-local.yml` 中设置 `plugin.use-auto-load-resource: false`
+    2. 开启自动加载时，为避免和Vite开发服务自动加载的资源重复加载导致冲突，建议在开发阶段将插件的自动加载资源配置项注释掉或删除，或将主模块前端项目整个集成进`sfc-core/src/main/resources/webapp`中直接通过后端的Web服务访问。
 
 ## 5. 插件 API 参考
 

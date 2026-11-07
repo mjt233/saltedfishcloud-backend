@@ -1,7 +1,6 @@
 package com.saltedfishcloud.ext.ftpserver.core;
 
-import com.xiaotao.saltedfishcloud.constant.UserConstants;
-import com.xiaotao.saltedfishcloud.model.po.User;
+import com.sfc.common.constant.SfcUserConstants;
 import com.xiaotao.saltedfishcloud.model.po.UserPrincipal;
 import org.apache.ftpserver.usermanager.impl.BaseUser;
 
@@ -33,6 +32,6 @@ public class DiskFtpUser extends BaseUser {
     }
 
     public boolean isAnonymousUser() {
-        return getName().equals(UserConstants.SYS_NAME_PUBLIC);
+        return getName().equals(SfcUserConstants.SYS_NAME_PUBLIC);
     }
 }

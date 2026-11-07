@@ -1,6 +1,6 @@
 package com.xiaotao.saltedfishcloud.dao.jpa;
 
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 import com.xiaotao.saltedfishcloud.dao.jpa.projection.FileInfoSearchResult;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import org.springframework.data.domain.Page;
@@ -14,7 +14,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
-public interface FileInfoRepo extends BaseRepo<FileInfo> {
+public interface FileInfoRepo extends SfcBaseRepo<FileInfo> {
     @Query("""
         SELECT
             f as fileInfo,

@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-parent</artifactId>
+        <version>4.0.8</version>
+        <relativePath/> <!-- lookup parent from repository -->
+    </parent>
+
+    <groupId>com.sfc.cloud</groupId>
+    <artifactId>microservices</artifactId>
+    <version>1.0.0</version>
+    <packaging>pom</packaging>
+    <name>microservices</name>
+    <description>咸鱼云微服务</description>
+
+    <modules>
+        <!--
+            ⚠️ sfc-common 已于 Phase 1 上提到仓库根目录（见 ../../sfc-common），
+            目的是让宿主（sfc-api → sfc-core）与微服务侧共用同一份轻量库。
+            它仍是不继承任何 parent 的独立模块，仅由根 pom 的 <modules> 聚合。
+        -->
+        <module>sfc-remote-client</module>
+        <!-- 任务执行者 SDK：让微服务接入 sfc-core 异步任务系统（被 sfc-demo-service 依赖） -->
+        <module>sfc-task-worker</module>
+        <module>sfc-gateway</module>
+        <module>sfc-demo-service</module>
+        <module>sfc-ai-service</module>
+        <module>sfc-download-service</module>
+    </modules>
+
+    <properties>
+        <common.version>${project.version}</common.version>
+        <java.version>25</java.version>
+        <spring-cloud.version>2025.1.0</spring-cloud.version>
+        <spring-cloud-alibaba.version>2025.1.0.0</spring-cloud-alibaba.version>
+        <jjwt.version>0.12.6</jjwt.version>
+        <!--
+            内部接口鉴权 SDK（com.xiaotao:sfc-auth）版本，需与仓库根 pom 的 auth.version 保持一致。
+            ⚠️ 本 SDK 在【仓库根 reactor】中且不继承根 pom，因此单独执行 `mvn -f microservices/pom.xml package`
+            时它属于外部依赖：需先在仓库根执行 `mvn -pl sfc-auth install`（或改从根目录用 -pl 构建本目录的目标模块）。
+        -->
+        <auth.version>1.0.0</auth.version>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- Spring Cloud 版本列车：管理 spring-cloud-gateway-dependencies 5.0.0（含 Server WebFlux starter） -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <!-- Spring Cloud Alibaba 版本管理：提供 nacos-discovery starter 及其 nacos-client 版本 -->
+            <dependency>
+                <groupId>com.alibaba.cloud</groupId>
+                <artifactId>spring-cloud-alibaba-dependencies</artifactId>
+                <version>${spring-cloud-alibaba.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
+            <!--
+                JWT 三件套：版本与作用域只在此声明一次，sfc-common 引用时不再写 version/scope。
+                jjwt-impl 与 jjwt-jackson 是纯运行期实现（Jwts.parser() 经 ServiceLoader 装载），故固定为 runtime，
+                并由 sfc-common 传递到网关等消费方的运行期类路径上。
+            -->
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-api</artifactId>
+                <version>${jjwt.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-impl</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+            <dependency>
+                <groupId>io.jsonwebtoken</groupId>
+                <artifactId>jjwt-jackson</artifactId>
+                <version>${jjwt.version}</version>
+                <scope>runtime</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <dependencies>
+        <!-- Lombok：三个子模块共用，在此声明一次（provided 不具备传递性，不会污染任何消费方） -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-configuration-processor</artifactId>
+            <optional>true</optional>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <proc>full</proc>
+                </configuration>
+            </plugin>
+        </plugins>
+
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+        </resources>
+    </build>
+</project>

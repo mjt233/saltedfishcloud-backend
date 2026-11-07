@@ -1,7 +1,7 @@
 package com.sfc.staticpublish.model.po;
 
 import com.sfc.staticpublish.constants.AccessWay;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -19,7 +19,7 @@ import java.util.Objects;
 })
 @Getter
 @Setter
-public class StaticPublishRecord extends AuditModel {
+public class StaticPublishRecord extends SfcAuditModel {
 
     /**
      * 部署名（站点名）

@@ -1,7 +1,6 @@
 package com.sfc.mcp.service;
 
 import com.sfc.mcp.constant.McpConstant;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;

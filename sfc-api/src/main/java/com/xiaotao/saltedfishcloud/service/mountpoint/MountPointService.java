@@ -3,14 +3,14 @@ package com.xiaotao.saltedfishcloud.service.mountpoint;
 import com.xiaotao.saltedfishcloud.exception.FileSystemParameterException;
 import com.xiaotao.saltedfishcloud.model.param.MountPointSyncFileRecordParam;
 import com.xiaotao.saltedfishcloud.model.po.MountPoint;
-import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.sfc.cloud.data.service.SfcCrudService;
 
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-public interface MountPointService extends CrudService<MountPoint> {
+public interface MountPointService extends SfcCrudService<MountPoint> {
 
     /**
      * 根据用户id查找挂载点

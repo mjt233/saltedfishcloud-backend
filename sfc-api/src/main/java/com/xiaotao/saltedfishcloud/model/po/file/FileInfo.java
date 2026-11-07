@@ -1,7 +1,7 @@
 package com.xiaotao.saltedfishcloud.model.po.file;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import com.xiaotao.saltedfishcloud.utils.FileUtils;
 import jakarta.persistence.*;
 import lombok.*;
@@ -36,7 +36,7 @@ import java.util.Optional;
                 @Index(name = "idx_file_table_uid", columnList = "uid")
         })
 @Entity
-public class FileInfo extends AuditModel {
+public class FileInfo extends SfcAuditModel {
     public final static int TYPE_DIR = 1;
     public final static int TYPE_FILE = 2;
 

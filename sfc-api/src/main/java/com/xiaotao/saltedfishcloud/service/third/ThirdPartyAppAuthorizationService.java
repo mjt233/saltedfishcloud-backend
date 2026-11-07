@@ -2,9 +2,9 @@ package com.xiaotao.saltedfishcloud.service.third;
 
 import com.xiaotao.saltedfishcloud.model.po.ThirdPartyAppAuthorization;
 import com.xiaotao.saltedfishcloud.model.vo.ThirdPartyAppUserAuthorizationVo;
-import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.sfc.cloud.data.service.SfcCrudService;
 
-public interface ThirdPartyAppAuthorizationService extends CrudService<ThirdPartyAppAuthorization> {
+public interface ThirdPartyAppAuthorizationService extends SfcCrudService<ThirdPartyAppAuthorization> {
     /**
      * 获取系统用户在第三方OAuth应用的授权信息
      * @param appId 第三方OAuth应用app

@@ -2,7 +2,7 @@ package com.xiaotao.saltedfishcloud.model.po;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.xiaotao.saltedfishcloud.model.template.AuditModel;
+import com.sfc.cloud.data.model.SfcAuditModel;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareDTO;
 import com.xiaotao.saltedfishcloud.service.share.entity.ShareType;
 import com.xiaotao.saltedfishcloud.utils.SecureUtils;
@@ -24,7 +24,7 @@ import java.util.Date;
 @Setter
 @NoArgsConstructor
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class ShareInfo extends AuditModel {
+public class ShareInfo extends SfcAuditModel {
     private Long uid;
     /**
      * 分享类型为目录时，分享的资源本身表示的节点id。若分享类型为文件则表示文件的md5。

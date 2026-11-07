@@ -1,10 +1,11 @@
 # 咸鱼云网盘 - 后端
 
-![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.8-green.svg)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-4.0.8-green.svg)
 ![Java](https://img.shields.io/badge/Java-25-purple.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力，并提供MCP服务支持。
+基于 Spring Cloud 微服务架构，支持按需拆分与动态扩展服务。
 
 <div style="text-align: center;">
 
@@ -27,7 +28,8 @@
 
 ### 存储与扩展能力
 
-- 插件化架构，支持按需装载扩展功能
+- 核心服务插件化架构，支持按需装载扩展功能
+- 支持基于微服务架构的动态服务扩展接入
 - 支持外部存储挂载（S3/OSS、MinIO、SFTP、FTP、Samba、WebDAV、HDFS）
 - 支持通过 FTP / WebDAV / HTTP文件列表页面 对外提供文件访问服务
 - 支持目录静态发布、OnlyOffice 集成、WebShell、网络工具、WebRTC(实验功能) 等扩展能力
@@ -39,10 +41,22 @@
 
 ### 工程与运维能力
 
-- 基于 Spring Boot + JPA + Redis + MySQL
+- 基于 Spring Boot + JPA，支持单体与微服务两种部署形态
+- 缓存可选Redis/单机进程内存缓存 + 数据库可选MySQL/SQLite
 - 兼容版本升级与数据库自动迁移
 - 统一配置体系，支持后台动态管理大量配置项
 - 支持 Maven 构建与 Docker 部署
+
+## 微服务架构
+
+核心网盘能力由主应用 `sfc-core` 提供，`microservices/` 下的服务以独立进程开发、部署，与 core 协同工作：
+
+- **统一入口**：启用微服务模式时，`sfc-gateway`（Spring Cloud Gateway）按服务发现自动路由 `/api/service/{服务名}/**`，其余请求回落到 core
+- **注册发现**：默认使用 core 内置 local 注册中心，多节点/容器化部署可切换 Nacos
+- **公共 SDK**：`sfc-remote-client`（OpenFeign 回调 core 网盘能力）、`sfc-auth`（内部接口鉴权）、`sfc-task-worker`（以 `SERVICE` 角色接入 core 统一异步任务调度）
+- **现有服务**：`sfc-ai-service`（AI 助手）、`sfc-download-service`（离线下载），新服务可参考 `sfc-demo-service`
+
+微服务工程不继承根 POM、零宿主依赖，开发与部署详见[微服务文档](docs/develop/microservice/index.md)。
 
 ## 界面展示
 
@@ -83,11 +97,23 @@ mvn package
 
 ### 3) 启动服务
 
-先根据实际环境修改配置文件（可参考 `conf/config.yml`），重点确认 MySQL 和 Redis 连接信息。
+先根据实际环境修改发布目录中的 `config.yml`（可选，模板见 `pre-release/config.yml`；模板项默认全部注释，未取消注释的项取内置默认值），
+重点确认 MySQL 和 Redis 连接信息，并注入两个必填密钥：
+
+- `SFC_JWT_SECRET`：JWT 会话密钥，**必须恰好 32 个字符**（例如 `openssl rand -hex 16`），未配置或长度不符时服务启动失败；启用微服务网关时 core 与网关必须注入同一值。
+- `SFC_INTERNAL_KEY`：内部接口共享密钥，**不少于 32 个字符**；即使单机部署也必须配置（内嵌任务 Worker 依赖它）。
 
 ```bash
-java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
+export SFC_JWT_SECRET='<恰好 32 字符>'
+export SFC_INTERNAL_KEY='<不少于 32 字符>'
+java -jar release/sfc-core.jar --spring.config.import=file:config.yml
 ```
+
+> 想先不装 MySQL / Redis 跑起来？在仓库根执行
+> `java -jar sfc-core/target/sfc-core.jar --spring.profiles.active=develop`
+> 即可使用内置 SQLite + 进程内缓存/锁（数据落在启动目录的 `xyy.db` 与 `store/`），无需启动 MySQL 与 Redis。
+> 此时 `SFC_INTERNAL_KEY` 仍必须注入，否则内嵌任务 Worker 会禁用认领。
+> 配置加载顺序、环境变量与本地覆盖文件 `config-local.yml` 见[参数配置](docs/quick-start/config.md)。
 
 系统默认由 JPA 自动创建/更新表结构。
 
@@ -99,6 +125,7 @@ java -jar release/sfc-core.jar --spring.config.import=file:conf/config.yml
 docker compose up -d --build
 ```
 
+> 微服务模式可使用仓库根的 `docker-compose-microservice-full.yml`，一次启动「Nacos + 网关 + core + AI 助手 + 离线下载 + MySQL/Redis」，详见 [Docker Compose 部署](docs/quick-start/docker/docker-compose.md)。
 
 > 构建期间默认从maven官方中央仓库拉取依赖，如果想通过更换镜像地址加速构建，请参考 [Docker Compose 部署](docs/quick-start/docker/docker-compose.md)
 > 或 [Dockerfile 构建](docs/quick-start/docker/dockerfile.md)
@@ -138,6 +165,7 @@ docker compose up -d --build
 - 用户与部署文档: `docs/quick-start/`
 - 插件文档: `docs/extension/`
 - 开发手册: `docs/develop/`
+- 微服务文档: `docs/develop/microservice/`
 - OAuth 开放平台文档（第三方应用授权）: `docs/oauth/`
 - Postman 接口集合: `咸鱼云PostmanAPI文档.json`
 
@@ -157,7 +185,7 @@ docker compose up -d --build
 
 - [X] 收敛`redisTemplate`使用，统一封装缓存接口，降低对`redis`的直接依赖
 - [X] 运行环境不依赖外部`redis` 和 `mysql`，直接单程序运行（内置轻量级数据库和缓存方案）
-- [ ] 消息队列可选配置 `redis stream` / `rabbitmq` / `kafka` 等方案
+- [ ] 消息队列可选配置 `redis stream` / `rabbitmq` / `RocketMQ` / `kafka` 等方案
 - [ ] 文件系统接口重构，优化性能，文件列表支持不依赖数据库提高IO吞吐量
 - [ ] 高级文件搜索，自定义搜索范围，不依赖文件记录服务
 

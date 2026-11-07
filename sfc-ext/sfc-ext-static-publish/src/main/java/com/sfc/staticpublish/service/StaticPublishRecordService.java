@@ -1,9 +1,9 @@
 package com.sfc.staticpublish.service;
 
 import com.sfc.staticpublish.model.po.StaticPublishRecord;
-import com.xiaotao.saltedfishcloud.service.CrudService;
+import com.sfc.cloud.data.service.SfcCrudService;
 
-public interface StaticPublishRecordService extends CrudService<StaticPublishRecord> {
+public interface StaticPublishRecordService extends SfcCrudService<StaticPublishRecord> {
 
     /**
      * 按站点发布名称获取发布记录（发布方式：按主机名）

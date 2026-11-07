@@ -1,14 +1,14 @@
 package com.sfc.mcp.dao;
 
 import com.sfc.mcp.model.McpApiKey;
-import com.xiaotao.saltedfishcloud.dao.BaseRepo;
+import com.sfc.cloud.data.repo.SfcBaseRepo;
 
 import java.util.List;
 
 /**
  * MCP API Key 持久化仓库。
  */
-public interface McpApiKeyRepo extends BaseRepo<McpApiKey> {
+public interface McpApiKeyRepo extends SfcBaseRepo<McpApiKey> {
 
 	/**
 	 * 查询指定用户的 MCP API Key 列表。

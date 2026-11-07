@@ -2,13 +2,13 @@ package com.saltedfishcloud.ext.hadoop.store;
 
 import com.saltedfishcloud.ext.hadoop.HDFSResource;
 import com.xiaotao.saltedfishcloud.constant.error.FileSystemError;
-import com.xiaotao.saltedfishcloud.exception.JsonException;
+import com.sfc.cloud.exception.SfcJsonException;
 import com.xiaotao.saltedfishcloud.model.param.FileTimeAttribute;
 import com.xiaotao.saltedfishcloud.model.po.file.FileInfo;
 import com.xiaotao.saltedfishcloud.model.progress.FileTransferItem;
 import com.xiaotao.saltedfishcloud.service.file.store.Storage;
 import com.xiaotao.saltedfishcloud.utils.PathUtils;
-import com.xiaotao.saltedfishcloud.utils.StringUtils;
+import com.sfc.cloud.utils.SfcStringUtils;
 import org.apache.hadoop.fs.FSDataOutputStream;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
@@ -115,7 +115,7 @@ public class HDFSStorage implements Storage, Closeable {
         Path target = new Path(path);
         if (fs.exists(target)) {
             if (fs.getFileStatus(target).isDirectory()) {
-                throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
+                throw new SfcJsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
             }
             fs.delete(target, false);
         }
@@ -137,7 +137,7 @@ public class HDFSStorage implements Storage, Closeable {
         Path target = new Path(path);
         if (fs.exists(target)) {
             if (fs.getFileStatus(target).isDirectory()) {
-                throw new JsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
+                throw new SfcJsonException(FileSystemError.RESOURCE_TYPE_NOT_MATCH);
             }
             fs.delete(target, false);
         }
@@ -155,7 +155,7 @@ public class HDFSStorage implements Storage, Closeable {
     @Override
     public boolean rename(String path, String newName) throws IOException {
         final Path originPath = new Path(path);
-        final Path newPath = new Path(StringUtils.appendPath(PathUtils.getParentPath(path), newName));
+        final Path newPath = new Path(SfcStringUtils.appendPath(PathUtils.getParentPath(path), newName));
         return fs.rename(originPath, newPath);
     }
 

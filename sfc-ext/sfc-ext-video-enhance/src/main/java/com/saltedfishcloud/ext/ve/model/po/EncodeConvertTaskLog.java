@@ -1,6 +1,6 @@
 package com.saltedfishcloud.ext.ve.model.po;
 
-import com.xiaotao.saltedfishcloud.model.template.BaseModel;
+import com.sfc.cloud.data.model.SfcBaseModel;
 import jakarta.persistence.Lob;
 import lombok.*;
 
@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 @Table(indexes = {
         @Index(name = "idx_encode_convert_task_log_task_id", columnList = "taskId")
 })
-public class EncodeConvertTaskLog extends BaseModel {
+public class EncodeConvertTaskLog extends SfcBaseModel {
     /**
      * 任务id
      */

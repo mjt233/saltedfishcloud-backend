@@ -1,8 +1,9 @@
 package com.xiaotao.saltedfishcloud.utils;
 
+import com.sfc.common.utils.PropertyUtils;
 import com.xiaotao.saltedfishcloud.ext.PluginManager;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
-import com.xiaotao.saltedfishcloud.model.PluginInfo;
+import com.sfc.common.model.ConfigNode;
+import com.sfc.common.model.PluginInfo;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.StreamUtils;
 
@@ -15,6 +16,8 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import com.sfc.common.utils.SfcMapperHolder;
+import com.sfc.common.utils.SfcStringUtils;
 
 @Slf4j
 public class ExtUtils {
@@ -28,12 +31,12 @@ public class ExtUtils {
     }
 
     public static PluginInfo getPluginInfo(ClassLoader loader, String prefix) throws IOException {
-        String file = prefix == null ? PluginManager.PLUGIN_INFO_FILE : StringUtils.appendPath(prefix, PluginManager.PLUGIN_INFO_FILE);
+        String file = prefix == null ? PluginManager.PLUGIN_INFO_FILE : SfcStringUtils.appendPath(prefix, PluginManager.PLUGIN_INFO_FILE);
         String infoJson = ExtUtils.getResourceText(loader, file);
-        if (!StringUtils.hasText(infoJson)) {
+        if (!SfcStringUtils.hasText(infoJson)) {
             throw new IllegalArgumentException("plugin-info.json为空");
         }
-        PluginInfo pluginInfo = MapperHolder.parseJson(infoJson, PluginInfo.class);
+        PluginInfo pluginInfo = SfcMapperHolder.parseJson(infoJson, PluginInfo.class);
         if (pluginInfo == null) {
             return null;
         }
@@ -75,12 +78,12 @@ public class ExtUtils {
      * @throws IOException  任何IO错误
      */
     public static List<ConfigNode> getPluginConfigNodeFromLoader(ClassLoader loader, String prefix) throws IOException {
-        String file = prefix == null ? PluginManager.CONFIG_PROPERTIES_FILE : StringUtils.appendPath(prefix, PluginManager.CONFIG_PROPERTIES_FILE);
+        String file = prefix == null ? PluginManager.CONFIG_PROPERTIES_FILE : SfcStringUtils.appendPath(prefix, PluginManager.CONFIG_PROPERTIES_FILE);
         String json = ExtUtils.getResourceText(loader, file);
-        if (!StringUtils.hasText(json)) {
+        if (!SfcStringUtils.hasText(json)) {
             return Collections.emptyList();
         }
-        List<ConfigNode> configNodeGroups = MapperHolder.parseJsonToList(json, ConfigNode.class);
+        List<ConfigNode> configNodeGroups = SfcMapperHolder.parseJsonToList(json, ConfigNode.class);
         PropertyUtils.dereferenceNodes(configNodeGroups, loader);
         return configNodeGroups;
     }

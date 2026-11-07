@@ -2,7 +2,7 @@ package com.saltedfishcloud.ext.sftp.filesystem;
 
 import com.saltedfishcloud.ext.sftp.SFTPStorage;
 import com.saltedfishcloud.ext.sftp.config.SFTPProperty;
-import com.xiaotao.saltedfishcloud.model.ConfigNode;
+import com.sfc.common.model.ConfigNode;
 import com.xiaotao.saltedfishcloud.service.file.AbstractStorageFactory;
 import com.xiaotao.saltedfishcloud.service.file.StorageMetadata;
 import com.xiaotao.saltedfishcloud.service.file.store.ScopedStorage;
