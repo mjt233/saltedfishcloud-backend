@@ -195,7 +195,11 @@ public class ResourceController {
         } else {
             name = resource.getFilename();
         }
-        return ResourceUtils.wrapResourceWithCache(resource, name);
+        ResponseEntity<Resource> res = ResourceUtils.wrapResourceWithCache(resource, name);
+        if ("1".equals(request.getParameter("download"))) {
+            res.getHeaders().setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        }
+        return res;
     }
 
 }
