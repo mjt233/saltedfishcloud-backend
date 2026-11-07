@@ -5,6 +5,7 @@
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
 咸鱼云网盘是一个基于 Spring Boot 的网盘后端系统，支持公共资源与私人存储双域管理，提供文件管理、分享协作、在线预览、外部存储挂载与插件化扩展能力，并提供MCP服务支持。
+基于 Spring Cloud 微服务架构，支持按需拆分与动态扩展服务。
 
 <div style="text-align: center;">
 
@@ -27,7 +28,8 @@
 
 ### 存储与扩展能力
 
-- 插件化架构，支持按需装载扩展功能
+- 核心服务插件化架构，支持按需装载扩展功能
+- 支持基于微服务架构的动态服务扩展接入
 - 支持外部存储挂载（S3/OSS、MinIO、SFTP、FTP、Samba、WebDAV、HDFS）
 - 支持通过 FTP / WebDAV / HTTP文件列表页面 对外提供文件访问服务
 - 支持目录静态发布、OnlyOffice 集成、WebShell、网络工具、WebRTC(实验功能) 等扩展能力
@@ -39,10 +41,22 @@
 
 ### 工程与运维能力
 
-- 基于 Spring Boot + JPA + Redis + MySQL
+- 基于 Spring Boot + JPA，支持单体与微服务两种部署形态
+- 缓存可选Redis/单机进程内存缓存 + 数据库可选MySQL/SQLite
 - 兼容版本升级与数据库自动迁移
 - 统一配置体系，支持后台动态管理大量配置项
 - 支持 Maven 构建与 Docker 部署
+
+## 微服务架构
+
+核心网盘能力由主应用 `sfc-core` 提供，`microservices/` 下的服务以独立进程开发、部署，与 core 协同工作：
+
+- **统一入口**：启用微服务模式时，`sfc-gateway`（Spring Cloud Gateway）按服务发现自动路由 `/api/service/{服务名}/**`，其余请求回落到 core
+- **注册发现**：默认使用 core 内置 local 注册中心，多节点/容器化部署可切换 Nacos
+- **公共 SDK**：`sfc-remote-client`（OpenFeign 回调 core 网盘能力）、`sfc-auth`（内部接口鉴权）、`sfc-task-worker`（以 `SERVICE` 角色接入 core 统一异步任务调度）
+- **现有服务**：`sfc-ai-service`（AI 助手）、`sfc-download-service`（离线下载），新服务可参考 `sfc-demo-service`
+
+微服务工程不继承根 POM、零宿主依赖，开发与部署详见[微服务文档](docs/develop/microservice/index.md)。
 
 ## 界面展示
 
@@ -111,6 +125,7 @@ java -jar release/sfc-core.jar --spring.config.import=file:config.yml
 docker compose up -d --build
 ```
 
+> 微服务模式可使用仓库根的 `docker-compose-microservice-full.yml`，一次启动「Nacos + 网关 + core + AI 助手 + 离线下载 + MySQL/Redis」，详见 [Docker Compose 部署](docs/quick-start/docker/docker-compose.md)。
 
 > 构建期间默认从maven官方中央仓库拉取依赖，如果想通过更换镜像地址加速构建，请参考 [Docker Compose 部署](docs/quick-start/docker/docker-compose.md)
 > 或 [Dockerfile 构建](docs/quick-start/docker/dockerfile.md)
@@ -150,6 +165,7 @@ docker compose up -d --build
 - 用户与部署文档: `docs/quick-start/`
 - 插件文档: `docs/extension/`
 - 开发手册: `docs/develop/`
+- 微服务文档: `docs/develop/microservice/`
 - OAuth 开放平台文档（第三方应用授权）: `docs/oauth/`
 - Postman 接口集合: `咸鱼云PostmanAPI文档.json`
 
@@ -169,7 +185,7 @@ docker compose up -d --build
 
 - [X] 收敛`redisTemplate`使用，统一封装缓存接口，降低对`redis`的直接依赖
 - [X] 运行环境不依赖外部`redis` 和 `mysql`，直接单程序运行（内置轻量级数据库和缓存方案）
-- [ ] 消息队列可选配置 `redis stream` / `rabbitmq` / `kafka` 等方案
+- [ ] 消息队列可选配置 `redis stream` / `rabbitmq` / `RocketMQ` / `kafka` 等方案
 - [ ] 文件系统接口重构，优化性能，文件列表支持不依赖数据库提高IO吞吐量
 - [ ] 高级文件搜索，自定义搜索范围，不依赖文件记录服务
 
