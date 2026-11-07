@@ -27,6 +27,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -87,11 +88,17 @@ public class ResourceController {
             throw new SfcJsonException(FileSystemError.FILE_NOT_FOUND);
         }
 
+        HttpEntity<Resource> res;
         if (Boolean.TRUE.equals(resourceRequest.getIsCache())) {
-            return ResourceUtils.wrapResourceWithCache(resource, resourceRequest.getName());
+            res = ResourceUtils.wrapResourceWithCache(resource, resourceRequest.getName());
         } else {
-            return ResourceUtils.wrapResource(resource, resourceRequest.getName());
+            res = ResourceUtils.wrapResource(resource, resourceRequest.getName());
         }
+        if ("1".equals(request.getParameter("download"))) {
+            res.getHeaders().setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        }
+
+        return res;
     }
 
     @GetMapping("thumbnail/{md5}")
