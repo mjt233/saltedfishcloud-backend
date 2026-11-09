@@ -140,13 +140,9 @@ class Aria2DownloadEngineSessionTest {
     @Test
     void shouldFollowMagnetContentGidAndNotifySessionListener() {
         String infohash = "08ada5a7a6183aae1e09d831df6748d566095a10";
-        when(aria2Client.tellStatus("meta", List.of("status", "completedLength", "totalLength", "downloadSpeed",
-                "errorCode", "errorMessage", "files", "bittorrent", "followedBy", "following", "numSeeders",
-                "connections")))
+        when(aria2Client.tellStatus(eq("meta"), any()))
                 .thenReturn(Map.of("status", "complete", "followedBy", List.of("content")));
-        when(aria2Client.tellStatus("content", List.of("status", "completedLength", "totalLength", "downloadSpeed",
-                "errorCode", "errorMessage", "files", "bittorrent", "followedBy", "following", "numSeeders",
-                "connections")))
+        when(aria2Client.tellStatus(eq("content"), any()))
                 .thenReturn(Map.of(
                         "status", "complete",
                         "totalLength", "2048",
@@ -185,6 +181,47 @@ class Aria2DownloadEngineSessionTest {
         engine.awaitCompletion(context, session, null);
 
         assertEquals(List.of("g1"), List.copyOf(session.contentGids()));
+    }
+
+    /**
+     * 做种中的 active gid（seeder=true 且内容完整）必须按「下载完成」处理，而不是继续等待 complete。
+     *
+     * <p>回归 P5-D01：默认 {@code download.aria2.seed-time-minutes=10080} 时，种子下载完成后 aria2 仍是
+     * {@code active} 并做种；旧实现只认 {@code complete}，导致任务卡在 DOWNLOADING 直到撞无进度超时。</p>
+     */
+    @Test
+    void shouldTreatSeedingActiveGidAsFinished() {
+        when(aria2Client.tellStatus(eq("g1"), any())).thenReturn(Map.of(
+                "status", "active",
+                "seeder", "true",
+                "completedLength", "2048",
+                "totalLength", "2048",
+                "files", List.of(Map.of("path", "/tmp/x/a.bin", "length", "2048"))));
+        DownloadContext context = new DownloadContext(execution, params);
+        Aria2TaskSession session = new Aria2TaskSession("g1");
+
+        Map<String, Object> status = engine.awaitCompletion(context, session, null);
+
+        assertEquals("active", status.get("status"), "返回的完成状态即最后一次轮询快照");
+        assertEquals(List.of("g1"), List.copyOf(session.contentGids()));
+        verify(aria2Client).tellStatus(eq("g1"), any());
+    }
+
+    /**
+     * 做种中的 active gid 但内容尚未完整（completed &lt; total）不能提前判定完成。
+     */
+    @Test
+    void shouldNotTreatIncompleteSeedingGidAsFinished() {
+        when(aria2Client.tellStatus(eq("g1"), any()))
+                .thenReturn(Map.of("status", "active", "seeder", "true",
+                        "completedLength", "1024", "totalLength", "2048"))
+                .thenReturn(Map.of("status", "error", "errorCode", "1", "errorMessage", "download failed"));
+        DownloadContext context = new DownloadContext(execution, params);
+        Aria2TaskSession session = new Aria2TaskSession("g1");
+
+        assertThrows(com.sfc.common.exception.SfcJsonException.class,
+                () -> engine.awaitCompletion(context, session, null));
+        assertTrue(session.contentGids().isEmpty());
     }
 
     /**

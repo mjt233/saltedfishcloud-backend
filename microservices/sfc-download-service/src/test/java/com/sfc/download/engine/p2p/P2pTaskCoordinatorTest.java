@@ -239,6 +239,34 @@ class P2pTaskCoordinatorTest {
     }
 
     /**
+     * 回归 P5-D01：aria2 下载完成后仍处于做种（active + seeder=true）时，引擎返回的完成状态应让协调器
+     * 正常把阶段推进到 DOWNLOADED 并登记做种，而不是停在 DOWNLOADING 等超时。
+     */
+    @Test
+    void shouldRegisterSeedingWhenAria2IsSeeding() {
+        stubWorkspace();
+        Aria2TaskSession session = new Aria2TaskSession("g1");
+        when(aria2Engine.submitSession(any())).thenReturn(session);
+        when(aria2Engine.awaitCompletion(any(), any(), any())).thenReturn(Map.of(
+                "status", "active", "seeder", "true",
+                "completedLength", "2048", "totalLength", "2048"));
+        when(aria2Engine.collectArtifacts(any(), any())).thenReturn(List.of());
+        when(seedRegistrar.register(any(), any(), any())).thenAnswer(invocation -> {
+            P2pTaskState state = invocation.getArgument(1);
+            state.setSeeding(true);
+            state.setSeedTaskId(66L);
+            state.setSeedEndAt(System.currentTimeMillis() + 60_000L);
+            return true;
+        });
+
+        P2pTaskCoordinator.P2pTaskResult result = coordinator.start(newContext());
+
+        assertEquals(P2pTaskState.Phase.DOWNLOADED, result.state().getPhase());
+        assertTrue(result.state().isSeeding(), "做种中的 aria2 任务也必须完成做种登记");
+        assertEquals(66L, lastCheckpoint().getSeedTaskId());
+    }
+
+    /**
      * resume 分支一：活动 gid 存在 → 重建会话继续轮询，接管计数 +1。
      */
     @Test

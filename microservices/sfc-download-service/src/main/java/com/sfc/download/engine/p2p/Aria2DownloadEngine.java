@@ -120,6 +120,9 @@ public class Aria2DownloadEngine implements DownloadEngine {
             "errorMessage",
             "files",
             "bittorrent",
+            // 做种判定：配置 seed-time>0 时，下载完成后 aria2 的任务仍是 active，但 seeder=true
+            // （内容已完整、正在做种），必须据此提前判定「下载完成」，否则要等到做种结束才拿到 complete。
+            "seeder",
             // 磁力链是「两阶段、两个 gid」：addUri 返回的 gid 只负责下载元数据，完成时通过 followedBy
             // 指向真正的内容下载 gid；following 用于反向排查，numSeeders/connections 用于诊断。
             "followedBy",
@@ -978,6 +981,18 @@ public class Aria2DownloadEngine implements DownloadEngine {
                     session.trackContentGid(gid);
                     continue;
                 }
+                if (isSeedingAfterDownloadCompleted(status)) {
+                    // 内容已下载完成，aria2 正处于做种阶段：按完成处理，不阻塞上传与做种登记。
+                    // 注意这里不能把 gid 放进 nextTargets，否则会一直等 aria2 转 complete（默认 seed-time=10080
+                    // 分钟，等于任务永远卡在 DOWNLOADING）。
+                    session.trackContentGid(gid);
+                    loadedSum += number(status.get("completedLength"), 0L);
+                    totalSum += number(status.get("totalLength"), 0L);
+                    if (finishedStatus == null) {
+                        finishedStatus = status;
+                    }
+                    continue;
+                }
 
                 // active / waiting / paused：仍在下载，累加进度
                 nextTargets.add(gid);
@@ -1026,8 +1041,12 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 }
                 applyInfohash(session, finishedStatus);
                 if (session.contentGids().isEmpty()) {
+                    // 兜底：正常路径已在 complete / 做种完成分支登记内容 gid；这里保证下游（做种登记）一定能拿到
                     session.trackContentGid(session.primaryGid());
                 }
+                log.info("{}aria2 任务判定完成: downloadId={}, 完成状态={}, gids={}, 内容gid={}, 做种中={}",
+                        LOG_PREFIX, context.getDownloadId(), text(finishedStatus.get("status")),
+                        session.gids(), session.contentGids(), isSeedingAfterDownloadCompleted(finishedStatus));
                 long total = number(finishedStatus.get("totalLength"), 0L);
                 if (total > 0L) {
                     context.getExecution().getProgress().setLoaded(total);
@@ -1058,6 +1077,36 @@ public class Aria2DownloadEngine implements DownloadEngine {
             }
             sleep(context, pollIntervalMillis);
         }
+    }
+
+    /**
+     * 判断一个 aria2 下载是否「内容已下载完成、正在做种」。
+     *
+     * <p>配置了 {@code seed-time>0}（默认 10080 分钟）时，aria2 下载完成后 gid <b>不会</b>变成
+     * {@code complete}，而是保持 {@code active} 并置 {@code seeder=true}。此时产物已经完整，必须按
+     * 「下载完成」处理；否则任务会一直等待 {@code complete}（直到做种结束），表现为任务卡在
+     * {@code phase=DOWNLOADING}，最终撞无进度超时失败。</p>
+     *
+     * <p>判定同时要求 {@code completedLength >= totalLength}，避免把「已连接做种者但尚未下完」的
+     * 中间状态误判为完成（{@code totalLength <= 0} 时无法确认，返回 {@code false}）。</p>
+     *
+     * @param status aria2 状态快照，允许为 {@code null}
+     * @return 内容已完整且正在做种时返回 {@code true}
+     */
+    private static boolean isSeedingAfterDownloadCompleted(Map<String, Object> status) {
+        if (status == null) {
+            return false;
+        }
+        String state = text(status.get("status"));
+        if (!"active".equals(state)) {
+            return false;
+        }
+        if (!"true".equalsIgnoreCase(text(status.get("seeder")))) {
+            return false;
+        }
+        long total = number(status.get("totalLength"), 0L);
+        long completed = number(status.get("completedLength"), 0L);
+        return total > 0L && completed >= total;
     }
 
     /**
