@@ -1,0 +1,71 @@
+# ============================================================================
+# P5 AC1-6（跨实例接管）专用 override：MySQL 数据源 + 第二个下载服务实例
+#
+# 用法（在仓库根目录执行，由 scripts/aria2-resume-seed-e2e.ps1 的 CrossInstance 阶段自动完成）：
+#   $env:QA_DATA / QA_CORE_JAR / QA_DOWNLOAD_JAR / ARIA2_RPC_SECRET 同 qa-p5-compose.override.yml
+#   docker compose -f docker-compose-microservice-full.yml \
+#                  -f scripts/qa-p5-compose.override.yml \
+#                  -f scripts/qa-p5-compose.mysql.override.yml \
+#                  up -d --force-recreate sfc-download-service sfc-download-service-2
+#
+# 说明：
+#   - 两个实例共享同一 MySQL（sfc_download 库，由 createDatabaseIfNotExist=true 自动创建）、
+#     同一共享下载卷 /shared/download、同一 Nacos 注册中心（同 serviceId=sfc-download-service）；
+#   - SQLite 模式无法跨实例共享任务状态，因此 AC1-6 必须切到本 override；其它 AC 仍使用
+#     qa-p5-compose.override.yml 的默认 SQLite 数据源；
+#   - 第二实例使用独立 /data 卷（MySQL 模式下 SQLite 文件不使用），端口 18093 仅用于排障；
+#   - MySQL root 密码与基础 compose 一致（test），仅供本机测试。
+# ============================================================================
+services:
+  sfc-download-service:
+    environment:
+      # P4 参数化数据源：切换 MySQL（默认 SQLite 行为不变）
+      SFC_DOWNLOAD_DB_DRIVER: com.mysql.cj.jdbc.Driver
+      SFC_DOWNLOAD_DB_URL: "jdbc:mysql://mysql:3306/sfc_download?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true"
+      SFC_DOWNLOAD_DB_USERNAME: root
+      SFC_DOWNLOAD_DB_PASSWORD: test
+      SFC_DOWNLOAD_DB_POOL_SIZE: "8"
+      SFC_DOWNLOAD_DB_MIN_IDLE: "2"
+
+  # 第二个下载服务实例：与实例 1 同镜像、同 jar、同共享卷、同注册中心
+  sfc-download-service-2:
+    image: sfc/sfc-download-service:latest
+    container_name: sfc-download-service-2
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    networks:
+      - nacos
+    ports:
+      # 排障用：直接对第二实例发 HTTP（业务请求两边等价，因为共享 MySQL）
+      - "18093:8092"
+    volumes:
+      - ${QA_DOWNLOAD_JAR:?请先设置 QA_DOWNLOAD_JAR 环境变量}:/app/app.jar:ro
+      # 独立 /data（MySQL 模式下 SQLite 文件不使用；保留卷以兼容镜像 VOLUME 声明）
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/download2:/data
+      # 与实例 1、aria2 共享的下载目录
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/shared:/shared/download
+    environment:
+      # 与实例 1 一致：使用 core 内置 local 注册中心（不依赖 Nacos）
+      SFC_LOCAL_ENABLED: "true"
+      NACOS_ENABLED: "false"
+      SFC_LOCAL_REGISTRY_ADDR: "sfc-core:8087"
+      SFC_LOCAL_REGISTRY_PASSWORD: "sfc-p5-local-registry"
+      SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY}
+      SFC_DOWNLOAD_ARIA2_RPC_URL: http://aria2:6800/jsonrpc
+      SFC_DOWNLOAD_ARIA2_SECRET: ${ARIA2_RPC_SECRET:-sfc-aria2-dev-secret}
+      SFC_DOWNLOAD_ARIA2_SHARED_DIR: /shared/download
+      SFC_DOWNLOAD_ARIA2_REMOTE_DIR: /downloads
+      SFC_DOWNLOAD_SEED_CHECK_INTERVAL_MILLIS: "10000"
+      SFC_DOWNLOAD_ARIA2_RECONCILE_INTERVAL_MILLIS: "15000"
+      SFC_DOWNLOAD_ARIA2_RECONCILEINTERVALMILLIS: "15000"
+      # MySQL 数据源（与实例 1 相同）
+      SFC_DOWNLOAD_DB_DRIVER: com.mysql.cj.jdbc.Driver
+      SFC_DOWNLOAD_DB_URL: "jdbc:mysql://mysql:3306/sfc_download?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true"
+      SFC_DOWNLOAD_DB_USERNAME: root
+      SFC_DOWNLOAD_DB_PASSWORD: test
+      SFC_DOWNLOAD_DB_POOL_SIZE: "8"
+      SFC_DOWNLOAD_DB_MIN_IDLE: "2"
+
