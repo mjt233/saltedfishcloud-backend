@@ -448,8 +448,12 @@ $env:SFC_INTERNAL_KEY = '<core 的 sfc.internal.key，≥32 字符>'
 17. 数据源切换：仅设置 §4.4 的 `SFC_DOWNLOAD_DB_*` 环境变量（不改 yml、不改代码）即可用 MySQL 启动，
     表由 `ddl-auto=update` 自动创建；默认不设置时行为与改造前一致（SQLite）
 
-> 续传 / 接管、做种保留、aria2 对账与 MySQL 切换的逐条验收结论（AC 表、日志证据、遗留风险）见
-> [`docs/resume-seed-verification-report.md`](docs/resume-seed-verification-report.md)（由 P5 生成）。
+> 续传 / 接管、做种保留、aria2 对账与 MySQL 切换的逐条验收结论见
+> [`docs/resume-seed-verification-report.md`](docs/resume-seed-verification-report.md)：
+> 最终 **AC 13 条 = PASS 9 / PARTIAL 1 / FAIL 0 / NOTRUN 3**（NOTRUN 为 AC1-3 崩溃恢复、AC1-4 离线期间下载完成、
+> AC1-6 跨实例接管（MySQL），均因时间原因未执行，可复现步骤见报告 §7）；单测最终 **166/166 通过**；
+> 实测缺陷 **P5-D01**（默认做种配置下完成判定）与 **P5-D02**（种子 infohash 未落库 / 同种子复用失效）
+> 均已修复并复验关闭。遗留风险与已知边界见报告 §8。
 
 ## 八、部署注意（必须执行）
 
@@ -519,10 +523,10 @@ $env:SFC_INTERNAL_KEY = '<core 的 sfc.internal.key，≥32 字符>'
   完成。但 Worker SDK 未暴露「重新读取 core 检查点」的接口，`UPLOADING` 新鲜窗口（默认 10 分钟）内只能等待，
   窗口超时后按陈旧重传，**可能产生重复文件**（由 core 落盘侧的重名策略兜底）。
 - **同 infohash / 同种子复用**：做种保留期内再次提交相同磁力链（infohash 匹配）或相同种子内容
-  （`torrentBase64` 的 SHA-256 匹配）时，直接复用做种目录中的文件上传，不再提交 aria2，避免
-  `InfoHash is already registered`。仅提供 `.torrent` URL、未携带 `torrentBase64` 的种子任务无法计算指纹，
-  不具备复用能力。极端竞态（无法匹配但 aria2 仍报 `InfoHash is already registered`）下任务会以 aria2
-  原始错误文本失败，**没有专用错误码 / 提示**，稍后重试即可。
+  （种子内容 SHA-256 匹配）时，直接复用做种目录中的文件上传，不再提交 aria2，避免
+  `InfoHash is already registered`。仅提供 `.torrent` URL 的任务也会在提交前预取种子内容计算复用键
+  （P5-D02 修复）。极端竞态（无法匹配但 aria2 已注册相同 infohash）下任务以业务错误失败：
+  `该种子正在做种保留中（aria2 已注册相同 infohash），请稍后重试或等待做种保留到期`（**code=409**）。
 - **做种保留时长只对新任务生效**：`download.aria2.seed-time-minutes` 在任务提交给 aria2 时读取快照；
   修改后仅影响之后创建的任务，进行中任务沿用提交时的值。到期清理只删除本地做种文件，**网盘副本保留**。
 - **检查点不改变既有表结构**：检查点存放在 core 的独立表 `async_task_checkpoint`（主键 `task_id`），

@@ -412,8 +412,8 @@ public int resolveSeedTimeMinutes() {
 |---|---|---|
 | `download_id` | Long，唯一 | 关联 `download_task.id`（一个下载任务最多一条做种记录） |
 | `content_gid` | String(64) | 真正产出内容的 aria2 gid（用于到期清理） |
-| `infohash` | String(64) | 小写 hex；磁力链可解析，种子任务取自 aria2 `bittorrent.infoHash`；未知为 null |
-| `torrent_sha256` | String(64) | 种子任务可选：种子内容的 SHA-256（用于同 infohash 复用匹配），磁力为 null |
+| `infohash` | String(64) | 小写 hex；磁力链从链接解析；种子任务取自 aria2 `tellStatus` 顶层 `infoHash`（兼容回退 `bittorrent.infoHash`，P5-D02 修复）；无法取得为 null |
+| `torrent_sha256` | String(64) | 种子任务：种子内容的 SHA-256（同种子复用匹配键）；仅给 `.torrent` URL 时先预取种子内容再计算（P5-D02 修复），磁力为 null |
 | `aria2_dir` | String(2048) | aria2 侧目录 |
 | `local_dir` | String(2048) | 本服务侧目录（到期删除目标） |
 | `seed_start_at` | Date | 下载完成时间 |
@@ -445,8 +445,8 @@ public int resolveSeedTimeMinutes() {
   - `configService.getAria2().resolveSeedTimeMinutes() <= 0` → 返回 false（不保留，走「完成即清理」）；
   - 计算 `seedEndAt = seedStartAt + minutes`；插入 `download_seed_task`（`download_id` 唯一；重复插入捕获唯一冲突后回查已存在记录）；
   - 已存在记录按「已存在」处理（复用原记录与到期时间，**不延长**）；若已有记录状态不是「做种中」则返回 false（不保留）；
-  - infohash：优先取检查点（磁力链解析 / 种子任务取自 aria2 `bittorrent.infoHash`），回退为从磁力链解析；
-  - `torrent_sha256`：**仅当任务参数携带 `torrentBase64` 时**计算（仅 `.torrent` URL 的种子任务无法计算，见差异 9）；
+  - infohash：优先取检查点（磁力链从链接解析 / 种子任务取会话中 aria2 `tellStatus` 顶层 `infoHash`，兼容回退 `bittorrent.infoHash`），回退为从磁力链解析；
+  - `torrent_sha256`：优先用任务参数 `torrentBase64` 计算；仅给 `.torrent` URL 时由引擎预取种子内容回填后再计算（`ensureTorrentBase64`，P5-D02 修复）；接管路径预取失败降级为 null（不因种子 URL 暂不可达而失败）；
   - 回写检查点 `seeding=true, seedTaskId, seedEndAt`（由协调器在调用返回后统一保存）；
   - 返回 true（目录保留）。
 - `findReusable(params)`：按 infohash（磁力）/`torrent_sha256`（种子）查 `status=0 AND seed_end_at > now` 且
@@ -460,11 +460,12 @@ public int resolveSeedTimeMinutes() {
 
 - **命中**：不再提交 aria2，直接把检查点置为 `DOWNLOADED`（`localDir` / `gids` 取自做种记录），走「读取现有文件 → 上传 → FINISH」；
   任务日志说明「复用做种中的文件，无需重新下载（做种保留至 ...）」。做种到期时间不变。
-- **未命中**：正常提交；极端竞态/无法匹配时 aria2 可能返回 `InfoHash is already registered`，此时任务以 aria2
-  **原始错误文本**失败（**未实现**初版契约中的可读 409 提示，见文末差异 A/4）；稍后重试或等做种到期清理后再试即可。
+- **未命中**：正常提交；极端竞态/无法匹配时 aria2 可能返回 `InfoHash is already registered`，此时提交阶段
+  被映射为可读业务异常 **409**「该种子正在做种保留中（aria2 已注册相同 infohash），请稍后重试或等待做种保留到期」
+  （`Aria2DownloadEngine#translateSubmitFailure`，P5-D02 修复）。
 - 磁力 infohash 解析（`SeedHashUtils#parseMagnetInfoHash`）：`xt=urn:btih:<40hex>` 或 `<32 base32>`（转小写 hex）；
   解析失败不阻断任务，只是失去复用能力。
-- 种子任务复用按 `torrentBase64` 的 SHA-256 匹配；仅提供 `.torrent` URL 时无法计算指纹，不具备复用能力。
+- 种子任务复用按种子内容 SHA-256 匹配；仅给 `.torrent` URL 时先预取种子内容再计算复用键（P5-D02 修复），同种子可命中复用。
 
 ### 4.6 列表展示字段
 
@@ -529,8 +530,9 @@ SFC_DOWNLOAD_DB_MIN_IDLE=2
 
 **禁止跨范围写入**；跨范围接口改动先发消息给 Lead。
 
-> **实现状态**：P0–P4 已完成并提交（`1a584056` 框架、`b4638bd8` 下载接管、`e385c20c` 做种生命周期、`24867f14` MySQL）；
-> P5 验收（qa-verifier）与 P6 文档（本文件定稿 + 其余 4 份文档）进行中；P7 由 Lead 集成复核。
+> **实现状态**：**P0–P6 已完成，P5 验收通过**（3 项 NOTRUN 见验收报告；P5-D01/P5-D02 已修复复验关闭）。
+> 提交：`1a584056` 框架、`b4638bd8` 下载接管、`e385c20c` 做种生命周期、`24867f14` MySQL、`da3f0d60` D01、`c744613f` D02；
+> 验收报告：`microservices/sfc-download-service/docs/resume-seed-verification-report.md`；P7 由 Lead 集成复核。
 
 ---
 
@@ -575,8 +577,8 @@ mvn -q -f microservices/pom.xml -pl sfc-task-worker,sfc-download-service -DskipT
 7. **框架改动影响面**：全部为新增 API/字段 + 新表；旧 handler 与其它微服务零迁移；P5 回归覆盖 core 内嵌 Worker。
 8. **上传阶段重复上传**：Worker SDK 无「重新读取 core 检查点」API，接管实例在 `UPLOADING` 新鲜窗口内只能等待，
    超时后重传可能产生重复文件（由 core 落盘侧 `.1` 重名策略兜底）。
-9. **同 infohash 复用竞态无专用提示**：提交前 `findReusable` 可避免绝大多数重复任务；极端竞态下仍可能收到
-   aria2 原始 `InfoHash is already registered` 错误，未实现可读 409 映射。
+9. **同 infohash 复用竞态**：提交前 `findReusable` 可避免绝大多数重复任务；极端竞态下 aria2 返回已注册相同
+   infohash 时，提交阶段会映射为可读 409（P5-D02 修复），用户按提示稍后重试或等待做种到期。
 10. **做种磁盘占用**：默认保留 7 天，需按「下载量 × 保留时长」规划共享卷容量；`seed-time-minutes=0` 可恢复
     「完成即清理」的旧行为。
 
@@ -585,7 +587,7 @@ mvn -q -f microservices/pom.xml -pl sfc-task-worker,sfc-download-service -DskipT
 ## 9. 实现差异说明（以代码为准）
 
 > 以下为实现相对初版契约（P0 冻结版）的差异，均已由 Lead 确认；文档与代码按本清单执行。编号 1–10 为
-> P2 阶段报告的差异，A–H 为 P6 文档核对代码时补充确认的差异。
+> P2 阶段报告的差异，A–H 为 P6 文档核对代码时补充确认的差异，19 为 P5 实测缺陷修复（P5-D01 / P5-D02）。
 
 1. **detach 检测方式**：任务实现**轮询** `DownloadContext#isDetachRequested()`，保存检查点后抛
    `SfcTaskDetachedException`（不是通过 `onDetach` 回调保存检查点；`onDetach` 仍提供，供实现注册快速动作）。
@@ -598,10 +600,11 @@ mvn -q -f microservices/pom.xml -pl sfc-task-worker,sfc-download-service -DskipT
 7. **SQLite 不保证跨实例接管**：跨实例接管需 MySQL。
 8. **OrphanReconciler**：`tellWaiting` / `tellStopped` 单页取 1000 条；下载记录不存在只 WARN 不删除；
    `OFFLINE(5)` 与未知状态保守跳过。
-9. **做种时长**只对**新任务**生效；TORRENT 仅给 `.torrent` URL 时无法计算 SHA-256（无复用能力）。
+9. **做种时长**只对**新任务**生效；TORRENT 仅给 `.torrent` URL 时原实现无法计算 SHA-256，P5-D02 已改为预取种子内容后计算（见文末修复说明）。
 10. **检查点不修改 `async_task_record` 表结构**，新增独立表 `async_task_checkpoint`；执行者主动停机挂起（detached）与
     「带检查点」任务的失联回收重新排队时均不消耗 `retry_count`。
-11. **A. 未实现 `InfoHash is already registered` → 409 映射**（见 §8 第 9 条与 4.5）。
+11. **A. `InfoHash is already registered` → 可读 409**：P6 定稿时未实现；P5 实测缺陷 **P5-D02** 已修复
+    （提交阶段映射 409「该种子正在做种保留中……」，见 §4.5），复验通过。
 12. **B. 停机兜底清扫**：对已收到挂起指令的上下文仍按 detached 语义上报（保留检查点、不消耗重试次数），
     而非初版契约写的「计入重试」；属更保守的正确行为。
 13. **C. 实际接口签名**：`P2pTaskCoordinator` 公开方法为
@@ -618,16 +621,34 @@ mvn -q -f microservices/pom.xml -pl sfc-task-worker,sfc-download-service -DskipT
 17. **G. 配置面板**：做种字段挂在 `config-properties.json` 的 `download-aria2` 组（标题「aria2 P2P 下载」）下，
     由 `Aria2Property` 的 `typeRef` 自动展开；组路径与既有面板一致。
 18. **H. OFFLINE / 未知状态**：孤儿对账对这些状态保守跳过，不清理（初版契约仅列 FINISH / FAILED / CANCEL）。
+19. **P5 实测修复**：**P5-D01** 做种中已完成的 aria2 任务按下载完成处理（读取 `tellStatus` 顶层 `infoHash` +
+    `seeder=true` 判定）；**P5-D02** 种子 infohash 落库与同种子复用键修复（预取 `torrentBase64`、重复 infohash
+    提交映射可读 409）。两项均已修复并在真实 aria2 环境复验关闭（报告 §10/§11）。
 
 ---
 
 ## 10. 验收结论
 
-> **验收报告**：`microservices/sfc-download-service/docs/resume-seed-verification-report.md`（由 P5 / qa-verifier 生成）。
-> 截至 P6 定稿时该报告**尚未生成**；生成后在此补充 AC1-1..AC1-7、AC2-1..AC2-6 的逐条结论与证据摘要，
-> 并同步更新本文档与 README / 前端适配文档中的验证状态表述。
+> **验收报告**：[`microservices/sfc-download-service/docs/resume-seed-verification-report.md`](../../microservices/sfc-download-service/docs/resume-seed-verification-report.md)
+> （qa-verifier，2026-11-09；证据与环境见报告 §2、§9）。
 
-- 单测：P1–P4 已随代码提交（清单见 §7）；P5 复跑结果以报告为准。
-- 真实 aria2 联调与回归（优雅停机不杀 aria2、重启接管不重复下载、离线期间完成后续传上报、取消清理、
-  做种到期清理、`seed-time-minutes=0` 旧行为、HTTP/GIT 回归、框架回归）：以 P5 报告为准。
-- 已知风险与未覆盖项：见 §8。
+**最终统计（P5-D01 / P5-D02 修复后复验）**：AC 共 13 条 → **PASS 9 / PARTIAL 1 / FAIL 0 / NOTRUN 3**。
+
+| 结论 | 数量 | 条目 |
+|---|---|---|
+| PASS | 9 | AC1-1 优雅停机不杀 aria2、AC1-2 重启接管不重复下载、AC1-5 用户取消清理、AC2-1 默认 10080 保留做种、AC2-2 到期清理、AC2-3 做种期间重启、AC2-4 配置=0 旧行为、AC2-5 列表字段、AC2-6 同 infohash / 同种子复用 |
+| PARTIAL | 1 | AC1-7 回归：HTTP 直链 / Git 克隆通过，core 内嵌 Worker 认领执行通过，`asyncCopy` 业务未成功（测试数据问题） |
+| FAIL | 0 | — |
+| NOTRUN | 3 | AC1-3 崩溃恢复（kill -9）、AC1-4 离线期间下载完成、AC1-6 跨实例接管（MySQL + 两实例）——均因时间原因未执行，可复现步骤见报告 §7 |
+
+- **单测**：最终 **166/166 通过**（download 111 + core-task 27 + task-worker 24 + 既有 4；报告 §3 为 P5 首轮
+  154，其后随 D01/D02 修复新增用例，最终以报告 §10/§11 与最后复验章节为准）。
+- **实测缺陷（均已修复并复验关闭）**：
+  - **P5-D01**：默认 `seed-time-minutes=10080` 时做种中的 aria2 任务（`active + seeder=true`）未被判定为下载完成，
+    任务卡在 `DOWNLOADING` → 已修复（完成判定识别做种中状态），AC2-1 复验 PASS；
+  - **P5-D02**：TORRENT 经 URL 提交时做种记录 `infohash` / `torrent_sha256` 未落库（`tellStatus` 的 infohash 在顶层
+    `infoHash`），导致同种子复用失效、`InfoHash is already registered` 以原始错误暴露 → 已修复（预取种子内容回填、
+    读取顶层 `infoHash`、重复 infohash 映射可读 409），AC2-6 复验 PASS。
+- **基础设施**：jar 构建、真实 aria2 栈（`p3terx/aria2-pro` 1.36.0；Sintel 129,302,391 字节完整下载）、
+  core 配置热生效均通过；环境事件（nacos 容器被 compose 重建）见报告 §4.1。
+- **遗留风险与未覆盖项**：报告 §8（上传幂等窗口、MAGNET 真实链路、aria2 重启恢复、跨实例 MySQL 等）与本文 §8。

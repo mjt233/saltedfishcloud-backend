@@ -5,8 +5,11 @@
 > MAGNET / TORRENT 支持**停机续传 / 接管**与**做种保留（默认 7 天）**，列表项新增 `seeding` / `seedEndAt` 展示字段（见 §6.3、§6.6）。
 > **Git 代理 + SSH 克隆专项对接说明**（页面交互、配置面板 template 组件、联调用例）见
 > [`git-proxy-ssh-clone-frontend-guide.md`](./git-proxy-ssh-clone-frontend-guide.md)。
-> 本文档依据服务端代码静态整理，**未经端到端联调验证**（续传 / 做种能力以 P5 验收报告
-> [`resume-seed-verification-report.md`](./resume-seed-verification-report.md) 为准）；如与实测行为不一致，以实测为准并回馈后端。
+> 本文档依据服务端代码静态整理；续传 / 做种能力已由 P5 真实 aria2 联调验证，最终结论见
+> [`resume-seed-verification-report.md`](./resume-seed-verification-report.md)：
+> **AC 13 条 = PASS 9 / PARTIAL 1 / FAIL 0 / NOTRUN 3**（NOTRUN 见报告 §7）、单测 **166/166 通过**、
+> P5-D01（默认做种配置下完成判定）/ P5-D02（种子 infohash 未落库 / 同种子复用失效）已修复并复验关闭。
+> 如与实测行为不一致，以实测为准并回馈后端。
 > 接口基址、鉴权、响应信封等基础约定见 [`frontend-adaptation-checklist.md`](./frontend-adaptation-checklist.md)。
 
 ---
@@ -851,7 +854,7 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
 - `aria2 下载超时: N 秒无进度（可能没有可用节点）`（统一配置 `download.aria2.stall-timeout=0` 时不会出现该错误）
 - `P2P 任务接管次数超过上限（50 次），已停止重试`（异常任务，避免无限接管）
 - `P2P 任务目录不存在，无法上传产物: <路径>` / `P2P 任务目录中没有可上传的文件: <路径>`
-- `InfoHash is already registered`（做种保留期内重复提交同一种子且无法复用文件）：稍后重试或等做种到期清理后再试
+- `该种子正在做种保留中（aria2 已注册相同 infohash），请稍后重试或等待做种保留到期`（**code=409**：做种保留期内重复提交同一种子且未能复用文件）
 - `下载失败: HTTP 404 Not Found`
 - `Git 克隆完成但未采集到任何文件: <repo>`
 - SSH 主机密钥与信任记录不一致时，克隆失败并给出可读提示（管理员在信任记录中删除旧记录后可重新信任）
@@ -989,9 +992,9 @@ A：做种保留期间会保留本地文件继续做种（默认 7 天），到�
 `download.aria2.seed-time-minutes` 设为 `0`（对之后的新任务生效）。本地目录对前端不可见，网盘副本始终保留。
 
 **Q：同一个磁力链 / 种子提交两次会重复下载吗？**
-A：不会。做种保留期内提交相同 infohash（磁力链）或相同种子内容（`torrentBase64` 的 SHA-256 匹配）时，
-服务直接复用做种目录中的文件上传，不再重复下载；复用不会延长原做种到期时间。仅提供 `.torrent` URL 而未携带
-`torrentBase64` 的种子任务无法计算指纹，不具备复用能力。
+A：不会。做种保留期内提交相同 infohash（磁力链）或相同种子内容（种子内容 SHA-256 匹配）时，
+服务直接复用做种目录中的文件上传，不再重复下载；复用不会延长原做种到期时间。仅提供 `.torrent` URL 的种子任务
+会先预取种子内容计算复用键，同样可以命中复用（P5-D02 修复）。
 
 **Q：接口返回 HTTP 200，但前端提示失败了 / 该怎么判断成功？**
 A：本服务的业务失败默认返回 **HTTP 200 + 信封 `code`**（如 `code=400/401/404`），错误码不在 HTTP 状态里。
