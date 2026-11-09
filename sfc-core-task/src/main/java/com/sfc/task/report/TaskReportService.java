@@ -28,13 +28,14 @@ import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
  * 任务执行上报服务。
  * <p>负责接收执行者（core 内嵌执行者与微服务实例）的任务执行上报（开始、进度、日志、完成、放弃），
- * 并维护任务状态、运行日志与进度快照。</p>
+ * 并维护任务状态、运行日志与进度快照；任务进入终态时清理其检查点。</p>
  */
 @Slf4j
 @Component
@@ -56,6 +57,11 @@ public class TaskReportService {
     private final MQService mqService;
 
     private final CacheService cacheService;
+
+    /**
+     * 任务检查点服务：任务进入终态时清理检查点，回收失联任务时判定是否可按「挂起」语义接管
+     */
+    private final TaskCheckpointService checkpointService;
 
     /**
      * 处理任务开始执行上报。
@@ -168,6 +174,8 @@ public class TaskReportService {
             record.setIsFailed(AsyncTaskConstants.Status.FAILED.equals(status));
         }
         taskRecordRepo.save(record);
+        // 任务进入终态，检查点不再需要，避免残留数据影响同id任务（理论上id不会复用）与数据库体积
+        deleteCheckpointQuietly(param.taskId());
         notifyTaskExit(record);
         destroyLogTopicLater(param.taskId());
         log.info("{}任务 {}-{} 执行结束，状态: {}", LOG_PREFIX, record.getName(), record.getId(), status);
@@ -178,6 +186,9 @@ public class TaskReportService {
      * 处理任务执行权放弃上报：保存已产生的日志，把任务重置回等待中状态并重新发布；
      * 若已达到最大重试次数则置为失败。临时任务不参与故障转移重试，放弃后直接置为失败。
      *
+     * <p>当 {@code detached=true}（执行者停机挂起，任务现场已保存到检查点）时，任务重新排队但
+     * <b>不消耗故障转移重试次数</b>，检查点保留供接管者恢复现场。</p>
+     *
      * @param param 上报参数
      * @return 任务已重置为等待中返回 true
      */
@@ -186,6 +197,7 @@ public class TaskReportService {
         if (record == null) {
             return false;
         }
+        boolean detached = Boolean.TRUE.equals(param.detached());
         String message = Optional.ofNullable(param.message()).orElse("无");
         List<String> lines = logBufferService.drain(param.taskId());
         if (Boolean.TRUE.equals(record.getIsTemp())) {
@@ -193,7 +205,21 @@ public class TaskReportService {
             failTempTask(record, "临时任务被放弃执行，已置为失败（临时任务不参与故障转移重试）");
             return false;
         }
-        saveLogRecord(record, lines, "[" + new Date() + "] 执行者放弃执行: " + message);
+        saveLogRecord(record, lines, "[" + new Date() + "] 执行者放弃执行"
+                + (detached ? "（任务挂起，保留检查点等待接管）" : "") + ": " + message);
+
+        if (detached) {
+            // 挂起语义：任务现场已由检查点保存，换执行者接管属于正常流转而非故障重试，不消耗 retryCount
+            if (taskRecordRepo.requeueDetached(param.taskId()) > 0) {
+                log.warn("{}任务 {}-{} 已挂起并重新排队（不消耗重试次数）",
+                        LOG_PREFIX, record.getName(), record.getId());
+                mqService.sendBroadcast(TaskMQTopic.TASK_PUBLISH, param.taskId());
+                return true;
+            }
+            log.warn("{}任务 {}-{} 挂起时已不在运行中（可能已被取消或回收）",
+                    LOG_PREFIX, record.getName(), record.getId());
+            return false;
+        }
 
         if (taskRecordRepo.abandonAndRequeue(param.taskId(), TaskScheduleConstants.MAX_RETRY) > 0) {
             log.warn("{}任务 {}-{} 被放弃执行，已重置为等待重试", LOG_PREFIX, record.getName(), record.getId());
@@ -227,6 +253,7 @@ public class TaskReportService {
                 "[" + new Date() + "] 任务被取消: " + Optional.ofNullable(reason).orElse("执行者已失联"));
         record.setStatus(AsyncTaskConstants.Status.CANCEL);
         record.setFailedDate(new Date());
+        deleteCheckpointQuietly(taskId);
         notifyTaskExit(record);
         log.warn("{}任务 {}-{} 被取消: {}", LOG_PREFIX, record.getName(), taskId, reason);
         return true;
@@ -234,7 +261,9 @@ public class TaskReportService {
 
     /**
      * 回收执行者已失联的任务：保存日志后把任务重置为等待中并重新发布。
-     * <p>若任务已达到最大重试次数，则直接置为失败。</p>
+     *
+     * <p>临时任务直接置为失败；已保存检查点的任务按「挂起」语义重新排队（保留检查点、
+     * 不消耗故障转移重试次数），其余任务沿用普通故障转移规则（累加 retryCount，达到上限置为失败）。</p>
      *
      * @param records 需要回收的任务记录
      * @param reason  回收原因说明
@@ -243,6 +272,8 @@ public class TaskReportService {
         if (records == null || records.isEmpty()) {
             return;
         }
+        // 一次性批量查出哪些任务已有检查点（可被其他执行者接管），避免逐条查询数据库
+        Set<Long> checkpointTaskIds = findCheckpointTaskIds(records);
         for (AsyncTaskRecord record : records) {
             try {
                 List<String> lines = logBufferService.drain(record.getId());
@@ -250,6 +281,17 @@ public class TaskReportService {
                 // 临时任务不参与故障转移重试，执行者失联时直接置为失败
                 if (Boolean.TRUE.equals(record.getIsTemp())) {
                     failTempTask(record, "临时任务执行者失联，已置为失败（临时任务不参与故障转移重试）");
+                    continue;
+                }
+                // 有检查点的任务可被接管，按挂起语义重新排队且不消耗重试次数
+                if (checkpointTaskIds.contains(record.getId())) {
+                    if (taskRecordRepo.requeueDetached(record.getId()) > 0) {
+                        log.warn("{}任务 {}-{} 执行者失联，已按检查点重新排队（不消耗重试次数）: {}",
+                                LOG_PREFIX, record.getName(), record.getId(), reason);
+                        mqService.sendBroadcast(TaskMQTopic.TASK_PUBLISH, record.getId());
+                    } else {
+                        markFailedIfRetryExceeded(record);
+                    }
                     continue;
                 }
                 if (taskRecordRepo.abandonAndRequeue(record.getId(), TaskScheduleConstants.MAX_RETRY) > 0) {
@@ -266,6 +308,31 @@ public class TaskReportService {
     }
 
     /**
+     * 批量查询待回收任务中已保存检查点的任务id集合。
+     *
+     * <p>查询失败时返回空集合，回退到「按普通故障转移回收（消耗重试次数）」的保守策略：
+     * 宁可多消耗一次重试，也不把无法确认可接管的任务无限重新排队。</p>
+     *
+     * @param records 待回收的任务记录
+     * @return 已存在检查点的任务id集合
+     */
+    private Set<Long> findCheckpointTaskIds(Collection<AsyncTaskRecord> records) {
+        List<Long> taskIds = records.stream()
+                .map(AsyncTaskRecord::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        if (taskIds.isEmpty()) {
+            return Set.of();
+        }
+        try {
+            return checkpointService.findExistingTaskIds(taskIds);
+        } catch (Throwable e) {
+            log.warn("{}批量查询任务检查点失败，本轮按普通故障转移规则回收: {}", LOG_PREFIX, e.getMessage());
+            return Set.of();
+        }
+    }
+
+    /**
      * 把达到最大重试次数的任务置为失败并广播退出事件。
      */
     private void markFailedIfRetryExceeded(AsyncTaskRecord record) {
@@ -278,6 +345,7 @@ public class TaskReportService {
         latest.setIsFailed(true);
         // 失败时间等字段需要显式落库（failIfRetryExceeded 只更新了 status）
         taskRecordRepo.save(latest);
+        deleteCheckpointQuietly(latest.getId());
         log.error("{}任务 {}-{} 达到最大重试次数，已置为失败", LOG_PREFIX, latest.getName(), latest.getId());
         notifyTaskExit(latest);
         destroyLogTopicLater(latest.getId());
@@ -299,9 +367,28 @@ public class TaskReportService {
         latest.setIsFailed(true);
         // 失败时间等字段需要显式落库（failRunningTask 只更新了 status）
         taskRecordRepo.save(latest);
+        deleteCheckpointQuietly(latest.getId());
         log.error("{}任务 {}-{} {}", LOG_PREFIX, latest.getName(), latest.getId(), reason);
         notifyTaskExit(latest);
         destroyLogTopicLater(latest.getId());
+    }
+
+    /**
+     * 删除任务的检查点（任务进入终态后调用）。
+     *
+     * <p>清理失败只记录 WARN，不影响任务状态流转：残留检查点会由每日过期清理任务兜底删除。</p>
+     *
+     * @param taskId 任务id
+     */
+    private void deleteCheckpointQuietly(Long taskId) {
+        if (taskId == null) {
+            return;
+        }
+        try {
+            checkpointService.delete(taskId);
+        } catch (Throwable e) {
+            log.warn("{}删除任务[{}]检查点失败，等待过期清理任务兜底: {}", LOG_PREFIX, taskId, e.getMessage());
+        }
     }
 
     /**

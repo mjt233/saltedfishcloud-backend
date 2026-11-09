@@ -57,4 +57,12 @@ public class SfcTaskWorkerProperties {
      * 紧急任务不受限制，因此实际并发可能短暂超出本值。
      */
     private int maxConcurrentTasks = Runtime.getRuntime().availableProcessors();
+
+    /**
+     * 停机时等待「可挂起任务」保存检查点并退出的最长时间（秒），默认 10 秒。
+     *
+     * <p>停机时 SDK 先对支持挂起的任务（{@link SfcTaskHandler#supportsDetach()} 返回 true）下发挂起指令，
+     * 等待其在该窗口内保存检查点并退出；超时仍未退出的任务会被中断并放弃执行权（计入故障转移重试次数）。</p>
+     */
+    private long detachAwaitSeconds = 10L;
 }

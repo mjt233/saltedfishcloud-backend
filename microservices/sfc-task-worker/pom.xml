@@ -72,6 +72,16 @@
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
         </dependency>
+
+        <!--
+            单元测试：JUnit 5 + Mockito + AssertJ（版本由 microservices/pom.xml 继承的 Spring Boot BOM 管理）。
+            本 SDK 不继承仓库根 pom，因此需要在此显式声明 test 作用域依赖；测试禁止使用 @SpringBootTest。
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!--
             Lombok 与 spring-boot-configuration-processor 由 microservices/pom.xml 统一声明（provided / optional），
             此处不重复声明，避免与父级重复；proc=full 编译器配置同样继承自父级。

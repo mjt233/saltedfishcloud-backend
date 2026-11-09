@@ -27,7 +27,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * （也可由宿主按同样的依赖手工创建），并在 Web 容器启动完成后自动启动
  * （{@link SmartLifecycle} 默认 phase）。</p>
  *
- * <p>停机时先停止认领，再把正在执行的任务上报放弃，任务会重新排队。</p>
+ * <p>停机时先停止认领，再按任务是否支持「挂起」分别处理：可挂起任务只下发挂起指令，等待其在
+ * {@code sfc.task.worker.detach-await-seconds} 窗口内保存检查点并退出（任务重回队列、保留检查点、
+ * 不消耗重试次数）；其余任务中断并上报放弃（任务重新排队，消耗重试次数）。</p>
  */
 @Slf4j
 public class SfcTaskWorkerRuntime implements SmartLifecycle {
@@ -41,11 +43,6 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
      * 认领请求中的默认执行者角色：微服务实例
      */
     private static final String DEFAULT_WORKER_ROLE = "SERVICE";
-
-    /**
-     * 停机时等待执行线程退出的最长时间（秒）
-     */
-    private static final long SHUTDOWN_AWAIT_SECONDS = 3L;
 
     /**
      * 停机时等待认领线程退出的最长时间（毫秒）。
@@ -226,7 +223,8 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
     }
 
     /**
-     * 停止 Worker：停止认领、放弃运行中任务并等待执行线程退出；被放弃的任务会重新排队。
+     * 停止 Worker：停止认领与上报，先让可挂起任务保存检查点后退出，再对残留任务中断并放弃，
+     * 最后等待执行线程退出。被放弃/挂起的任务都会重新排队。
      */
     @Override
     public synchronized void stop() {
@@ -250,16 +248,38 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
             currentScheduler.shutdownNow();
         }
 
-        // 3. 对运行中任务上报放弃，任务会被 core 重置回等待中交给其他执行者
-        List<Long> abandonedTaskIds = new ArrayList<>(abandonRunningTasks());
+        // 3. 遍历运行中任务：支持挂起的下发挂起指令（不中断、不注销，由 runner 在任务退出后上报挂起），
+        //    其余任务维持原有语义：立即中断并放弃（任务重新排队，消耗重试次数）
+        List<Long> detachRequestedTaskIds = new ArrayList<>();
+        List<Long> abandonedTaskIds = new ArrayList<>();
+        for (SfcTaskExecution execution : registry.getRunningExecutions()) {
+            try {
+                if (supportsDetach(execution)) {
+                    execution.requestDetach();
+                    detachRequestedTaskIds.add(execution.getTaskId());
+                    log.info("{}已请求任务[{}]挂起（等待执行线程保存检查点后退出）",
+                            LOG_PREFIX, execution.getTaskId());
+                } else {
+                    execution.requestInterrupt();
+                    registry.unregisterExecution(execution.getTaskId());
+                    reporter.reportAbandon(execution);
+                    abandonedTaskIds.add(execution.getTaskId());
+                }
+            } catch (Throwable e) {
+                log.warn("{}放弃/挂起任务[{}]失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
+            }
+        }
 
-        // 4. 关闭任务线程池，最多等待数秒让处理器响应中断后退出
+        // 4. 关闭任务线程池：等待可挂起任务在 detach-await-seconds 窗口内保存检查点并退出
+        long detachAwaitSeconds = Math.max(0L, properties.getDetachAwaitSeconds());
         ExecutorService executor = this.taskExecutor;
         this.taskExecutor = null;
         if (executor != null) {
             executor.shutdown();
             try {
-                if (!executor.awaitTermination(SHUTDOWN_AWAIT_SECONDS, TimeUnit.SECONDS)) {
+                if (!executor.awaitTermination(detachAwaitSeconds, TimeUnit.SECONDS)) {
+                    log.warn("{}等待 {} 秒后仍有任务未退出，将对残留任务中断并放弃",
+                            LOG_PREFIX, detachAwaitSeconds);
                     executor.shutdownNow();
                 }
             } catch (InterruptedException e) {
@@ -268,21 +288,35 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
             }
         }
 
-        // 5. 关闭线程池后做最后一次清扫：停机窗口内可能仍有刚登记的执行上下文
+        // 5. 最后清扫：仍登记的执行上下文（挂起超时或停机窗口内新登记）一律中断并放弃，
+        //    已收到挂起指令的任务按挂起语义上报（保留检查点、不消耗重试次数）
         List<Long> lateAbandonedTaskIds = abandonRunningTasks();
         if (!lateAbandonedTaskIds.isEmpty()) {
-            log.warn("{}停机窗口内又登记了 {} 个执行上下文，已补报放弃: {}",
+            log.warn("{}停机末尾仍有 {} 个执行上下文未退出，已补报放弃: {}",
                     LOG_PREFIX, lateAbandonedTaskIds.size(), lateAbandonedTaskIds);
             abandonedTaskIds.addAll(lateAbandonedTaskIds);
         }
 
-        log.info("{}已停止，已放弃并重新排队的任务: {}", LOG_PREFIX, abandonedTaskIds);
+        log.info("{}已停止，已请求挂起的任务: {}，已放弃并重新排队的任务: {}",
+                LOG_PREFIX, detachRequestedTaskIds, abandonedTaskIds);
+    }
+
+    /**
+     * 判断一个运行中任务是否支持挂起（其处理器 {@link SfcTaskHandler#supportsDetach()} 返回 true）。
+     *
+     * @param execution 执行上下文
+     * @return 支持挂起返回 true
+     */
+    private boolean supportsDetach(SfcTaskExecution execution) {
+        SfcTaskHandler handler = registry.getHandler(execution.getTaskType());
+        return handler != null && handler.supportsDetach();
     }
 
     /**
      * 放弃当前登记的全部运行中任务并上报。
      *
-     * <p>放弃后的任务由调度中心按故障转移规则处理：普通任务重新排队，临时任务置为失败。</p>
+     * <p>放弃后的任务由调度中心按故障转移规则处理：普通任务重新排队，临时任务置为失败。
+     * 已收到挂起指令的任务会按挂起语义上报（保留检查点、不消耗重试次数），用于停机等待窗口结束后的兜底清扫。</p>
      *
      * @return 已上报放弃的任务id列表
      */
@@ -376,7 +410,8 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
                     }
                     // 先创建并登记执行上下文：排队中的任务也能被中断与停机放弃流程覆盖；
                     // 登记完成后把认领占用的容量占位转为「运行中」计数（紧急任务未占用槽位，无需释放）
-                    SfcTaskExecution execution = new SfcTaskExecution(dispatchInfo, identity.getWorkerId());
+                    SfcTaskExecution execution = new SfcTaskExecution(dispatchInfo, identity.getWorkerId(),
+                            reporter::saveCheckpoint);
                     registry.registerExecution(execution);
                     if (slotAcquired) {
                         registry.releaseSlot();
@@ -523,7 +558,8 @@ public class SfcTaskWorkerRuntime implements SmartLifecycle {
      */
     private void abandonTask(TaskDispatchInfo dispatchInfo, String message) {
         try {
-            client.reportAbandon(new TaskAbandonParam(dispatchInfo.id(), identity.getWorkerId(), message));
+            // 尚未开始执行，不存在可接管的现场，按普通放弃语义（消耗重试次数）上报
+            client.reportAbandon(new TaskAbandonParam(dispatchInfo.id(), identity.getWorkerId(), message, false));
         } catch (Throwable e) {
             log.warn("{}上报放弃任务[{}]失败: {}", LOG_PREFIX, dispatchInfo.id(), describe(e));
         }

@@ -7,6 +7,9 @@ import lombok.extern.slf4j.Slf4j;
  *
  * <p>结束状态与 core 的 {@code AsyncTaskConstants.Status} 保持一致：
  * {@code 2=FINISH}、{@code 3=FAILED}、{@code 4=CANCEL}。</p>
+ *
+ * <p>任务收到挂起指令或抛出 {@link SfcTaskDetachedException} 时<b>不写终态</b>：改为按「挂起」上报
+ * 放弃执行权，core 会把任务重置回等待中并保留检查点，由其他执行者接管。</p>
  */
 @Slf4j
 class SfcTaskExecutionRunner {
@@ -15,6 +18,11 @@ class SfcTaskExecutionRunner {
      * 日志前缀
      */
     private static final String LOG_PREFIX = "[任务Worker]";
+
+    /**
+     * 挂起任务的默认放弃说明
+     */
+    private static final String DETACH_MESSAGE = "执行者停机，任务已挂起，等待接管";
 
     /**
      * 任务完成状态，与 core 的 FINISH 一致
@@ -79,11 +87,20 @@ class SfcTaskExecutionRunner {
             execution.log("任务开始执行：name=" + execution.getTaskName()
                     + ", taskType=" + execution.getTaskType() + ", uid=" + execution.getUid());
             handler.execute(execution);
-            if (execution.isInterruptRequested()) {
+            if (execution.isDetachRequested()) {
+                // 正常返回但已收到挂起指令：同样按挂起处理，不写终态
+                status = STATUS_CANCEL;
+                message = DETACH_MESSAGE;
+            } else if (execution.isInterruptRequested()) {
                 status = STATUS_CANCEL;
                 message = "任务收到中断指令，按取消结束";
             }
             execution.log(LOG_PREFIX + message);
+        } catch (SfcTaskDetachedException e) {
+            // 任务实现检测到挂起后主动结束本次执行：不写终态，交由 finally 按挂起处理
+            status = STATUS_CANCEL;
+            message = messageOf(e, DETACH_MESSAGE);
+            execution.log(LOG_PREFIX + "任务已挂起: " + message);
         } catch (SfcTaskInterruptedException e) {
             status = STATUS_CANCEL;
             message = messageOf(e, "任务被中断");
@@ -102,7 +119,12 @@ class SfcTaskExecutionRunner {
             }
             try {
                 if (accepted) {
-                    reporter.reportFinish(execution, status, message);
+                    if (execution.isDetachRequested()) {
+                        // 挂起语义：不写终态，core 保留检查点并重新排队（不消耗重试次数）
+                        reporter.reportAbandon(execution, DETACH_MESSAGE);
+                    } else {
+                        reporter.reportFinish(execution, status, message);
+                    }
                 }
             } catch (Throwable e) {
                 log.warn("{}任务 {}-{} 结束上报异常: {}", LOG_PREFIX, execution.getTaskName(), taskId,
