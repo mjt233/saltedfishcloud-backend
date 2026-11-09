@@ -137,6 +137,26 @@ public class DownloadTaskInfo extends SfcAuditModel {
     private AsyncTaskRef asyncTaskRecord;
 
     /**
+     * 是否正在做种保留，仅用于接口展示，不持久化。
+     *
+     * <p>由 {@link com.sfc.download.service.impl.DownloadServiceImpl} 在列表查询后按
+     * {@code download_seed_task} 批量回填：存在生效中（做种中 / 清理中）的做种记录时为 {@code true}，
+     * 否则为 {@code false}（未开启做种保留、已到期清理或没有做种记录）。对应做种记录在下载任务完成后才创建，
+     * 运行中的任务恒为 {@code false}。</p>
+     */
+    @Transient
+    private Boolean seeding;
+
+    /**
+     * 做种保留到期时间，仅用于接口展示，不持久化。
+     *
+     * <p>仅在 {@link #seeding} 为 {@code true} 时有值；到达该时间后由后台清理任务停止 aria2 做种并删除
+     * 本地工作目录（网盘中的副本保留）。</p>
+     */
+    @Transient
+    private Date seedEndAt;
+
+    /**
      * 创建时间的别名，兼容前端旧字段 {@code createdAt}。
      *
      * <p>旧插件的实体字段名为 {@code createdAt}；迁移到共享基座后审计字段为 {@code createAt}，

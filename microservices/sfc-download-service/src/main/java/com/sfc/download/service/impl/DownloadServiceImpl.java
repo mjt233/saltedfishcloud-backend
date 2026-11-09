@@ -22,11 +22,15 @@ import com.sfc.download.engine.DownloadType;
 import com.sfc.download.identity.SfcCurrentUserSupport;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.param.TaskType;
+import com.sfc.download.model.po.DownloadSeedTask;
 import com.sfc.download.model.po.DownloadTaskInfo;
 import com.sfc.download.model.po.SshCredential;
 import com.sfc.download.model.po.SshCredentialAuthType;
 import com.sfc.download.model.vo.AsyncTaskRef;
+import com.sfc.download.repo.DownloadSeedTaskRepo;
 import com.sfc.download.repo.DownloadTaskRepo;
+import com.sfc.download.seed.SeedTaskBatchUtils;
+import com.sfc.download.seed.SeedTaskStatus;
 import com.sfc.download.service.DownloadService;
 import com.sfc.download.service.SshCredentialService;
 import com.sfc.download.util.DownloadFileUtils;
@@ -69,6 +73,9 @@ public class DownloadServiceImpl implements DownloadService {
     /** 单次向 core 查询任务状态的最大数量（core 侧硬限制 500，超出会返回 400） */
     private static final int MAX_STATE_QUERY_BATCH = 500;
 
+    /** 单次批量查询做种记录的最大下载任务 id 数量（避免单条 SQL 的 IN 参数过多） */
+    private static final int MAX_SEED_QUERY_BATCH = SeedTaskBatchUtils.DEFAULT_BATCH_SIZE;
+
     /** 下载中（非终态）状态集合：等待中 + 运行中 */
     private static final Collection<Integer> DOWNLOADING_STATUSES = List.of(
             DownloadTaskConstants.Status.WAITING,
@@ -89,6 +96,9 @@ public class DownloadServiceImpl implements DownloadService {
 
     /** 下载任务仓储 */
     private final DownloadTaskRepo downloadTaskRepo;
+
+    /** 做种保留记录仓储（列表查询后批量回填 seeding / seedEndAt 展示字段） */
+    private final DownloadSeedTaskRepo downloadSeedTaskRepo;
 
     /** core 网盘文件客户端（校验保存路径） */
     private final SfcCoreFileClient fileClient;
@@ -240,6 +250,8 @@ public class DownloadServiceImpl implements DownloadService {
 
         // 为每行生成前端契约中的 asyncTaskRecord 快照（先用本地镜像状态，后续校准会覆盖非终态行）
         content.forEach(task -> task.setAsyncTaskRecord(new AsyncTaskRef(task.getTaskId(), task.getStatus())));
+        // 批量回填做种保留展示字段（transient，不落库）
+        fillSeedingFields(content);
 
         List<DownloadTaskInfo> activeTasks = content.stream()
                 .filter(task -> task.getTaskId() != null && !isFinalStatus(task.getStatus()))
@@ -248,6 +260,51 @@ public class DownloadServiceImpl implements DownloadService {
             calibrateActiveTasks(activeTasks);
         }
         return tasks;
+    }
+
+    /**
+     * 批量回填做种保留的展示字段（{@link DownloadTaskInfo#getSeeding()} /
+     * {@link DownloadTaskInfo#getSeedEndAt()}）。
+     *
+     * <p>做种信息只是列表展示增强，权威数据在本服务的 {@code download_seed_task} 表；因此查询失败时只记
+     * WARN 并把本页字段回退为「未做种」，不能让做种模块的异常导致任务列表接口整体失败。</p>
+     *
+     * <p>按下载任务 id 批量查询（{@link SeedTaskBatchUtils#partition} 分批），只取生效中
+     * （做种中 / 清理中）的记录；查不到做种记录的任务显式写入 {@code seeding=false}，
+     * 使前端契约字段始终存在。</p>
+     *
+     * @param tasks 当前页的下载任务
+     */
+    private void fillSeedingFields(List<DownloadTaskInfo> tasks) {
+        List<Long> downloadIds = tasks.stream()
+                .map(DownloadTaskInfo::getId)
+                .filter(Objects::nonNull)
+                .toList();
+        Map<Long, DownloadSeedTask> seedMap = new HashMap<>();
+        if (!downloadIds.isEmpty()) {
+            try {
+                for (List<Long> batch : SeedTaskBatchUtils.partition(downloadIds, MAX_SEED_QUERY_BATCH)) {
+                    for (DownloadSeedTask seed : downloadSeedTaskRepo.findByDownloadIdInAndStatusIn(
+                            batch, SeedTaskStatus.ACTIVE_STATUSES)) {
+                        if (seed != null && seed.getDownloadId() != null) {
+                            seedMap.put(seed.getDownloadId(), seed);
+                        }
+                    }
+                }
+            } catch (RuntimeException e) {
+                log.warn("{}批量查询做种保留记录失败，本页做种展示字段回退为 false: downloadIds={}, cause={}",
+                        LOG_PREFIX, downloadIds, e.toString());
+            }
+        }
+        for (DownloadTaskInfo task : tasks) {
+            DownloadSeedTask seed = task.getId() == null ? null : seedMap.get(task.getId());
+            if (seed == null) {
+                task.setSeeding(Boolean.FALSE);
+                continue;
+            }
+            task.setSeeding(Boolean.TRUE);
+            task.setSeedEndAt(seed.getSeedEndAt());
+        }
     }
 
     /**
