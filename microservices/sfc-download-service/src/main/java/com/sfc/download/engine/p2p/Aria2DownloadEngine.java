@@ -1,6 +1,7 @@
 package com.sfc.download.engine.p2p;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.sfc.cloud.task.worker.SfcTaskDetachedException;
 import com.sfc.cloud.task.worker.SfcTaskInterruptedException;
 import com.sfc.common.constant.ConfigInputType;
 import com.sfc.common.exception.SfcJsonException;
@@ -24,6 +25,7 @@ import com.sfc.download.util.DownloadTaskNameUtils;
 import com.sfc.download.util.IgnoreSSLHttpRequestFactory;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -36,14 +38,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Base64;
+import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 
 /**
  * P2P 下载引擎：通过 aria2 的 JSON-RPC 接口下载磁力链与种子。
@@ -68,9 +71,14 @@ import java.util.concurrent.atomic.AtomicReference;
  * 涉及本地路径的 {@code dir}、{@code out} 等由服务端强制设置，用户传入会被丢弃，避免越权写盘。</p>
  *
  * <p><b>并发：</b>引擎是 Spring 单例，任务级状态全部保存在 {@link DownloadContext} 与
- * {@link Aria2Session} 中，不持有跨任务可变状态（能力探测缓存除外，它是全局共享且线程安全的）。</p>
+ * {@link Aria2TaskSession} 中，不持有跨任务可变状态（能力探测缓存除外，它是全局共享且线程安全的）。</p>
+ *
+ * <p><b>生命周期收口：</b>本引擎只提供「提交 / 轮询 / 采集 / 丢弃结果」等原子能力，
+ * <b>不自行清理</b> aria2 任务结果；取消、失败、成功与挂起时的清理策略统一由
+ * {@link P2pTaskCoordinator} 按生命周期收口矩阵执行。</p>
  *
  * @see Aria2Client
+ * @see P2pTaskCoordinator
  */
 @Slf4j
 @Component
@@ -163,6 +171,14 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * <p>磁力链会从 1 个元数据 gid 跟随出若干内容 gid，超过该数量说明出现异常，按失败处理。</p>
      */
     private static final int MAX_TRACKED_GIDS = 8;
+
+    /**
+     * 轮询期间刷新检查点的最小间隔（毫秒）：约 60 秒。
+     *
+     * <p>设计约定轮询期间可不写检查点（避免 RPC 放大），但每 60 秒刷新一次 {@code updatedAt}，
+     * 便于崩溃后判断下载现场的新鲜度。</p>
+     */
+    private static final long CHECKPOINT_REFRESH_INTERVAL_MILLIS = 60_000L;
 
     /**
      * aria2 用于标记「这只是一份元数据」的伪文件路径片段。
@@ -270,6 +286,14 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * 本服务的内部调优配置（能力探测缓存时长）。
      */
     private final SfcDownloadInternalProperties internalProperties;
+
+    /**
+     * P2P 任务协调器（懒加载）。
+     *
+     * <p>{@link #execute(DownloadContext)} 只作为引擎接口的兼容入口委托给协调器；使用
+     * {@link ObjectProvider} 注入以打破「协调器依赖引擎」的构造期循环依赖。</p>
+     */
+    private final ObjectProvider<P2pTaskCoordinator> coordinatorProvider;
 
     /**
      * 能力探测结果缓存（全局共享，线程安全）。
@@ -441,28 +465,33 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * {@inheritDoc}
      *
-     * <p>执行流程：装配 aria2 选项 → 提交任务拿到 GID → 注册中断回调 → 轮询进度并做停滞检测 →
-     * 完成后采集产物 → 收尾清理 aria2 侧的任务结果。</p>
-     *
-     * <p><b>磁力链的 gid 跟随：</b>磁力链会先产生一个「元数据 gid」，它完成时通过 {@code followedBy}
-     * 指向真正的内容 gid；本方法把跟随出的 gid 一并纳入会话跟踪，中断与收尾时对全部 gid 执行
-     * {@code forceRemove} + {@code removeDownloadResult}，避免残留的 active 下载继续写盘、或同一
-     * infohash 因 {@code InfoHash is already registered} 无法立即重试。</p>
-     *
-     * <p><b>产物契约（与落盘服务约定）：</b>单文件种子只会产生一个直接位于任务临时目录下的文件，
-     * 由落盘服务走「单文件通道」并按原文件名保存；多文件种子则必须让全部产物共享同一个首层目录
-     * （aria2 会在强制指定的 {@code dir} 下按种子的 {@code info.name} 建该目录，因此实际路径形如
-     * {@code <种子信息名>/a/b.mkv}）。落盘服务的顶层目录名正是按「全部产物的公共首层目录」推断的，
-     * 若返回顶层平铺的多个文件，顶层目录名会退化为时间戳。本引擎不额外干预 aria2 的目录结构，
-     * 采集时只做「跳过不存在或越界的路径」，因此现状满足该约定。</p>
+     * <p><b>兼容入口：</b>P2P 下载的完整编排（检查点、续传接管、做种登记与生命周期收口）由
+     * {@link P2pTaskCoordinator} 负责，本方法仅作为 {@link DownloadEngine#execute(DownloadContext)}
+     * 的兼容入口委托给协调器。任务处理器对 MAGNET / TORRENT 直接调用协调器，不经过本方法；本引擎
+     * <b>不再自行清理</b> aria2 任务结果——清理必须由收口矩阵决定（挂起保留现场、做种保留文件）。</p>
      *
      * @param context 执行上下文
-     * @return 产物列表（至少一个文件，否则抛异常）
-     * @throws SfcTaskInterruptedException 任务被中断时抛出
-     * @throws SfcJsonException           参数、RPC 或 aria2 侧失败时抛出
+     * @return 下载产物列表
      */
     @Override
     public List<DownloadArtifact> execute(DownloadContext context) {
+        return coordinatorProvider.getObject().start(context).artifacts();
+    }
+
+    // ==================== 会话式执行（供 P2P 协调器使用） ====================
+
+    /**
+     * 新建并提交 aria2 下载任务，返回本次任务的会话。
+     *
+     * <p>负责：装配 aria2 选项（强制 {@code dir} / {@code seed-time} / {@code continue=true}）→
+     * 提交磁力链或种子拿到首个 gid → 注册中断回调（对会话内全部 gid 执行 {@code forceRemove}）。
+     * 检查点由调用方（{@link P2pTaskCoordinator}）维护。</p>
+     *
+     * @param context 执行上下文
+     * @return 已提交的 aria2 任务会话
+     * @throws SfcJsonException 参数、种子获取或 RPC 失败时抛出
+     */
+    public Aria2TaskSession submitSession(DownloadContext context) {
         DownloadTaskParams params = context.getParams();
         Path tempDir = context.getTempDir();
         // 任务开始时取一次统一配置快照，保证本次任务的轮询/超时/种子体积上限使用同一份配置
@@ -471,34 +500,133 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 LOG_PREFIX, context.getDownloadId(), Boolean.TRUE.equals(aria2Config.getEnabled()),
                 aria2Config.getPollInterval(), describeStallTimeout(aria2Config.getStallTimeout()),
                 aria2Config.getTorrentMaxSize());
-        Map<String, String> options = buildAria2Options(context, tempDir);
+        Map<String, String> options = buildAria2Options(context, tempDir, aria2Config);
         String aria2Dir = options.get("dir");
         // 跨容器部署时排障最关键的信息就是这层映射，执行开始即输出一次到任务日志
         context.log("aria2 下载目录映射: " + aria2Workspace.describeMapping());
 
-        Aria2Session session = new Aria2Session(submit(context, params, options, aria2Config));
-        context.log("已提交 aria2 下载任务: gid=" + session.primaryGid());
+        String gid = submit(context, params, options, aria2Config);
+        Aria2TaskSession session = new Aria2TaskSession(gid);
+        context.log("已提交 aria2 下载任务: gid=" + gid);
         log.info("{}aria2 任务已提交: downloadId={}, gid={}, type={}, aria2Dir={}, localDir={}",
-                LOG_PREFIX, context.getDownloadId(), session.primaryGid(), params.type, aria2Dir, tempDir);
+                LOG_PREFIX, context.getDownloadId(), gid, params.type, aria2Dir, tempDir);
         // 中断时可能已经跟随出内容 gid，因此这里遍历「当下」的全部 gid（并发安全集合），
         // 而不是只移除最初提交的那个元数据 gid
         context.registerCanceller(() -> session.gids().forEach(aria2Client::forceRemove));
+        return session;
+    }
 
-        try {
-            Map<String, Object> status = awaitCompletion(context, session, aria2Config);
-            List<DownloadArtifact> artifacts = collectArtifacts(context, tempDir, status);
-            context.log("aria2 下载完成，文件数 " + artifacts.size());
-            log.info("{}aria2 下载完成: downloadId={}, gid={}, 文件数={}",
-                    LOG_PREFIX, context.getDownloadId(), session.primaryGid(), artifacts.size());
-            return artifacts;
-        } finally {
-            // 统一收尾：先 forceRemove（对仍在 active 的下载有效），再 removeDownloadResult
-            // （对已终止的任务有效）。两者都是 best-effort，顺序不能颠倒——否则 active 任务
-            // 会继续往临时目录写文件，导致目录删不掉、且同一 infohash 无法立即重试。
-            session.gids().forEach(gid -> {
-                aria2Client.forceRemove(gid);
-                aria2Client.removeDownloadResult(gid);
-            });
+    /**
+     * 依据检查点中已跟踪的 gid 重建会话（接管场景，不重新提交 aria2）。
+     *
+     * <p>重建后由 {@link P2pTaskCoordinator} 调用 {@link #awaitCompletion(DownloadContext,
+     * Aria2TaskSession, java.util.function.Consumer)} 继续轮询；中断回调同样覆盖会话内全部 gid。</p>
+     *
+     * @param context      执行上下文
+     * @param trackedGids  检查点记录的全部 gid，不能为空
+     * @return 重建的会话
+     * @throws SfcJsonException gid 列表为空时抛出
+     */
+    public Aria2TaskSession resumeSession(DownloadContext context, List<String> trackedGids) {
+        Aria2TaskSession session = Aria2TaskSession.fromTracked(trackedGids);
+        if (session == null) {
+            throw new SfcJsonException(500, "接管 aria2 任务失败: 检查点中没有可用的 gid");
+        }
+        context.log("已接管既有 aria2 任务: gid=" + String.join(",", session.gids()));
+        log.info("{}接管既有 aria2 任务: downloadId={}, gids={}",
+                LOG_PREFIX, context.getDownloadId(), session.gids());
+        context.registerCanceller(() -> session.gids().forEach(aria2Client::forceRemove));
+        return session;
+    }
+
+    /**
+     * 过滤出仍然存在于 aria2 中的 gid，用于判断「gid 是否丢失」。
+     *
+     * <p>aria2 已不认识的 gid（协议返回错误码）视为丢失并跳过；<b>传输层失败</b>
+     * （{@link Aria2RpcException#getCode()} 为 {@link Aria2RpcException#UNKNOWN_CODE}，即 aria2 不可达）
+     * 直接向上抛出——此时不能把 gid 当成丢失并重新提交，否则会在 aria2 实际仍在下载时重复提交。</p>
+     *
+     * @param trackedGids 检查点记录的全部 gid，允许为空
+     * @return 仍然存在的 gid 列表（保持原顺序）
+     * @throws Aria2RpcException aria2 不可达时抛出
+     */
+    public List<String> filterAliveGids(List<String> trackedGids) {
+        if (trackedGids == null || trackedGids.isEmpty()) {
+            return List.of();
+        }
+        List<String> alive = new ArrayList<>(trackedGids.size());
+        for (String gid : trackedGids) {
+            if (!SfcStringUtils.hasText(gid)) {
+                continue;
+            }
+            String normalized = gid.trim();
+            try {
+                Map<String, Object> status = aria2Client.tellStatus(normalized, List.of("status"));
+                String state = text(status.get("status"));
+                if (STATUS_REMOVED.equals(state) || STATUS_ERROR.equals(state)) {
+                    log.debug("{}检查点中的 aria2 gid 已结束（removed/error），按丢失处理: gid={}, status={}",
+                            LOG_PREFIX, normalized, state);
+                    continue;
+                }
+                alive.add(normalized);
+            } catch (Aria2RpcException e) {
+                if (e.getCode() == Aria2RpcException.UNKNOWN_CODE) {
+                    // aria2 不可达：不能据此判定 gid 丢失，交给调用方按失败处理
+                    throw e;
+                }
+                log.debug("{}检查点中的 aria2 gid 已不存在，按丢失处理: gid={}, cause={}",
+                        LOG_PREFIX, normalized, describe(e));
+            }
+        }
+        return alive;
+    }
+
+    /**
+     * 轮询 aria2 直到任务结束（带检查点刷新回调）。
+     *
+     * @param context         执行上下文
+     * @param session         本次任务会话
+     * @param sessionListener 会话状态变化回调（gid 跟随、约 60 秒一次的心跳刷新），允许为 {@code null}
+     * @return 内容 gid 的完成状态快照
+     */
+    public Map<String, Object> awaitCompletion(DownloadContext context, Aria2TaskSession session,
+                                               Consumer<Aria2TaskSession> sessionListener) {
+        return awaitCompletion(context, session, configService.getAria2(), sessionListener);
+    }
+
+    /**
+     * 采集 aria2 完成状态中的本地产物（任务临时目录取自执行上下文）。
+     *
+     * @param context 执行上下文
+     * @param status  完成状态快照
+     * @return 产物列表（至少一个文件，否则抛异常）
+     * @throws SfcJsonException 没有任何可用文件时抛出（HTTP 502 语义）
+     */
+    public List<DownloadArtifact> collectArtifacts(DownloadContext context, Map<String, Object> status) {
+        List<DownloadArtifact> artifacts = collectArtifacts(context, context.getTempDir(), status);
+        context.log("aria2 下载完成，文件数 " + artifacts.size());
+        return artifacts;
+    }
+
+    /**
+     * 丢弃 aria2 侧的任务结果（生命周期收口：取消 / 下载失败 / 成功但无做种保留）。
+     *
+     * <p>先 {@code forceRemove}（对仍在 active 的下载有效）再 {@code removeDownloadResult}
+     * （对已终止的任务有效），两者都是 best-effort；顺序不能颠倒——否则 active 任务会继续往目录写文件，
+     * 导致目录删不掉、且同一 infohash 无法立即重试。</p>
+     *
+     * @param gids 需要清理的 gid 集合，允许为 {@code null}
+     */
+    public void discardTaskResults(Collection<String> gids) {
+        if (gids == null || gids.isEmpty()) {
+            return;
+        }
+        for (String gid : gids) {
+            if (!SfcStringUtils.hasText(gid)) {
+                continue;
+            }
+            aria2Client.forceRemove(gid);
+            aria2Client.removeDownloadResult(gid);
         }
     }
 
@@ -625,30 +753,33 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 装配本次任务提交给 aria2 的选项。
      *
-     * <p>服务端强制项：{@code dir}（任务临时目录映射后的 aria2 侧目录）、{@code seed-time=0}
-     * （下载完成即停止做种，避免占用进程与文件句柄）、{@code bt-save-metadata=false}；
-     * 用户选项仅白名单键生效；代理仅在 HTTP 类型代理下透传。</p>
+     * <p>服务端强制项（在用户选项之后覆盖，保证不被用户透传覆盖）：</p>
+     * <ul>
+     *   <li>{@code dir}：任务临时目录映射后的 aria2 侧目录；</li>
+     *   <li>{@code seed-time}：做种保留时长（{@link Aria2Property#resolveSeedTimeMinutes()}，默认 10080 分钟；
+     *       {@code 0} 表示不做种、完成即停止）；</li>
+     *   <li>{@code continue=true}：保证同目录续传（gid 丢失时在同一目录重新提交可续传）；</li>
+     *   <li>{@code bt-save-metadata=false}。</li>
+     * </ul>
+     * <p>用户选项仅白名单键生效；代理仅在 HTTP 类型代理下透传。</p>
      *
      * <p><b>刻意不设置 {@code follow-torrent}：</b>磁力链依赖 aria2 的「元数据 → 内容」自动跟进，
      * 把它设为 {@code false} 会导致任务在拿到元数据后就 complete 但零产物，详见方法内注释。</p>
      *
-     * @param context 执行上下文
-     * @param tempDir 任务临时目录
+     * @param context     执行上下文
+     * @param tempDir     任务临时目录
+     * @param aria2Config 本次任务使用的 aria2 运行参数快照（提供做种保留时长）
      * @return aria2 选项键值对
      */
-    private Map<String, String> buildAria2Options(DownloadContext context, Path tempDir) {
+    private Map<String, String> buildAria2Options(DownloadContext context, Path tempDir, Aria2Property aria2Config) {
         Map<String, String> options = new LinkedHashMap<>();
-        // 强制项：下载目录按共享目录映射换算成 aria2 侧路径；未启用共享目录时即本服务任务临时目录
-        options.put("dir", aria2Workspace.toAria2Dir(tempDir));
-        options.put("seed-time", "0");
-        options.put("bt-save-metadata", "false");
         // 刻意不设置 follow-torrent：磁力链的流程是「先通过 DHT 拿到元数据（本质就是一个 torrent），
         // 再据其下载内容」，完全依赖 aria2 的「元数据 → 内容」自动跟进行为。实测把它设为 false 会让
         // aria2 拿到元数据后就认为任务结束（status=complete 但没有任何内容文件），最终产物采集为空、
         // 任务以「aria2 已完成但没有产生可用的文件」失败。.torrent 文件场景由本引擎显式调用 addTorrent，
         // 不依赖该选项，因此这里交给 aria2 的默认值即可。
 
-        // 用户选项：仅白名单生效
+        // 用户选项：仅白名单生效，先应用，随后由服务端强制项覆盖
         readAria2Options(context.getParams()).forEach((key, value) -> {
             String normalizedKey = key.toLowerCase(Locale.ROOT);
             if (ALLOWED_ARIA2_OPTIONS.contains(normalizedKey)) {
@@ -659,8 +790,28 @@ public class Aria2DownloadEngine implements DownloadEngine {
             }
         });
 
+        // 强制项：下载目录按共享目录映射换算成 aria2 侧路径；未启用共享目录时即本服务任务临时目录
+        options.put("dir", aria2Workspace.toAria2Dir(tempDir));
+        options.put("seed-time", String.valueOf(resolveSeedTimeMinutes(aria2Config)));
+        // 同目录续传：接管/重提时必须强制为 true，否则 aria2 会重新从零下载
+        options.put("continue", "true");
+        options.put("bt-save-metadata", "false");
+
         applyProxy(context, options);
         return options;
+    }
+
+    /**
+     * 解析本次任务生效的做种保留时长（分钟）。
+     *
+     * <p>统一使用 {@link Aria2Property#resolveSeedTimeMinutes()}（{@code null}/{@code <=0} → 0，上限 1 年），
+     * 与做种生命周期计算 {@code seedEndAt} 的取值保持一致。</p>
+     *
+     * @param aria2Config aria2 运行参数快照，允许为 {@code null}
+     * @return 生效的做种保留时长（分钟）
+     */
+    private static int resolveSeedTimeMinutes(Aria2Property aria2Config) {
+        return aria2Config == null ? 0 : aria2Config.resolveSeedTimeMinutes();
     }
 
     /**
@@ -743,31 +894,44 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * 「当前需要等待的 gid 集合」，元数据 gid 完成后丢弃它、改为跟踪 {@code followedBy} 指向的内容 gid，
      * 只有全部 gid 都终止才算任务结束。</p>
      *
-     * @param context     执行上下文
-     * @param session     本次任务的会话（含已跟踪的全部 gid）
-     * @param aria2Config 本次任务使用的 aria2 运行参数快照
+     * <p><b>检查点回调：</b>{@code sessionListener} 在两类时机被调用——gid 集合变化（磁力链跟随出内容 gid）
+     * 与约 {@value #CHECKPOINT_REFRESH_INTERVAL_MILLIS} 毫秒一次的轮询心跳；由协调器据此保存检查点。</p>
+     *
+     * <p><b>挂起：</b>每轮轮询开始前检查 {@link DownloadContext#isDetachRequested()}，已请求挂起时抛
+     * {@link SfcTaskDetachedException}，由协调器保存检查点后向上传递（aria2 与本地目录保持不动）。</p>
+     *
+     * @param context         执行上下文
+     * @param session         本次任务的会话（含已跟踪的全部 gid）
+     * @param aria2Config     本次任务使用的 aria2 运行参数快照
+     * @param sessionListener 会话状态变化回调，允许为 {@code null}
      * @return 内容 gid 的完成状态快照
      * @throws SfcTaskInterruptedException 任务被中断时抛出
+     * @throws SfcTaskDetachedException    执行者请求挂起时抛出
      * @throws SfcJsonException           aria2 报错、跟随层级异常、停滞超时（配置为 0 即不限，不会触发）或
      *                                    RPC 失败时抛出
      */
-    private Map<String, Object> awaitCompletion(DownloadContext context, Aria2Session session,
-                                                Aria2Property aria2Config) {
+    private Map<String, Object> awaitCompletion(DownloadContext context, Aria2TaskSession session,
+                                                Aria2Property aria2Config,
+                                                Consumer<Aria2TaskSession> sessionListener) {
         long pollIntervalMillis = positive(aria2Config.getPollInterval(), DEFAULT_POLL_INTERVAL_MILLIS);
         Long stallTimeoutMillis = resolveStallTimeoutMillis(aria2Config.getStallTimeout());
         long lastProgressAt = System.currentTimeMillis();
         long lastLoadedSum = -1L;
+        long lastCheckpointRefreshAt = System.currentTimeMillis();
         int followDepth = 0;
 
         // 当前仍需等待的 gid；磁力链拿到元数据后会被 followedBy 指向的内容 gid 整体替换
-        Set<String> targets = new LinkedHashSet<>();
-        targets.add(session.primaryGid());
+        Set<String> targets = new LinkedHashSet<>(session.pollTargets());
 
         // 任务展示名只需上报一次：aria2 返回的文件清单是完整的（磁力链元数据阶段的伪文件会被过滤）
         boolean taskNameReported = false;
 
         while (true) {
             context.checkInterrupted();
+            if (context.isDetachRequested()) {
+                // 挂起：aria2 与本地目录保持不动，检查点由协调器在异常传播路径上保存
+                throw new SfcTaskDetachedException("执行者停机，aria2 下载任务已挂起");
+            }
 
             Set<String> nextTargets = new LinkedHashSet<>();
             List<String> followed = new ArrayList<>();
@@ -790,6 +954,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
                     continue;
                 }
                 fileNames.addAll(extractFileNames(status));
+                applyInfohash(session, status);
 
                 String state = text(status.get("status"));
                 if (STATUS_ERROR.equals(state)) {
@@ -809,6 +974,8 @@ public class Aria2DownloadEngine implements DownloadEngine {
                         continue;
                     }
                     finishedStatus = status;
+                    // 真正产出文件的 gid：种子任务即提交 gid；磁力链为跟随出的内容 gid
+                    session.trackContentGid(gid);
                     continue;
                 }
 
@@ -834,7 +1001,10 @@ public class Aria2DownloadEngine implements DownloadEngine {
                     throw new SfcJsonException(502, "aria2 元数据跟随层级异常（层级=" + followDepth
                             + "，已跟踪 gid=" + session.gids().size() + "，新增=" + followed.size() + "）");
                 }
-                followed.forEach(session::track);
+                followed.forEach(gid -> {
+                    session.track(gid);
+                    session.trackContentGid(gid);
+                });
                 targets = new LinkedHashSet<>(followed);
                 // 阶段切换时进度会跳变（元数据只有几十 KB，内容有上百 MB）：
                 // 重置基线，下一轮按内容 gid 的 totalLength 重新计算，避免出现「已超过 100%」
@@ -845,6 +1015,8 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 context.log("磁力链元数据已就绪，转入内容下载: gid=" + String.join(",", followed));
                 log.info("{}磁力链元数据已就绪，转入内容下载: downloadId={}, 新 gid={}",
                         LOG_PREFIX, context.getDownloadId(), followed);
+                notifySessionChanged(sessionListener, session);
+                lastCheckpointRefreshAt = System.currentTimeMillis();
                 continue;
             }
 
@@ -852,11 +1024,16 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 if (finishedStatus == null) {
                     throw new SfcJsonException(502, "aria2 任务结束但没有返回完成状态: gids=" + session.gids());
                 }
+                applyInfohash(session, finishedStatus);
+                if (session.contentGids().isEmpty()) {
+                    session.trackContentGid(session.primaryGid());
+                }
                 long total = number(finishedStatus.get("totalLength"), 0L);
                 if (total > 0L) {
                     context.getExecution().getProgress().setLoaded(total);
                     context.getExecution().getProgress().setTotal(total);
                 }
+                notifySessionChanged(sessionListener, session);
                 return finishedStatus;
             }
 
@@ -874,7 +1051,42 @@ public class Aria2DownloadEngine implements DownloadEngine {
                 throw new SfcJsonException(504,
                         "aria2 下载超时: " + (stallTimeoutMillis / 1000L) + " 秒无进度（可能没有可用节点）");
             }
+            long now = System.currentTimeMillis();
+            if (now - lastCheckpointRefreshAt >= CHECKPOINT_REFRESH_INTERVAL_MILLIS) {
+                notifySessionChanged(sessionListener, session);
+                lastCheckpointRefreshAt = now;
+            }
             sleep(context, pollIntervalMillis);
+        }
+    }
+
+    /**
+     * 通知会话状态变化（回调为空时忽略）。
+     *
+     * @param sessionListener 会话状态变化回调，允许为 {@code null}
+     * @param session         本次任务会话
+     */
+    private static void notifySessionChanged(Consumer<Aria2TaskSession> sessionListener,
+                                             Aria2TaskSession session) {
+        if (sessionListener == null) {
+            return;
+        }
+        sessionListener.accept(session);
+    }
+
+    /**
+     * 从 aria2 状态快照中提取 torrent infohash 并写入会话。
+     *
+     * @param session 本次任务会话
+     * @param status  aria2 状态快照，允许为 {@code null}
+     */
+    private static void applyInfohash(Aria2TaskSession session, Map<String, Object> status) {
+        if (status == null || !(status.get("bittorrent") instanceof Map<?, ?> bittorrent)) {
+            return;
+        }
+        String infohash = text(bittorrent.get("infoHash"));
+        if (SfcStringUtils.hasText(infohash)) {
+            session.updateInfohash(infohash.trim().toLowerCase(Locale.ROOT));
         }
     }
 
@@ -1295,67 +1507,5 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * @param expireAt 过期时间（毫秒时间戳）
      */
     private record Probe(String reason, long expireAt) {
-    }
-
-    /**
-     * 单次 aria2 下载任务的会话状态。
-     *
-     * <p>承载本次任务涉及的全部 GID：磁力链会从「元数据 gid」通过 {@code followedBy} 跟随出「内容 gid」，
-     * 中断与收尾清理必须覆盖所有这些 gid，否则仍处于 active 的下载会继续写盘，并导致同一 infohash
-     * 无法立即重试（aria2 报 {@code InfoHash is already registered}）。</p>
-     *
-     * <p><b>线程安全：</b>gid 集合使用并发集合——任务线程可能在轮询中新增跟随 gid，
-     * 而中断回调线程会同时遍历它执行 {@code forceRemove}。</p>
-     */
-    private static final class Aria2Session {
-
-        /**
-         * 首次提交返回的 gid（磁力链场景下通常只是元数据 gid）。
-         */
-        private final String primaryGid;
-
-        /**
-         * 本次任务涉及的全部 gid（并发安全），供中断与收尾清理遍历。
-         */
-        private final Set<String> gids = ConcurrentHashMap.newKeySet();
-
-        /**
-         * 构造会话并登记首个 gid。
-         *
-         * @param primaryGid 首次提交返回的 gid
-         */
-        private Aria2Session(String primaryGid) {
-            this.primaryGid = primaryGid;
-            this.gids.add(primaryGid);
-        }
-
-        /**
-         * 获取首次提交返回的 gid。
-         *
-         * @return 首个 gid
-         */
-        private String primaryGid() {
-            return primaryGid;
-        }
-
-        /**
-         * 获取本次任务涉及的全部 gid（并发安全集合，调用方只读遍历）。
-         *
-         * @return gid 集合
-         */
-        private Set<String> gids() {
-            return gids;
-        }
-
-        /**
-         * 登记一个跟随出来的新 gid。
-         *
-         * @param gid 新 gid，为 {@code null} 时忽略
-         */
-        private void track(String gid) {
-            if (gid != null) {
-                gids.add(gid);
-            }
-        }
     }
 }

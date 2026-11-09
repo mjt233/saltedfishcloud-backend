@@ -3,6 +3,7 @@ package com.sfc.download.task;
 import com.sfc.cloud.exception.SfcRemoteApiException;
 import com.sfc.cloud.model.SfcFileInfo;
 import com.sfc.cloud.remote.client.SfcCoreFileClient;
+import com.sfc.cloud.task.worker.SfcTaskDetachedException;
 import com.sfc.cloud.task.worker.SfcTaskExecution;
 import com.sfc.cloud.task.worker.SfcTaskHandler;
 import com.sfc.cloud.task.worker.SfcTaskInterruptedException;
@@ -18,6 +19,9 @@ import com.sfc.download.engine.DownloadEngineRegistry;
 import com.sfc.download.engine.DownloadTempDirCreator;
 import com.sfc.download.engine.DownloadType;
 import com.sfc.download.engine.p2p.Aria2Workspace;
+import com.sfc.download.engine.p2p.P2pTaskCoordinator;
+import com.sfc.download.engine.p2p.P2pTaskCoordinator.P2pTaskResult;
+import com.sfc.download.engine.p2p.P2pTaskState;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.repo.DownloadTaskRepo;
 import com.sfc.download.stash.DownloadSaveService;
@@ -42,16 +46,20 @@ import java.util.concurrent.TimeUnit;
  * {@link #execute(SfcTaskExecution)}。本类只负责「调度与状态机」，<b>不包含任何具体的下载实现</b>：</p>
  * <ol>
  *     <li>解析任务参数 {@link DownloadTaskParams}，把本地任务状态镜像置为运行中；</li>
- *     <li>把 Worker 的中断指令接线到 {@link DownloadContext}，使引擎能够及时释放阻塞资源；</li>
+ *     <li>把 Worker 的中断/挂起指令接线到 {@link DownloadContext}，使引擎能够及时释放阻塞资源；</li>
  *     <li>通过 {@link SfcCoreFileClient#list(long, String)} 校验保存目录是否存在；</li>
- *     <li>按参数类型经 {@link DownloadEngineRegistry} 路由到具体下载引擎（HTTP / Git / 磁力链 / 种子…）；</li>
+ *     <li>非 P2P：按参数类型经 {@link DownloadEngineRegistry} 路由到具体下载引擎（HTTP / Git / ed2k）；
+ *         P2P（磁力链 / 种子）：交由 {@link P2pTaskCoordinator} 编排（检查点、新建或接管、做种登记）；</li>
  *     <li>引擎执行完毕后，由 {@link DownloadSaveService} 统一把产物写入 core 网盘；</li>
- *     <li>回写任务展示名（P2P 下载取下载文件名摘要）与完成状态；异常时按「取消 / 失败」两种语义回写，
- *         并在 {@code finally} 中清理临时目录。</li>
+ *     <li>回写任务展示名与完成状态；异常时按「取消 / 失败 / 挂起」三种语义回写并执行收口矩阵。</li>
  * </ol>
  *
- * <p><b>扩展方式：</b>新增一种下载方式只需要实现 {@link DownloadEngine} 并注册为 Spring Bean，
- * 本类与业务接口都无需改动——这正是本次改造把「下载执行」从处理器中抽离出来的目的。</p>
+ * <p><b>P2P 检查点与接管：</b>P2P 任务在下载、上传前后与挂起时由协调器保存检查点（{@link P2pTaskState} JSON）。
+ * 执行者停机（挂起）时保存检查点后抛 {@link SfcTaskDetachedException}：任务回到队列，由其它实例接管；
+ * 接管实例发现检查点为 {@code UPLOADED} 时直接补报 FINISH，不重复上传。</p>
+ *
+ * <p><b>生命周期收口矩阵：</b>P2P 任务的 aria2 任务结果与本地目录不再无条件删除，统一由
+ * {@link P2pTaskCoordinator} 按「成功 + 做种保留 / 成功无做种清理 / 上传失败 / 取消 / 失败 / 挂起」决定。</p>
  *
  * <p><b>并发说明：</b>本处理器是 Spring 单例，会被 Worker 线程池并发调用，因此自身不持有任何
  * 任务级可变状态；一次执行的全部可变状态都保存在每次新建的 {@link DownloadContext} 中。</p>
@@ -97,6 +105,11 @@ public class DownloadTaskHandler implements SfcTaskHandler {
     private final Aria2Workspace aria2Workspace;
 
     /**
+     * P2P 任务协调器：检查点、续传接管、做种登记与生命周期收口。
+     */
+    private final P2pTaskCoordinator p2pTaskCoordinator;
+
+    /**
      * 本处理器支持的任务类型。
      *
      * @return {@link DownloadTaskConstants#TASK_TYPE}
@@ -107,23 +120,38 @@ public class DownloadTaskHandler implements SfcTaskHandler {
     }
 
     /**
+     * 声明本处理器支持「挂起」（执行者优雅停机时保留现场、任务回到队列等待接管）。
+     *
+     * <p>同一处理器同时承载 P2P 与非 P2P 任务：P2P 任务拥有 aria2 外部现场与检查点，挂起后可由任意实例接管；
+     * HTTP / Git / ed2k 任务没有可接管的下载现场，收到挂起请求后按「取消语义收尾」（清理本地临时文件）并以
+     * 挂起异常退出，由 SDK 无重试消耗地重新排队。</p>
+     *
+     * @return 恒定返回 {@code true}
+     */
+    @Override
+    public boolean supportsDetach() {
+        return true;
+    }
+
+    /**
      * 执行一个离线下载任务。
      *
-     * <p><b>执行顺序：</b>参数解析 → 置运行中 → 中断接线 → 保存目录校验 → 类型路由 → 引擎执行 →
-     * 落盘 → 置完成。</p>
+     * <p><b>执行顺序：</b>参数解析 → 置运行中 → 中断接线 → 保存目录校验 → 类型路由（P2P 走协调器）→
+     * 引擎/协调器执行 → 落盘 → 置完成 → 收口矩阵。</p>
      *
      * <p><b>异常映射约定：</b></p>
      * <ul>
-     *     <li>中断（{@link SfcTaskInterruptedException}，或中断指令导致 IO 失败）→ 本地状态置为
-     *         {@link DownloadTaskConstants.Status#CANCEL} 后以中断语义抛出，由 SDK 上报 CANCEL；</li>
-     *     <li>其它异常 → 本地状态置为 {@link DownloadTaskConstants.Status#FAILED} 并记录错误信息后
-     *         原样抛出，由 SDK 上报 FAILED；</li>
-     *     <li>无论成功失败，{@code finally} 中都会删除本地临时目录。</li>
+     *     <li>挂起（{@link SfcTaskDetachedException}）→ 检查点已由协调器保存，<b>不动</b> aria2 与本地目录，
+     *         异常原样抛出由 SDK 上报 abandon(detached)；</li>
+     *     <li>中断（{@link SfcTaskInterruptedException}，或中断指令导致 IO 失败）→ 本地状态置 CANCEL，
+     *         按收口矩阵清理后以中断语义抛出，由 SDK 上报 CANCEL；</li>
+     *     <li>其它异常 → 本地状态置 FAILED 并记录错误信息，按收口矩阵清理后原样抛出，由 SDK 上报 FAILED。</li>
      * </ul>
      *
-     * @param execution 任务执行上下文（任务参数、日志、进度与中断协作）
+     * @param execution 任务执行上下文（任务参数、日志、进度与中断/挂起协作）
      * @throws SfcTaskInterruptedException 任务被中断时抛出（由 SDK 上报为 CANCEL）
-     * @throws RuntimeException           其它执行失败（由 SDK 上报为 FAILED）
+     * @throws SfcTaskDetachedException    执行者停机导致任务挂起时抛出（由 SDK 重新排队，不计重试）
+     * @throws RuntimeException            其它执行失败（由 SDK 上报为 FAILED）
      */
     @Override
     public void execute(SfcTaskExecution execution) {
@@ -137,15 +165,15 @@ public class DownloadTaskHandler implements SfcTaskHandler {
         // 磁力链 / 种子由 aria2 写盘，可能跨容器部署，任务目录需落在共享工作区，产物本服务才可见；
         // 其它类型在本服务进程内下载，沿用默认的 JVM 临时目录策略。
         DownloadType type = params.type;
-        boolean isAria2Task = type == DownloadType.MAGNET || type == DownloadType.TORRENT;
-        DownloadTempDirCreator tempDirCreator = isAria2Task ? aria2Workspace::createTaskDir : null;
+        boolean isP2pTask = type == DownloadType.MAGNET || type == DownloadType.TORRENT;
+        DownloadTempDirCreator tempDirCreator = isP2pTask ? aria2Workspace::createTaskDir : null;
         // 引擎解析出名称后（HTTP 响应文件名 / aria2 文件清单）立即回写，使任务在运行中即可展示名称
         DownloadContext context = new DownloadContext(execution, params, name -> updateTaskNameQuietly(downloadId, name), tempDirCreator);
         try {
             execution.log(LOG_PREFIX + "开始执行离线下载任务: " + params);
             log.info("{}开始执行离线下载任务: downloadId={}, taskId={}, uid={}, type={}, url={}, savePath={}",
                     LOG_PREFIX, downloadId, taskId, params.uid,
-                    params.type == null ? "未指定" : params.type.getCode(),
+                    type == null ? "未指定" : type.getCode(),
                     DownloadLogUtils.maskUrl(params.url), params.savePath);
             downloadTaskRepo.updateStatus(downloadId, DownloadTaskConstants.Status.RUNNING);
 
@@ -157,40 +185,25 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             if (type == null) {
                 throw new SfcJsonException(400, "离线下载任务参数缺少下载类型（type），拒绝执行");
             }
-            DownloadEngine engine = engineRegistry.get(type);
-
-            validateSavePath(context);
-
             context.log("使用下载方式: " + type.getDisplayName());
-            log.info("{}下载任务已路由到引擎: downloadId={}, taskId={}, type={}, engineId={}",
-                    LOG_PREFIX, downloadId, taskId, type.getCode(), engine.getEngineId());
-
-            List<DownloadArtifact> artifacts = engine.execute(context);
-            log.info("{}下载引擎执行完成: downloadId={}, taskId={}, type={}, 产物数={}",
-                    LOG_PREFIX, downloadId, taskId, type.getCode(), artifacts == null ? 0 : artifacts.size());
-
-            // 落盘前再检查一次，避免把已被取消的内容写入网盘
-            context.checkInterrupted();
-            // 完成前先把展示名落库：上传可能耗时较长，期间列表也能看到名称；上传失败时名称同样保留
-            String taskDisplayName = resolveTaskDisplayName(type, artifacts);
-            if (SfcStringUtils.hasText(taskDisplayName)) {
-                updateTaskNameQuietly(downloadId, taskDisplayName);
-                context.log("任务名称: " + taskDisplayName);
-            }
-            DownloadSaveService.StashResult result = stash(context, artifacts);
-
-            // P2P 下载使用文件名摘要作为任务名称；其它类型沿用落盘结果的保存名
-            String finishName = SfcStringUtils.hasText(taskDisplayName) ? taskDisplayName : result.savedName();
-            downloadTaskRepo.updateFinish(downloadId, DownloadTaskConstants.Status.FINISH,
-                    result.totalBytes(), result.totalBytes(), finishName, new Date());
+            ExecutionOutcome outcome = isP2pTask
+                    ? executeP2p(context)
+                    : executeStandard(context, type);
             log.info("{}离线下载任务执行完成: downloadId={}, taskId={}, type={}, 保存名={}, 任务名称={}, 大小={}字节, 总耗时={}ms",
-                    LOG_PREFIX, downloadId, taskId, type.getCode(), result.savedName(), finishName,
-                    result.totalBytes(), elapsedMillis(startNanos));
+                    LOG_PREFIX, downloadId, taskId, type.getCode(), outcome.savedName(), outcome.finishName(),
+                    outcome.totalBytes(), elapsedMillis(startNanos));
+        } catch (SfcTaskDetachedException e) {
+            // 挂起：收口矩阵要求 aria2 与本地目录「不动」、检查点保留；由协调器在异常传播路径上保存
+            execution.log(LOG_PREFIX + "任务已挂起，检查点已保存，等待其它实例接管: " + describe(e));
+            log.info("{}离线下载任务已挂起: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
+                    LOG_PREFIX, downloadId, taskId, describe(e), elapsedMillis(startNanos));
+            throw e;
         } catch (SfcTaskInterruptedException e) {
             execution.log(LOG_PREFIX + "任务已被取消: " + describe(e));
             log.info("{}离线下载任务已取消: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
                     LOG_PREFIX, downloadId, taskId, describe(e), elapsedMillis(startNanos));
             updateCancelStatusQuietly(execution, downloadId);
+            releaseP2pOnCancel(context);
             throw e;
         } catch (Exception e) {
             if (context.isCancelled() || execution.isInterruptRequested()) {
@@ -200,6 +213,7 @@ public class DownloadTaskHandler implements SfcTaskHandler {
                 log.info("{}离线下载任务因中断而终止: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
                         LOG_PREFIX, downloadId, taskId, reason, elapsedMillis(startNanos));
                 updateCancelStatusQuietly(execution, downloadId);
+                releaseP2pOnCancel(context);
                 throw new SfcTaskInterruptedException("离线下载任务被中断: " + reason, e);
             }
             String message = describe(e);
@@ -208,10 +222,166 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             log.warn("{}离线下载任务执行失败: downloadId={}, taskId={}, 原因={}, 总耗时={}ms",
                     LOG_PREFIX, downloadId, taskId, message, elapsedMillis(startNanos));
             updateFailureQuietly(execution, downloadId, message);
+            releaseP2pOnFailure(context);
             throw e;
         } finally {
-            cleanup(context);
+            // P2P 任务目录由收口矩阵决定保留或删除；非 P2P 任务仍按原行为无条件清理临时目录
+            cleanup(context, isP2pTask);
         }
+    }
+
+    // ==================== 执行分支 ====================
+
+    /**
+     * 执行非 P2P 下载（HTTP / Git / ed2k）：引擎下载 → 落盘 → 回写完成。
+     *
+     * @param context 执行上下文
+     * @param type    下载类型
+     * @return 执行结果摘要（保存名、上传字节数、任务展示名）
+     */
+    private ExecutionOutcome executeStandard(DownloadContext context, DownloadType type) {
+        Long downloadId = context.getDownloadId();
+        log.info("{}下载任务已路由到引擎: downloadId={}, taskId={}, type={}, engineId={}",
+                LOG_PREFIX, downloadId, context.getExecution().getTaskId(), type.getCode(),
+                engineRegistry.get(type).getEngineId());
+
+        validateSavePath(context);
+        DownloadEngine engine = engineRegistry.get(type);
+        List<DownloadArtifact> artifacts = engine.execute(context);
+        log.info("{}下载引擎执行完成: downloadId={}, taskId={}, type={}, 产物数={}",
+                LOG_PREFIX, downloadId, context.getExecution().getTaskId(), type.getCode(),
+                artifacts == null ? 0 : artifacts.size());
+
+        // 非 P2P 任务没有可接管的下载现场：收到挂起请求时清理本地临时目录（finally）后退出等待重新排队
+        context.checkDetach();
+        // 落盘前再检查一次，避免把已被取消的内容写入网盘
+        context.checkInterrupted();
+        // 完成前先把展示名落库：上传可能耗时较长，期间列表也能看到名称；上传失败时名称同样保留
+        String taskDisplayName = resolveTaskDisplayName(type, artifacts);
+        if (SfcStringUtils.hasText(taskDisplayName)) {
+            updateTaskNameQuietly(downloadId, taskDisplayName);
+            context.log("任务名称: " + taskDisplayName);
+        }
+        DownloadSaveService.StashResult result = stash(context, artifacts);
+
+        // P2P 下载使用文件名摘要作为任务名称；其它类型沿用落盘结果的保存名
+        String finishName = SfcStringUtils.hasText(taskDisplayName) ? taskDisplayName : result.savedName();
+        downloadTaskRepo.updateFinish(downloadId, DownloadTaskConstants.Status.FINISH,
+                result.totalBytes(), result.totalBytes(), finishName, new Date());
+        return new ExecutionOutcome(result.savedName(), result.totalBytes(), finishName);
+    }
+
+    /**
+     * 执行 P2P 下载（磁力链 / 种子）：协调器新建或接管 → 上传幂等 → 收口矩阵。
+     *
+     * <p>接管分支按检查点阶段处理：</p>
+     * <ul>
+     *   <li>{@code UPLOADED}：直接补报 FINISH，不重复上传；</li>
+     *   <li>{@code UPLOADING}：先做上传幂等等待（新检查点可能已变为 UPLOADED），否则采集既有产物重新上传；</li>
+     *   <li>其它阶段：交给协调器恢复（继续轮询 / 采集产物 / gid 丢失同目录续传）。</li>
+     * </ul>
+     *
+     * @param context 执行上下文
+     * @return 执行结果摘要（保存名、上传字节数、任务展示名）
+     */
+    private ExecutionOutcome executeP2p(DownloadContext context) {
+        DownloadTaskParams params = context.getParams();
+        Long downloadId = context.getDownloadId();
+        P2pTaskState state = p2pTaskCoordinator.loadResumable(context);
+        if (state != null) {
+            log.info("{}检测到可接管的 P2P 检查点: downloadId={}, phase={}, gid={}",
+                    LOG_PREFIX, downloadId, state.getPhase(), state.getGids());
+        }
+        // 分支 1：上次已上传成功但未上报完成 → 直接补报 FINISH
+        if (state != null && state.isUploaded()) {
+            context.log("检测到上次上传已完成（检查点 phase=UPLOADED），直接补报任务完成，不重复上传");
+            return finalizeP2pFromCheckpoint(context, state);
+        }
+
+        List<DownloadArtifact> artifacts;
+        if (state != null && state.isPhase(P2pTaskState.Phase.UPLOADING)) {
+            // 分支 2：上传阶段幂等
+            P2pTaskState latest = p2pTaskCoordinator.awaitUploadSettled(context, state).orElse(state);
+            if (latest.isUploaded()) {
+                context.log("等待期间确认上传已完成，直接补报任务完成，不重复上传");
+                return finalizeP2pFromCheckpoint(context, latest);
+            }
+            validateSavePath(context);
+            P2pTaskResult collected = p2pTaskCoordinator.collectExisting(latest, context);
+            state = collected.state();
+            artifacts = collected.artifacts();
+        } else if (state != null) {
+            // 分支 3：接管下载阶段
+            validateSavePath(context);
+            P2pTaskResult resumed = p2pTaskCoordinator.resume(state, context);
+            state = resumed.state();
+            artifacts = resumed.artifacts();
+        } else {
+            // 分支 4：新建任务
+            validateSavePath(context);
+            P2pTaskResult started = p2pTaskCoordinator.start(context);
+            state = started.state();
+            artifacts = started.artifacts();
+        }
+
+        // 下载完成后、开始上传前：响应挂起与取消（挂起时 aria2/目录/检查点保持不动）
+        context.checkDetach();
+        context.checkInterrupted();
+        // 完成前先把展示名落库：上传可能耗时较长，期间列表也能看到名称；上传失败时名称同样保留
+        String taskDisplayName = resolveTaskDisplayName(params.type, artifacts);
+        if (SfcStringUtils.hasText(taskDisplayName)) {
+            updateTaskNameQuietly(downloadId, taskDisplayName);
+            context.log("任务名称: " + taskDisplayName);
+        }
+
+        // 上传前写检查点（UPLOADING + uploadStartedAt），成功后写 UPLOADED + savedName/savedBytes
+        p2pTaskCoordinator.markUploading(context, state);
+        DownloadSaveService.StashResult result = stash(context, artifacts);
+        p2pTaskCoordinator.markUploaded(context, state, result.savedName(), result.totalBytes());
+
+        // 上传阶段收到挂起：允许上传完成，写 UPLOADED 后退出，由接管实例直接补报 FINISH
+        if (context.isDetachRequested()) {
+            context.log("上传已完成并保存检查点（phase=UPLOADED），任务挂起，等待接管实例补报完成");
+            throw new SfcTaskDetachedException("P2P 任务上传完成，执行者停机，任务已挂起");
+        }
+        return finalizeP2pSuccess(context, state, taskDisplayName, result);
+    }
+
+    /**
+     * 补报 P2P 任务完成（检查点已是 {@code UPLOADED}）。
+     *
+     * @param context 执行上下文
+     * @param state   检查点
+     * @return 执行结果摘要
+     */
+    private ExecutionOutcome finalizeP2pFromCheckpoint(DownloadContext context, P2pTaskState state) {
+        context.checkDetach();
+        String savedName = state.getSavedName();
+        long savedBytes = state.getSavedBytes();
+        downloadTaskRepo.updateFinish(context.getDownloadId(), DownloadTaskConstants.Status.FINISH,
+                savedBytes, savedBytes, savedName, new Date());
+        p2pTaskCoordinator.finishSuccess(context, state);
+        context.log("已补报任务完成: " + (savedName == null ? "（保存名未知）" : savedName)
+                + "（" + savedBytes + " 字节）");
+        return new ExecutionOutcome(savedName, savedBytes, savedName);
+    }
+
+    /**
+     * 正常完成 P2P 任务并执行成功收口（做种保留或清理）。
+     *
+     * @param context         执行上下文
+     * @param state           检查点
+     * @param taskDisplayName 任务展示名，允许为 {@code null}
+     * @param result          落盘结果
+     * @return 执行结果摘要
+     */
+    private ExecutionOutcome finalizeP2pSuccess(DownloadContext context, P2pTaskState state,
+                                                String taskDisplayName, DownloadSaveService.StashResult result) {
+        String finishName = SfcStringUtils.hasText(taskDisplayName) ? taskDisplayName : result.savedName();
+        downloadTaskRepo.updateFinish(context.getDownloadId(), DownloadTaskConstants.Status.FINISH,
+                result.totalBytes(), result.totalBytes(), finishName, new Date());
+        p2pTaskCoordinator.finishSuccess(context, state);
+        return new ExecutionOutcome(result.savedName(), result.totalBytes(), finishName);
     }
 
     // ==================== 执行步骤 ====================
@@ -354,14 +524,21 @@ public class DownloadTaskHandler implements SfcTaskHandler {
     }
 
     /**
-     * 任务收尾清理：删除本次任务创建的本地临时目录（递归）。
+     * 任务收尾清理。
      *
-     * <p>清理属于 best-effort：目录从未创建时会先按需创建再删除（无副作用），任何异常都只记 WARN，
-     * 不覆盖原始执行结果。</p>
+     * <p>非 P2P：删除本次任务创建的本地临时目录（递归），best-effort。P2P：<b>不做任何清理</b>——
+     * aria2 任务结果与本地目录一律由收口矩阵决定（成功保留做种 / 成功清理 / 失败清理 / 取消清理 /
+     * 挂起保留），避免无条件删除破坏续传或做种现场。</p>
      *
-     * @param context 任务执行上下文
+     * @param context  任务执行上下文
+     * @param isP2pTask 是否为 P2P 任务
      */
-    private void cleanup(DownloadContext context) {
+    private void cleanup(DownloadContext context, boolean isP2pTask) {
+        if (isP2pTask) {
+            log.debug("{}P2P 任务目录由生命周期收口矩阵处理，跳过无条件清理: downloadId={}",
+                    LOG_PREFIX, context.getDownloadId());
+            return;
+        }
         try {
             Path tempDir = context.getTempDir();
             log.info("{}清理下载临时目录: downloadId={}, path={}",
@@ -369,6 +546,42 @@ public class DownloadTaskHandler implements SfcTaskHandler {
             DownloadFileUtils.deleteQuietly(tempDir);
         } catch (RuntimeException e) {
             log.warn("{}清理下载临时目录失败: downloadId={}, cause={}",
+                    LOG_PREFIX, context.getDownloadId(), e.toString());
+        }
+    }
+
+    /**
+     * 失败时按收口矩阵处理 P2P 现场（异常只记日志，不覆盖原始失败）。
+     *
+     * @param context 任务执行上下文
+     */
+    private void releaseP2pOnFailure(DownloadContext context) {
+        P2pTaskState state = context.getP2pState();
+        if (state == null) {
+            return;
+        }
+        try {
+            p2pTaskCoordinator.releaseOnFailure(context, state);
+        } catch (RuntimeException e) {
+            log.warn("{}失败收口清理异常（忽略）: downloadId={}, cause={}",
+                    LOG_PREFIX, context.getDownloadId(), e.toString());
+        }
+    }
+
+    /**
+     * 取消时按收口矩阵处理 P2P 现场（异常只记日志，不覆盖原始取消）。
+     *
+     * @param context 任务执行上下文
+     */
+    private void releaseP2pOnCancel(DownloadContext context) {
+        P2pTaskState state = context.getP2pState();
+        if (state == null) {
+            return;
+        }
+        try {
+            p2pTaskCoordinator.releaseOnCancel(context, state);
+        } catch (RuntimeException e) {
+            log.warn("{}取消收口清理异常（忽略）: downloadId={}, cause={}",
                     LOG_PREFIX, context.getDownloadId(), e.toString());
         }
     }
@@ -447,5 +660,15 @@ public class DownloadTaskHandler implements SfcTaskHandler {
      */
     private static long elapsedMillis(long startNanos) {
         return TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startNanos);
+    }
+
+    /**
+     * 一次执行的结果摘要（仅用于收尾日志）。
+     *
+     * @param savedName   网盘最终保存名
+     * @param totalBytes  上传成功的字节数合计
+     * @param finishName  写入 {@code download_task.name} 的展示名
+     */
+    private record ExecutionOutcome(String savedName, long totalBytes, String finishName) {
     }
 }

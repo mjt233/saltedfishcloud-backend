@@ -1,5 +1,6 @@
 package com.sfc.download.engine.p2p;
 
+import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.download.config.Aria2Properties;
 import com.sfc.download.constant.DownloadTaskConstants;
@@ -7,6 +8,7 @@ import com.sfc.download.util.DownloadFileUtils;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
@@ -61,6 +63,14 @@ public class Aria2Workspace {
     private final Aria2Properties aria2Properties;
 
     /**
+     * 做种保留 SPI（懒加载）：用于把「做种保护目录」桥接给陈旧清理逻辑。
+     *
+     * <p>使用 {@link ObjectProvider} 而非直接注入：P2 阶段允许没有做种实现（用 no-op 兜底），
+     * 同时避免与做种实现之间产生启动期循环依赖。</p>
+     */
+    private final ObjectProvider<P2pSeedRegistrar> seedRegistrarProvider;
+
+    /**
      * 输出生效的 aria2 部署配置，并在共享目录配置非法时给出可读的 WARN 提示。
      *
      * <p>只输出部署期字段（rpc-url、令牌掩码、共享目录映射）；P2P 开关、进度轮询间隔、无进度超时与
@@ -85,6 +95,117 @@ public class Aria2Workspace {
             log.warn("{}aria2 共享目录配置无效（MAGNET/TORRENT 能力将不可用，不影响服务启动）: {}",
                     LOG_PREFIX, invalid);
         }
+        installProtectedDirectoryProbe();
+    }
+
+    /**
+     * 把「做种保护目录」查询桥接给 {@link DownloadFileUtils#cleanupStaleTempDirs(Path, java.time.Duration)}。
+     *
+     * <p>陈旧清理是静态工具方法，无法直接依赖 Spring Bean，因此在此注册一个探测器；探测器每次查询时
+     * 经 {@link ObjectProvider} 懒加载做种实现（未装配时用 no-op 兜底）。探测器内部异常由清理侧按
+     * fail-safe 处理（跳过整轮清理），不会误删做种中的文件。</p>
+     */
+    public void installProtectedDirectoryProbe() {
+        DownloadFileUtils.setProtectedDirectoryProbe(dir -> {
+            P2pSeedRegistrar registrar = seedRegistrarProvider == null
+                    ? NoopP2pSeedRegistrar.INSTANCE
+                    : seedRegistrarProvider.getIfAvailable(() -> NoopP2pSeedRegistrar.INSTANCE);
+            return registrar != null && registrar.isProtectedDirectory(dir);
+        });
+        log.debug("{}已注册做种保护目录探测器（陈旧清理将跳过做种保留中的目录）", LOG_PREFIX);
+    }
+
+    /**
+     * 获取本服务侧任务工作区根目录。
+     *
+     * <p>启用共享目录时为 {@code <shared-dir>/offline-download}；未启用时为 JVM 临时目录下的
+     * {@code offline-download}（与 {@link DownloadFileUtils#getTempDir()} 一致）。孤儿任务对账与陈旧清理
+     * 都以该目录作为「本服务任务工作区」的边界。</p>
+     *
+     * @return 工作区根目录（绝对路径、已规范化）
+     * @throws SfcJsonException 工作区目录不可用（共享目录配置非法或 JVM 临时目录创建失败）时抛出
+     */
+    public Path workspaceRoot() {
+        String sharedDir = sharedDirText();
+        if (SfcStringUtils.hasText(sharedDir)) {
+            try {
+                return workspaceRoot(sharedRoot());
+            } catch (InvalidPathException e) {
+                throw new SfcJsonException(500, "共享目录 shared-dir 不是合法路径: " + sharedDir);
+            }
+        }
+        try {
+            return DownloadFileUtils.getTempDir().toAbsolutePath().normalize();
+        } catch (IOException e) {
+            throw new SfcJsonException(500, "获取下载任务工作区目录失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 判断目录是否位于本服务的任务工作区内。
+     *
+     * <p>用于 aria2 孤儿任务对账的安全边界：只有 {@code dir} 映射后落在
+     * {@code <shared-dir>/offline-download}（或未启用共享目录时的 JVM 临时目录
+     * {@code offline-download}）之下的任务才允许处理，<b>绝不触碰</b>工作区之外的 aria2 任务。</p>
+     *
+     * @param dir 待判断的目录，允许为 {@code null}
+     * @return 位于本服务工作区内（且不是工作区根本身）返回 {@code true}
+     */
+    public boolean isInWorkspace(Path dir) {
+        if (dir == null) {
+            return false;
+        }
+        try {
+            Path normalized = dir.toAbsolutePath().normalize();
+            Path root = workspaceRoot();
+            return !normalized.equals(root) && normalized.startsWith(root);
+        } catch (RuntimeException e) {
+            // 配置非法或路径无法解析时按「不属于本服务工作区」处理，保证对账不会误删
+            return false;
+        }
+    }
+
+    /**
+     * 从任务目录名解析下载任务 id。
+     *
+     * <p>任务目录命名规则为 {@code <downloadId>-<UUID>}（见
+     * {@link DownloadFileUtils#createTaskTempDir(Path, String)}），因此取目录名第一个 {@code '-'}
+     * 之前的部分，只有全部为数字时才认为是合法的下载任务 id。</p>
+     *
+     * @param dir 任务目录，允许为 {@code null}
+     * @return 下载任务 id；目录名为空、不含分隔符或前缀不是数字时返回 {@code null}
+     */
+    public Long parseDownloadId(Path dir) {
+        if (dir == null || dir.getFileName() == null) {
+            return null;
+        }
+        String name = dir.getFileName().toString();
+        int separator = name.indexOf('-');
+        if (separator <= 0) {
+            return null;
+        }
+        String idText = name.substring(0, separator);
+        if (!idText.chars().allMatch(Character::isDigit)) {
+            return null;
+        }
+        try {
+            long id = Long.parseLong(idText);
+            return id > 0 ? id : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * 把 aria2 报告的目录映射为本服务可见目录。
+     *
+     * <p>语义与 {@link #toLocalArtifactPath(String)} 一致，用于孤儿任务对账等「目录级」场景。</p>
+     *
+     * @param aria2Dir aria2 侧目录，允许为 {@code null}
+     * @return 本服务可见目录；无法映射时返回 {@code null}
+     */
+    public Path toLocalDir(String aria2Dir) {
+        return toLocalArtifactPath(aria2Dir);
     }
 
     /**
@@ -332,11 +453,11 @@ public class Aria2Workspace {
     /**
      * 获取共享工作区目录：{@code <sharedDir>/offline-download}。
      *
+     * @param sharedRoot 共享根目录（本服务侧、已规范化）
      * @return 共享工作区目录
-     * @throws InvalidPathException {@code shared-dir} 不是合法路径时抛出
      */
-    private Path workspaceRoot() {
-        return sharedRoot().resolve(SHARED_DIR_NAME);
+    private static Path workspaceRoot(Path sharedRoot) {
+        return sharedRoot.resolve(SHARED_DIR_NAME);
     }
 
     /**

@@ -120,6 +120,14 @@
             <artifactId>org.eclipse.jgit.ssh.apache</artifactId>
             <version>${jgit.version}</version>
         </dependency>
+
+        <!-- ============ 单元测试 ============ -->
+        <!-- 轻量级单测（JUnit 5 + Mockito）；项目规范禁止 @SpringBootTest，版本由 Spring Boot BOM 管理 -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
