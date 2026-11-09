@@ -4,11 +4,12 @@
 
 异步任务可以让一些耗时较长的任务（如：视频编码转换、文件下载）放到后台运行而不阻塞请求，并提供了统一的任务控制接口。
 
-咸鱼云异步任务框架支持**按任务类型路由调度**、**故障转移**、**紧急通道**、**进度监控**，并且 **core 节点与微服务实例共用同一套任务队列、调度机制与执行侧实现**：
+咸鱼云异步任务框架支持**按任务类型路由调度**、**故障转移**、**紧急通道**、**进度监控**、**任务检查点与可挂起任务**，并且 **core 节点与微服务实例共用同一套任务队列、调度机制与执行侧实现**：
 
-- 调度与控制面位于 `sfc-core-task`：任务入队、类型路由认领、执行者健康检查、上报落库、中断路由、日志与进度查询、管理接口；
+- 调度与控制面位于 `sfc-core-task`：任务入队、类型路由认领、执行者健康检查、上报落库、中断路由、日志与进度查询、检查点管理、管理接口；
 - 执行侧由 `microservices/sfc-task-worker`（下称 **Worker SDK**）提供：core 节点内嵌一个角色为 `CORE` 的 Worker，微服务实例各自内嵌一个角色为 `SERVICE` 的 Worker，二者使用同一套认领循环、线程池、上报与停机逻辑；
 - 两端通过「服务发现 + 内部 HTTP（`/api/internal/task/**`）」交互，报文类型以 SDK 的 `protocol` 包为唯一来源。
+- 任务现场可通过**检查点**持久化到 core，执行者优雅停机或失联后由其它执行者接管；声明支持「挂起」的任务（`SfcTaskHandler#supportsDetach()`）在停机时优先保存检查点，而不是被中断。
 
 任务系统以 **数据库队列为唯一事实来源**：所有任务都走同一条「入队 → 按类型认领 → 执行」的流程，不存在「本地直执行」旁路，因此**同一组提交参数（`immediate` / `isTemp`）在 core 本地任务与微服务任务上的行为完全一致**。
 
@@ -17,9 +18,9 @@
 > 微服务接入指引见 [微服务异步任务 Worker 接入](../microservice/async-task-worker.md)。
 
 > **代码组织**：
-> - 契约与模型：`sfc-api`（`com.sfc.task`：`AsyncTask`、`AsyncTaskFactory`、`AsyncTaskManager`、`AsyncTaskRecord`、仓库接口等）；
-> - 调度与控制面：`sfc-core-task`（同包名 `com.sfc.task`：`AsyncTaskFactoryRegistry`、`TaskClaimService`、`TaskHealthChecker`、`TaskReportService`、`TaskInterruptRouter`、`TaskLogBufferService`、管理接口 `/api/asyncTask/**` 与内部协议控制器 `/api/internal/task/**`）；
-> - 执行侧 SDK：`microservices/sfc-task-worker`（`com.sfc.cloud.task.worker`：`SfcTaskWorkerRuntime`、`SfcTaskWorkerClient`、`SfcTaskExecution`、`SfcTaskReporter`、`SfcTaskWorkerRegistry`、`SfcTaskWorkerIdentity` 与 `protocol` 包）；
+> - 契约与模型：`sfc-api`（`com.sfc.task`：`AsyncTask`、`AsyncTaskFactory`、`AsyncTaskManager`、`AsyncTaskRecord`、`AsyncTaskCheckpoint`、`AsyncTaskCheckpointRepo`、仓库接口等）；
+> - 调度与控制面：`sfc-core-task`（同包名 `com.sfc.task`：`AsyncTaskFactoryRegistry`、`TaskClaimService`、`TaskHealthChecker`、`TaskReportService`、`TaskCheckpointService`、`TaskInterruptRouter`、`TaskLogBufferService`、管理接口 `/api/asyncTask/**` 与内部协议控制器 `/api/internal/task/**`）；
+> - 执行侧 SDK：`microservices/sfc-task-worker`（`com.sfc.cloud.task.worker`：`SfcTaskWorkerRuntime`、`SfcTaskWorkerClient`、`SfcTaskExecution`、`SfcTaskReporter`、`SfcTaskHandler`、`SfcTaskDetachedException`、`SfcTaskWorkerRegistry`、`SfcTaskWorkerIdentity` 与 `protocol` 包）；
 > - `sfc-core` 依赖上述两个模块，通过 `@EnableAsyncTask` 引入控制面，并由 `com.xiaotao.saltedfishcloud.task.worker.AsyncTaskWorkerConfiguration` 把容器中全部 `AsyncTaskFactory` 桥接为 SDK 的 `SfcTaskHandler`，内嵌 `CORE` 角色的 Worker。
 
 ## 2. 总体架构
@@ -33,7 +34,8 @@
 | 服务注册中心 | 执行者能力与存活状态的唯一来源：`local`（进程内注册表，单节点）/ `nacos`（多节点共享）。系统通过 Spring Cloud `DiscoveryClient` 读取 |
 | 任务认领服务 `TaskClaimService` | 按 Worker 支持的任务类型从数据库队列中原子认领任务，支持长轮询等待与紧急车道 |
 | 健康检查 `TaskHealthChecker` | 周期检查运行中任务的执行者实例是否还在注册中心，失联时回收任务并重新发布（故障转移）；同时告警长期无人认领的任务 |
-| 上报服务 `TaskReportService` | 接收执行者的执行上报（开始/进度/日志/完成/放弃），维护任务状态、运行日志缓冲与进度快照 |
+| 上报服务 `TaskReportService` | 接收执行者的执行上报（开始/进度/日志/完成/放弃），维护任务状态、运行日志缓冲与进度快照；任务进入终态时清理其检查点 |
+| 检查点服务 `TaskCheckpointService` | 保存/查询/删除任务检查点（upsert、空值视为删除、单条上限 1MB），并为故障转移回收批量判定哪些任务带有可接管现场；每日兜底清理超过 30 天未更新的残留检查点 |
 | 中断路由 `TaskInterruptRouter` | 按任务记录的 `claimed_service` + `claimed_worker` 在注册中心定位执行者实例，向其内部中断端点下发指令 |
 
 ### 2.2 核心调度模型：类型路由认领 + 紧急车道
@@ -55,12 +57,16 @@
    认领：
        UPDATE ... SET status = 1, claimed_service / claimed_worker / claimed_role = 本实例
        WHERE id = ? AND status = 0                                -- 乐观锁，并发只有一个成功
+       并读取 async_task_checkpoint 中的检查点，随 TaskDispatchInfo 一并下发（无检查点为 null）
         │
         ▼
   执行任务（Worker SDK 线程池）──► 约 1 秒节流上报进度、按批上报运行日志
         │
         ▼
-  上报最终状态（完成 / 失败 / 取消），或停机时上报放弃（任务回到队列）
+  上报最终状态（完成 / 失败 / 取消）；
+  或执行者停机 / 失联时：
+     - 可挂起任务（supportsDetach=true）：保存检查点 → 上报挂起（detached=true）→ 任务回到等待中（不消耗 retry_count）
+     - 其它任务：中断 + 上报普通放弃 → 任务回到等待中（retry_count + 1，达到上限 3 次置为失败）
 ```
 
 关键点：
@@ -71,6 +77,9 @@
 - **没有任何执行者支持的任务会一直排队等待**，不会丢失；健康检查会对「等待超过 5 分钟」的任务输出聚合告警
   （即使不知道具体哪个实例应该支持该类型，也能暴露「类型写错 / 服务未部署」）；
 - 无任务时认领以**长轮询**等待，新任务发布广播会立即唤醒等待者，避免高频空转轮询数据库；
+- **检查点随认领下发、任务进入终态时清理**：执行者可在执行过程中保存任务现场快照（检查点），
+  任务被挂起或执行者失联后，下一个认领者会收到该检查点用于恢复；检查点存放在独立表
+  `async_task_checkpoint`，**不改动 `async_task_record` 的表结构与实体字段**（详见 4.3）；
 - Worker 启动后先做两项自检：内部接口鉴权密钥是否已配置、是否启用服务发现；认领线程还会等待「本实例已在服务注册中心可见」（最多 60 秒）。任一项不满足都会打印 ERROR 并禁用认领，应用继续运行（详见第 9 节）；负载均衡拦截器、凭证签发器与服务注册信息是必需 Bean，缺失时应用启动失败。
 
 ### 2.3 紧急通道（immediate）
@@ -112,6 +121,7 @@
 
 - 异步任务记录：`async_task_record`
 - 异步任务日志记录：`async_task_log_record`
+- 异步任务检查点：`async_task_checkpoint`（独立表，主键为 `task_id`；不改动 `async_task_record`）
 
 `async_task_record` 关键字段：
 
@@ -127,7 +137,7 @@
 | `claimed_role` | 认领者角色：`CORE`（core 节点）/ `SERVICE`（微服务实例），供管理接口展示与排障使用；中断统一下发方式为按服务发现定位地址后走内部 HTTP，与角色无关 |
 | `claimed_at` | 认领时间 |
 | `last_report_at` | 执行者最后一次上报时间（诊断用） |
-| `retry_count` | 故障转移重试次数 |
+| `retry_count` | 故障转移重试次数。执行者停机挂起（`detached`）与**带检查点**任务的失联回收重新排队时不累加该值（见 4.3）；接管次数预算由任务实现写在检查点内部 |
 | `executor` | 执行者描述信息，便于排查 |
 | `is_temp` | 是否为临时任务（临时任务**只影响故障转移行为**：执行者失联/放弃即置失败，不重试） |
 
@@ -136,6 +146,18 @@
 > ```sql
 > CREATE INDEX idx_async_task_record_claim ON async_task_record (status, priority, task_type, create_at);
 > ```
+
+`async_task_checkpoint` 关键字段（**独立新表，`async_task_record` 的表结构与实体字段零改动**）：
+
+| 字段 | 说明 |
+|---|---|
+| `task_id` | 主键，与 `async_task_record.id` 一一对应（非自增，不生成雪花 id） |
+| `task_type` | 任务类型，仅用于运维排查 |
+| `checkpoint` | 任务自定义现场快照（JSON 文本），调度中心只做持久化、不解析；空白视为删除 |
+| `update_at` | 最后更新时间，用于过期清理 |
+
+> 检查点由执行者经 `POST /api/internal/task/checkpoint/save` 上报，任务被认领时随 `TaskDispatchInfo.checkpoint`
+> 下发；任务进入终态后由 `TaskReportService` 删除，`TaskCheckpointService` 每日兜底清理超过 30 天未更新的残留检查点。
 
 ### 4.2 状态机
 
@@ -159,6 +181,40 @@ graph LR
   FAILED --> END
   CANCEL --> END
 ```
+
+> **状态值不新增**：挂起 / 接管复用「等待中（0）」。可挂起任务被停机挂起后，任务回到 `0` 且 `retry_count` 不变；
+> 无检查点的其它任务执行者失联 / 放弃则回到 `0` 且 `retry_count + 1`（超过 3 次置失败）。两种回收都会重新广播任务发布事件，
+> 由具备该任务类型的执行者认领（有检查点的任务因此可以接续执行，见 4.3）。
+
+### 4.3 任务检查点与可挂起任务（detach）
+
+**检查点（checkpoint）** 是任务实现自定义的现场快照（JSON 文本），用于任务被挂起、执行者停机或失联后由其它执行者
+接管时恢复现场。调度中心只做归属校验与持久化，**不解析检查点内容**：
+
+- **保存**：任务处理器通过 `SfcTaskExecution#saveCheckpoint(String)` 同步上报（带有限重试，失败不抛异常、记为待重发，
+  由周期上报补发）；core 侧 `POST /api/internal/task/checkpoint/save` 校验「任务存在、`status=1` 且
+  `claimed_worker == workerId`」，不满足返回 `false`（不报错）。检查点内容为空白时视为删除；单条上限 1MB
+  （`TaskCheckpointService.MAX_CHECKPOINT_LENGTH`，1024 * 1024 字符），超限拒绝保存。
+- **下发**：任务被认领时，core 把当前检查点填入 `TaskDispatchInfo.checkpoint` 一并下发（无检查点为 `null`）；
+  执行者通过 `SfcTaskExecution#getCheckpoint()` 读取（之后返回最近一次保存的内容）。
+- **生命周期**：任务进入终态（完成 / 失败 / 取消）后自动删除检查点；任务挂起、执行者主动放弃与失联回收时**保留**检查点；
+  超过 30 天未更新的残留检查点由 `TaskCheckpointService` 每日兜底清理（启动 10 分钟后首跑）。
+- **不消耗重试次数**：执行者主动停机挂起（`detached=true`）与「带检查点」任务的失联回收走
+  `AsyncTaskRecordRepo#requeueDetached`（`status 1 → 0`、清空 `claimed_*`、**不累加 `retry_count`**）并重新广播；
+  其余任务走 `AsyncTaskRecordRepo#abandonAndRequeue`（`retry_count + 1`，达到上限 3 次置失败）。
+  接管次数预算由任务实现写在检查点内部（例如离线下载的 `resumeCount`），框架不新增 `async_task_record` 字段。
+
+**可挂起任务（detach）**：任务处理器可覆写 `SfcTaskHandler#supportsDetach()` 返回 `true`，表示它能保留外部工作现场、
+适合在停机时挂起而不是被中断。语义：
+
+- 执行者优雅停机时，SDK 对 `supportsDetach()` 为 `true` 的任务只下发挂起指令
+  （`SfcTaskExecution#isDetachRequested()` / `onDetach(Runnable)`），**不触发中断回调**；任务实现保存检查点后退出
+  （抛 `SfcTaskDetachedException` 或正常返回均可）。
+- SDK 最多等待 `sfc.task.worker.detach-await-seconds`（默认 10 秒）让可挂起任务退出；超时仍未退出的任务会被中断并兜底放弃
+  （已收到挂起指令的按挂起语义上报，保留检查点且不消耗重试次数）。
+- 任务回到等待中后，任意具备该任务类型的执行者认领时都会拿到检查点，由任务实现自行恢复现场继续执行。
+- 挂起与中断相互独立：挂起只让任务退出本次执行并保留现场；用户中断仍走中断回调并最终置为已取消（4）。
+- 不支持挂起的任务零迁移（接口默认 `supportsDetach()=false`）：停机时仍按原有「中断 + 普通放弃」语义处理。
 
 ## 5. 自定义异步任务（core 宿主侧）
 
@@ -243,6 +299,11 @@ public class MyTask implements AsyncTask {
 - core 下发的中断指令会调用任务的 `interrupt()`；任务执行期间收到中断、最终正常返回时，结果按**取消**上报；
 - 执行前会把任务创建者绑定到当前线程的安全上下文（`SecureUtils.bindUser`），执行结束解绑；
 - `getProgress()` 返回的完整进度快照（含自定义字段）会作为进度扩展信息上报，前端 `getProg` 接口中这些字段与 `loaded` / `total` 同级返回。
+
+> **core 宿主侧任务暂不支持检查点与挂起**：`AsyncTaskFactory` 桥接出的 `SfcTaskHandler` 使用默认
+> `supportsDetach() = false`，且 `AsyncTask` 契约没有检查点 API；停机时按普通任务（中断 + 放弃）处理。
+> 需要停机续传 / 接管能力时，应直接实现 Worker SDK 的 `SfcTaskHandler`（见
+> [微服务异步任务 Worker 接入](../microservice/async-task-worker.md)）。
 
 ### 5.2 创建任务工厂
 
@@ -393,14 +454,21 @@ asyncTaskManager.getProgress(taskId);
 
 - **存活判定以服务注册中心为唯一依据**：运行中任务记录 `claimed_service + claimed_worker`（serviceId + `host:port`），
   健康检查每 30 秒扫描一次运行中任务，若该实例已不在注册中心（进程崩溃、停机、网络断开导致注册信息过期），视为执行者失联；
-- 失联任务的处理：保存已有运行日志 → **普通任务**重置为等待中并重新发布（`retry_count + 1`，超过上限 3 次置为失败）；
-  **临时任务**（`is_temp = true`）不参与重试，直接置为失败并写入失败日志；
+- 失联任务的处理：保存已有运行日志 → **临时任务**（`is_temp = true`）不参与重试，直接置为失败并写入失败日志；
+  其余任务按是否带检查点区分：
+  - **有检查点**：走挂起语义重新排队（`AsyncTaskRecordRepo#requeueDetached`：`status 1 → 0`、清空 `claimed_*`、
+    **不累加 `retry_count`**），检查点保留，任意具备该类型的执行者认领后接管现场——适用于停机续传类长任务，
+    避免服务重启数次后被误判失败；
+  - **无检查点**：普通故障转移（`AsyncTaskRecordRepo#abandonAndRequeue`：重新排队且 `retry_count + 1`，
+    超过上限 3 次置为失败）；
 - **优雅停机由 Worker 运行时统一处理**：core 内嵌 Worker 与微服务 Worker 完全相同——停止认领（认领线程可能阻塞在长轮询上，
-  运行时最多等待约 15 秒让其退出）→ 对运行中任务上报放弃（普通任务回到队列由其他实例接管，临时任务直接失败）→
-  最多等待数秒让执行线程响应中断后退出 → 对停机窗口内新登记的执行上下文补报放弃；
-- **进程异常退出/强制终止后的遗留任务由执行者启动恢复兜底**：执行者身份是 `host:port`，同端口重启后与上次进程相同，
-  因此本实例启动后、开始认领前会把 `claimed_service + claimed_worker` 指向自己的运行中任务按故障转移规则回收
-  （普通任务重新排队、临时任务置失败），避免任务永远停留在运行中；
+  运行时最多等待约 15 秒让其退出）→ 停止上报调度 → 遍历运行中任务：`supportsDetach()` 为 `true` 的任务只请求挂起
+  （不中断、不注销，由任务线程保存检查点后自行上报挂起），其余任务立即中断并上报普通放弃 → 关闭线程池并最多等待
+  `sfc.task.worker.detach-await-seconds`（默认 10 秒）→ 最后清扫仍登记的执行上下文（已收到挂起指令的按挂起语义上报，
+  保留检查点且不消耗重试次数）；
+- **进程异常退出 / 强制终止后的遗留任务由执行者启动恢复兜底**：执行者身份是 `host:port`，同端口重启后与上次进程相同，
+  因此本实例启动后、开始认领前会把 `claimed_service + claimed_worker` 指向自己的运行中任务按上述「带检查点 / 无检查点」
+  规则回收，避免任务永远停留在运行中；跨实例场景由健康检查回收；
 - 服务发现查询异常时本轮跳过判定，避免把「注册中心抖动」误判为执行者失联而批量回收任务；
 - 长时间无人认领的等待任务（超过 5 分钟）会被健康检查按类型聚合告警（10 分钟最多一次），用于发现任务类型写错或执行者未部署。
 
@@ -414,13 +482,14 @@ core 内嵌 Worker 的自调用同样走该前缀：core 的用户会话安全�
 
 | 接口 | 说明 |
 |---|---|
-| `POST /api/internal/task/claim` | 按任务类型认领任务（长轮询，携带 `serviceId`、`workerId`、`role`，支持只认领紧急任务） |
+| `POST /api/internal/task/claim` | 按任务类型认领任务（长轮询，携带 `serviceId`、`workerId`、`role`，支持只认领紧急任务；返回的 `TaskDispatchInfo` 含 `checkpoint`） |
 | `POST /api/internal/task/submit` | 以指定用户身份提交任务（支持 `immediate` / `isTemp`） |
 | `POST /api/internal/task/report/start` | 上报任务开始执行 |
 | `POST /api/internal/task/report/progress` | 上报任务进度（含可选 `extensions` 扩展字段） |
 | `POST /api/internal/task/report/log` | 上报任务运行日志（按批） |
-| `POST /api/internal/task/report/finish` | 上报任务结束（完成/失败/取消，可携带尾部日志） |
-| `POST /api/internal/task/report/abandon` | 上报放弃执行权（普通任务回到队列，临时任务置失败） |
+| `POST /api/internal/task/report/finish` | 上报任务结束（完成/失败/取消，可携带尾部日志；终态后 core 删除检查点） |
+| `POST /api/internal/task/checkpoint/save` | 保存/覆盖任务检查点（校验任务运行中且由本执行者认领；空白视为删除；单条上限 1MB） |
+| `POST /api/internal/task/report/abandon` | 上报放弃执行权（普通任务回到队列，临时任务置失败；`detached=true` 表示挂起语义：保留检查点且不累加 `retry_count`） |
 | `POST /api/internal/task/interrupt` | **执行者侧提供**：core 下发中断指令 |
 
 > 所有内部接口均为 POST；执行者出站请求由 SDK 自动携带内部调用凭证，
@@ -473,4 +542,8 @@ core 内嵌 Worker 通过内部 HTTP 调用本机（或其他 core 节点）的 
 | `存在 N 个等待超过 5 分钟仍未被执行者认领的任务（按类型: ...）` | 任务类型写错或对应执行者未部署 |
 | `发现 N 个本实例上次退出时遗留的运行中任务，开始回收` | 上次进程未优雅退出；启动恢复会按故障转移规则重新排队或置失败，无需人工处理 |
 | `认领线程在 15000ms 内未退出，继续停机流程` | 停机时认领长轮询仍未返回；遗留任务由健康检查或下次启动恢复兜底 |
+| `已请求任务[..]挂起（等待执行线程保存检查点后退出）` | 优雅停机：可挂起任务已收到挂起指令，等待其在 `sfc.task.worker.detach-await-seconds` 窗口内退出 |
+| `任务[..]已挂起并重新排队（不消耗重试次数）` | 可挂起任务已保存检查点并回到等待中，等待其它执行者接管 |
+| `等待 N 秒后仍有任务未退出，将对残留任务中断并放弃` | 停机等待窗口内任务未退出，SDK 兜底中断；已收到挂起指令的任务仍按挂起语义重新排队 |
+| `忽略过期的检查点上报：taskId=..., workerId=...` | 检查点上报时任务已结束 / 已被回收（状态非运行中或认领者不匹配）；SDK 会按待重发处理，无需人工干预 |
 | 任务长时间保持运行中并提示「执行者可能已失联或中断指令下发失败」 | 执行者已不在注册中心，或中断指令下发失败；可查看健康检查回收日志 |

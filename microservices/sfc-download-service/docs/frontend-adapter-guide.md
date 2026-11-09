@@ -1,10 +1,12 @@
 # 离线下载 · 多类型下载前端对接指南
 
 > 适用版本：`sfc-download-service` 多类型下载改造（HTTP / GIT / MAGNET / TORRENT 可用，ED2K 已登记但未接入引擎）；
-> GIT 已支持 SSH 克隆（用户级 SSH 凭据 + 主机密钥信任记录），凭据/信任记录管理接口见 §九。
+> GIT 已支持 SSH 克隆（用户级 SSH 凭据 + 主机密钥信任记录），凭据/信任记录管理接口见 §九；
+> MAGNET / TORRENT 支持**停机续传 / 接管**与**做种保留（默认 7 天）**，列表项新增 `seeding` / `seedEndAt` 展示字段（见 §6.3、§6.6）。
 > **Git 代理 + SSH 克隆专项对接说明**（页面交互、配置面板 template 组件、联调用例）见
 > [`git-proxy-ssh-clone-frontend-guide.md`](./git-proxy-ssh-clone-frontend-guide.md)。
-> 本文档依据服务端代码静态整理，**未经端到端联调验证**；如与实测行为不一致，以实测为准并回馈后端。
+> 本文档依据服务端代码静态整理，**未经端到端联调验证**（续传 / 做种能力以 P5 验收报告
+> [`resume-seed-verification-report.md`](./resume-seed-verification-report.md) 为准）；如与实测行为不一致，以实测为准并回馈后端。
 > 接口基址、鉴权、响应信封等基础约定见 [`frontend-adaptation-checklist.md`](./frontend-adaptation-checklist.md)。
 
 ---
@@ -23,6 +25,8 @@
 | 8 | 用 SSH 地址做 Git 克隆时，先让用户选择**用户 SSH 凭据**，把凭据 id 放进请求体顶层 `sshCredentialId`（不是 `options`）；无凭据时引导新增（§九） | 用到 SSH 克隆时 |
 | 9 | 管理员端可增加「SSH 主机信任记录」管理（列表 + 删除），普通用户不可见（§九） | 建议 |
 | 10 | 实现后台配置面板 template 组件 `download-ssh-credential-manager`（「我的 SSH 凭据」+「SSH 主机信任记录」两个页签） | 使用后台管理面板时 |
+| 11 | 任务列表展示做种保留：读取列表项新增的 `seeding`（是否做种中）与 `seedEndAt`（做种到期时间，仅做种中非空） | 建议（P2P 下载） |
+| 12 | 任务可能在服务停机 / 接管时由「运行中」回到「等待中」（任务 id 不变），前端不要当作失败或重复创建（§6.6） | 建议 |
 
 > ⚠️ **不再兼容「只传 `url` / `uid` / `savePath`」的旧请求体**：`type` 现为必填，缺失会被 Bean Validation 拒绝（HTTP 422 + 信封 `code=422`）。自动选型请改用 §4.5 的 `detect-type` 接口，由前端把结果放进请求体。
 
@@ -66,6 +70,8 @@
 | `asyncTaskRecord.status`、任务 `status` | number |
 
 ⚠️ 不要用 `=== 0` 这类严格比较判断这些数值。
+
+列表新增的 `seeding` 是 **boolean**、`seedEndAt` 是**时间字符串**（ISO-8601，与 `createAt` / `finishAt` 同格式），二者都不是数值字段。
 
 ### 3.3 鉴权
 
@@ -503,8 +509,10 @@ async function readTorrentAsBase64(file) {
         "speed": "0",
         "status": 2,
         "taskId": "9988776655443322110",
-        "finishAt": "2026-10-26 12:00:00",
-        "createdAt": "2026-10-26 11:59:00",
+        "finishAt": "2026-10-26T12:00:00Z",
+        "createdAt": "2026-10-26T11:59:00Z",
+        "seeding": false,
+        "seedEndAt": null,
         "asyncTaskRecord": { "id": "9988776655443322110", "status": 2 }
       }
     ],
@@ -521,17 +529,21 @@ async function readTorrentAsBase64(file) {
 | `id` / `taskId` / `asyncTaskRecord.id` | 字符串形式的 id |
 | `type` | 下载类型编码（创建时提交的值）；升级前创建的历史记录该列为空，返回 `null` |
 | `name` | 任务展示名称：HTTP 运行中为探测到的文件名、完成后为保存到网盘的文件名；GIT 为保存的顶层目录名；MAGNET/TORRENT 为下载文件名摘要（1 个文件即文件名，2~3 个以 `、` 连接，超过 3 个为前 3 个 + `等...`），任务运行中即可有值 |
-| `status` | 状态镜像：`0` 等待、`1` 运行、`2` 完成、`3` 失败、`4` 取消、`5` 离线 |
+| `status` | 状态镜像：`0` 等待、`1` 运行、`2` 完成、`3` 失败、`4` 取消、`5` 离线；P2P 任务在服务停机 / 执行者失联时可能由 `1` 回到 `0`（等待接管），属正常流转（见 §6.6） |
 | `asyncTaskRecord.status` | 与 `status` 同源；列表接口会用 core 的实时状态校准非终态任务 |
 | `message` | 失败原因（成功时为空） |
 | `size` / `loaded` / `speed` | 总字节数 / 已下载字节数 / 速度（字符串） |
-| `finishAt` / `createdAt` | 时间字符串 |
+| `finishAt` / `createdAt` | 时间字符串（ISO-8601） |
+| `seeding` | boolean：是否处于做种保留中（做种中 / 清理中）。仅 MAGNET / TORRENT 任务可能为 `true`；运行中、未开启做种（`download.aria2.seed-time-minutes=0`）、已到期清理或非 P2P 任务均为 `false` |
+| `seedEndAt` | string \| null：做种到期时间（ISO-8601 时间字符串）；仅 `seeding=true` 时有值，到期清理后变回 `null` |
 
 ### 6.4 展示建议
 
 - 用 `type` 渲染类型标签（如 `HTTP`→链接图标、`GIT`→分支图标、`MAGNET`/`TORRENT`→磁铁图标、`ED2K`→驴图标）；`type` 为 `null` 的历史记录请给一个通用图标/「未知」标签；
 - `name` 可直接作为任务名称展示（为 `null` 时用「未知文件」等占位）；注意 **BT 多文件任务的 `name` 只是文件名摘要，不能拼成网盘路径**——需要定位保存结果时请用 `savePath` 列目录（网盘顶层目录名是种子信息名，与 `name` 不一定相同）；Git 仓库的 `name` 则是顶层目录名；
 - `status` 为 `3/4/5` 时展示 `message`（可能是 aria2/Git 的原始错误，内容较长）。
+- `seeding=true` 时可展示「做种中（保留至 `<seedEndAt>`）」标签；做种期间任务本身仍是已完成（`status=2`）。
+  到期清理后 `seeding` 变回 `false`、`seedEndAt` 为 `null`（下次列表查询生效），不需要额外请求。
 
 ### 6.5 保存结果的形态
 
@@ -544,6 +556,20 @@ async function readTorrentAsBase64(file) {
 
 > BT 多文件种子的任务名称（`name`）是下载文件名摘要，与网盘里实际生成的顶层目录名（种子信息名）并不相同，
 > 两者不要混用：展示任务用 `name`，定位文件用 `savePath`。
+
+### 6.6 停机续传 / 接管对前端的影响
+
+MAGNET / TORRENT 任务支持服务停机后续传、重启或跨实例接管（HTTP / GIT / ed2k 不支持续传）：
+
+- **任务 id 不变**：服务停机、执行者失联或跨实例迁移不会创建新任务，`id` / `taskId` 始终保持不变；
+- **状态可能回退**：运行中的 P2P 任务在服务优雅停机时回到「等待中（0）」，由其它实例（或重启后的实例）认领后继续，
+  前端按 `status` 正常展示即可，**不要当作失败、也不要重复创建任务**；
+- **进度可能回跳**：磁力链分「获取元数据 → 下载内容」两段，切换阶段时进度会重置（aria2 语义）；
+  跨实例接管后进度以 core 返回的快照为准；
+- **不消耗重试次数**：停机挂起 / 失联回收后由检查点接管的 P2P 任务不计入故障转移重试次数（不会因此被判定失败）；
+- **HTTP / GIT / ed2k**：服务停机时重新排队并从头下载，任务 id 同样不变；
+- **上传阶段可能重复**：极少数情况下（旧实例上传结果未知且超过等待窗口）接管实例会重新上传，网盘可能出现 `.1`
+  重名副本，属已知边界。
 
 ---
 
@@ -587,8 +613,8 @@ async function readTorrentAsBase64(file) {
 ## 九、SSH 凭据与主机信任记录管理
 
 Git 的 SSH 克隆需要**用户级 SSH 凭据**；SSH 主机密钥采用 **TOFU（首次信任）** 策略，管理员可维护信任记录。
-凭据与信任记录都存放在本服务 SQLite（`ssh_credential` / `ssh_host_key`），本服务**不读取宿主机 `~/.ssh`**
-（密钥、`known_hosts`、`config` 均不读取），SSH 认证完全由用户凭据驱动。
+凭据与信任记录都存放在本服务数据库（默认 SQLite，可切换 MySQL；`ssh_credential` / `ssh_host_key`），
+本服务**不读取宿主机 `~/.ssh`**（密钥、`known_hosts`、`config` 均不读取），SSH 认证完全由用户凭据驱动。
 
 ### 9.1 用户 SSH 凭据：`/ssh-credential`
 
@@ -821,7 +847,11 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
 - `Git 克隆失败: <原因>`
 - `SSH 凭据不存在或已被删除: {id}`（创建任务后、执行前凭据被删除）
 - `aria2 RPC 调用失败: <原因>` / `aria2 下载失败: <原因>`
+- `aria2 不可达，无法恢复 P2P 下载任务: <原因>`（停机接管时 aria2 不可达）
 - `aria2 下载超时: N 秒无进度（可能没有可用节点）`（统一配置 `download.aria2.stall-timeout=0` 时不会出现该错误）
+- `P2P 任务接管次数超过上限（50 次），已停止重试`（异常任务，避免无限接管）
+- `P2P 任务目录不存在，无法上传产物: <路径>` / `P2P 任务目录中没有可上传的文件: <路径>`
+- `InfoHash is already registered`（做种保留期内重复提交同一种子且无法复用文件）：稍后重试或等做种到期清理后再试
 - `下载失败: HTTP 404 Not Found`
 - `Git 克隆完成但未采集到任何文件: <repo>`
 - SSH 主机密钥与信任记录不一致时，克隆失败并给出可读提示（管理员在信任记录中删除旧记录后可重新信任）
@@ -839,12 +869,15 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
    microservices/sfc-download-service/src/main/resources/static/
    ```
    然后重启本服务（core 会通过注册中心 metadata `sfc.plugin.autoload` 重新拉取 `/static/index.umd.js`）。
-4. **配置面板包含 Git 与 aria2 运行参数**：管理员在 core 后台「插件配置 → 离线下载」中配置 Git 参数与 aria2 运行参数（开关 / 轮询间隔 / 无进度超时 / 种子体积上限），改完最长 5 秒生效；aria2 的 RPC 地址 / 令牌 / 共享目录仍为**部署期配置**（`sfc.download.aria2.*` / 环境变量），需在部署端设置并重启服务（见 §12.1）。
+4. **配置面板包含 Git 与 aria2 运行参数**：管理员在 core 后台「插件配置 → 离线下载」中配置 Git 参数与 aria2 运行参数（开关 / 轮询间隔 / 无进度超时 / 种子体积上限 / 做种保留时长），改完最长 5 秒生效；aria2 的 RPC 地址 / 令牌 / 共享目录仍为**部署期配置**（`sfc.download.aria2.*` / 环境变量），需在部署端设置并重启服务（见 §12.1）。
 5. **不要用 HTTP 状态码判断业务失败**：业务异常默认返回 **HTTP 200 + 信封 `code`**，只有请求体解析失败（HTTP 400）、参数校验失败（HTTP 422）与携带 `SfcErrorInfo` 的资源级权限异常（HTTP 403，如非创建者中断任务）会改写 HTTP 状态。请统一按 `body.code === 200` 判断成功、失败时展示 `body.msg`；这与宿主 `sfc-core` 的既有行为一致。
 6. **SSH 克隆与 GIT 代理为新增能力 / 行为变化**：
    - 新增顶层字段 `sshCredentialId`（仅 `GIT` + SSH 地址使用），不影响其它请求体；SSH 地址不提交该字段会被 `code=400` 拒绝；
    - `proxy` 对 `GIT` 由「忽略」改为「生效」：旧前端若对 GIT 任务传了代理，现在会真正走代理；需要直连时不要传 `proxy`；
    - `GET /ssh-credential`、`POST /ssh-credential`、`DELETE /ssh-credential` 为用户接口；`/ssh-host-key` 的查询与删除为管理员接口。
+7. **列表新增做种 / 续传相关展示字段（向后兼容）**：列表项新增 `seeding` / `seedEndAt`，P2P 任务可能因停机接管
+   在状态间正常流转。这些是纯响应字段 / 状态语义变化，**无请求体变化、无接口路径变化**；旧前端忽略
+   `seeding` / `seedEndAt` 即可正常工作。
 
 ---
 
@@ -857,7 +890,7 @@ SSH 首次连接未知主机时自动接受，并把主机密钥写入信任记�
 | `sfc-gateway` | 已启动；默认动态路由生效即可（无需为本服务加显式路由） |
 | `SFC_INTERNAL_KEY` | core 与本服务必须是同一份（≥32 字符），否则任务提交/状态校准/中断全部失败 |
 | 登录态 | 需要 `X-Sfc-Uid`（由网关注入） |
-| aria2（可选） | 未部署时 `MAGNET` / `TORRENT` 在 `/capabilities` 中显示不可用，**这是正常状态，不是缺陷** |
+| aria2（可选） | 未部署时 `MAGNET` / `TORRENT` 在 `/capabilities` 中显示不可用，**这是正常状态，不是缺陷**；P2P 任务停机续传 / 做种期内请保持 aria2 运行（不要随本服务一起停止） |
 
 ### 12.1 用 aria2 打开 P2P 能力
 
@@ -872,6 +905,7 @@ core 统一配置（后台「插件配置 → 离线下载 → aria2 P2P 下载�
 | `download.aria2.poll-interval` | `1000` | 进度轮询间隔（毫秒） |
 | `download.aria2.stall-timeout` | `300` | 无进度超时（秒）；`0` 表示不限 |
 | `download.aria2.torrent-max-size` | `2` | Base64 种子内容上限（MB） |
+| `download.aria2.seed-time-minutes` | `10080` | 做种保留时长（分钟）；`0` = 不做种（完成即清理本地文件）。仅对**新任务**生效，进行中任务沿用提交时的快照 |
 
 部署期配置（修改后需**重启本服务**）：
 
@@ -898,7 +932,7 @@ aria2c --enable-rpc --rpc-listen-all=false --rpc-listen-port=6800 --rpc-secret=<
 aria2c --enable-rpc --rpc-listen-all=true --rpc-listen-port=6800 --rpc-secret=<令牌>
 ```
 
-部署配置（RPC/令牌/共享目录）修改后**重启本服务**生效；统一配置（Git 与 aria2 运行参数）改完最长 5 秒生效。
+部署配置（RPC/令牌/共享目录）修改后**重启本服务**生效；统一配置（Git 与 aria2 运行参数，含做种保留时长）改完最长 5 秒生效。
 `GET /capabilities?refresh=true` 会刷新统一配置快照，aria2 连通性探测结果按
 `sfc.download.capability.cache-seconds`（默认 30 秒）缓存。前端调用 `GET /capabilities`、按 `available` 展示
 不可用原因即可，无需关心部署细节。
@@ -940,6 +974,24 @@ A：本服务对 SSH 主机密钥采用 TOFU（首次连接自动信任并记录
 **Q：Git 任务传了 `proxy` 为什么没生效 / 现在反而生效了？**
 A：`proxy` 对 `GIT` 已生效（HTTP(S) 克隆与 SSH 克隆均支持 HTTP 代理与 SOCKS（SOCKS5）代理，地址在创建时快照）；
 `git://` 地址不支持代理，带代理创建会返回 `code=400`。
+
+**Q：任务为什么从「运行中」变回「等待中」？**
+A：P2P（磁力 / 种子）任务在服务停机或执行者失联时会先保存检查点并回到等待中，由其它实例（或重启后的实例）认领后
+继续执行，任务 `id` 不变、进度以 core 返回为准。这是正常的停机续传 / 接管流程，前端不要当作失败，也不要重复创建任务（§6.6）。
+
+**Q：列表里的 `seeding` / `seedEndAt` 是什么？**
+A：做种保留相关字段。`seeding=true` 表示下载完成后正在做种（默认保留 7 天，由 core 统一配置
+`download.aria2.seed-time-minutes` 控制，`0` 表示不做种）；`seedEndAt` 是到期时间。做种期间任务仍是已完成（`status=2`），
+到期清理后这两个字段变回 `false` / `null`，网盘中的副本保留。
+
+**Q：下载完成后为什么任务目录还占磁盘？**
+A：做种保留期间会保留本地文件继续做种（默认 7 天），到期后自动停止做种并删除本地目录；不需要做种时可由管理员把
+`download.aria2.seed-time-minutes` 设为 `0`（对之后的新任务生效）。本地目录对前端不可见，网盘副本始终保留。
+
+**Q：同一个磁力链 / 种子提交两次会重复下载吗？**
+A：不会。做种保留期内提交相同 infohash（磁力链）或相同种子内容（`torrentBase64` 的 SHA-256 匹配）时，
+服务直接复用做种目录中的文件上传，不再重复下载；复用不会延长原做种到期时间。仅提供 `.torrent` URL 而未携带
+`torrentBase64` 的种子任务无法计算指纹，不具备复用能力。
 
 **Q：接口返回 HTTP 200，但前端提示失败了 / 该怎么判断成功？**
 A：本服务的业务失败默认返回 **HTTP 200 + 信封 `code`**（如 `code=400/401/404`），错误码不在 HTTP 状态里。
