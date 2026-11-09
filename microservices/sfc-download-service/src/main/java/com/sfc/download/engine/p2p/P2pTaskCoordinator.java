@@ -8,6 +8,7 @@ import com.sfc.download.config.SfcDownloadInternalProperties;
 import com.sfc.download.constant.DownloadTaskConstants;
 import com.sfc.download.engine.DownloadArtifact;
 import com.sfc.download.engine.DownloadContext;
+import com.sfc.download.engine.DownloadType;
 import com.sfc.download.util.DownloadFileUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -128,13 +129,16 @@ public class P2pTaskCoordinator {
     /**
      * 新建 P2P 下载并完成到「产物可上传」阶段。
      *
-     * <p>提交前先查询做种 SPI 是否可复用现有文件：命中则不提交 aria2，直接把检查点置为
-     * {@code DOWNLOADED} 并读取做种目录中的产物（任务日志说明「复用做种中的文件，无需重新下载」）。</p>
+     * <p>提交前先确保种子内容可用（URL 形式的 TORRENT 先拉取并回填 {@code torrentBase64}），再查询做种 SPI
+     * 是否可复用现有文件：命中则不提交 aria2，直接把检查点置为 {@code DOWNLOADED} 并读取做种目录中的产物
+     * （任务日志说明「复用做种中的文件，无需重新下载」）；未命中则正常提交，种子内容已回填可供做种登记计算
+     * 指纹。</p>
      *
      * @param context 执行上下文
      * @return 检查点与产物
      */
     public P2pTaskResult start(DownloadContext context) {
+        prepareTorrentContent(context, true);
         Optional<P2pSeedReuseTarget> reusable = findReusable(context);
         if (reusable.isPresent()) {
             P2pTaskResult reused = tryReuse(context, reusable.get());
@@ -193,6 +197,9 @@ public class P2pTaskCoordinator {
             return downloadWithNewSession(context, fresh);
         }
         context.useTempDir(localDir);
+        // 接管时同样先确保种子内容可用：后续 DOWNLOADED 阶段补登记做种需要 torrent_sha256（同种子复用键）。
+        // 已下载的数据不能因种子 URL 暂不可达而失败，因此这里降级处理。
+        prepareTorrentContent(context, false);
         log.info("{}接管 P2P 任务: downloadId={}, phase={}, resumeCount={}, localDir={}, gids={}",
                 LOG_PREFIX, context.getDownloadId(), state.getPhase(), resumeCount, localDir, state.getGids());
         context.log("接管既有 P2P 任务: phase=" + state.getPhase()
@@ -437,6 +444,9 @@ public class P2pTaskCoordinator {
         syncSession(context, state, session);
         state.setPhase(P2pTaskState.Phase.DOWNLOADED);
         saveCheckpoint(context, state);
+        // 下载完成后再兜底确保一次种子内容（接管时首次拉取失败/未触发时，做种登记仍需 torrent_sha256）；
+        // 已回填时 ensure 直接返回，不产生额外网络请求
+        prepareTorrentContent(context, false);
         registerSeeding(context, state, artifacts);
         saveCheckpoint(context, state);
         return new P2pTaskResult(state, artifacts);
@@ -534,6 +544,42 @@ public class P2pTaskCoordinator {
                     LOG_PREFIX, context.getDownloadId(), state.getSeedTaskId(), state.getSeedEndAt());
         } else {
             context.log("未启用做种保留（或做种 SPI 不可用），下载完成后将清理本地文件");
+        }
+    }
+
+    /**
+     * 预取 URL 形式种子的内容（回填 {@link com.sfc.download.model.DownloadTaskParams#torrentBase64}）。
+     *
+     * <p>只对 TORRENT 生效；MAGNET 无需种子内容。回填后同种子复用查询（{@code torrent_sha256}）与做种登记
+     * 指纹都有内容可用。客户端直传 Base64 的场景由引擎侧直接跳过、不会重复拉取。</p>
+     *
+     * <p>拉取失败时的语义由 {@code fatal} 控制：<b>新建任务</b>必须失败（没有种子内容无法提交 aria2）；
+     * <b>接管任务</b>尽量降级（已下载的数据不应因种子 URL 暂不可达而被清理/失败，最多缺失
+     * {@code torrent_sha256} 复用键）。</p>
+     *
+     * @param context 执行上下文
+     * @param fatal   拉取失败时是否向上抛出异常
+     * @throws SfcJsonException {@code fatal=true} 且种子地址为空、拉取失败、内容为空或超过体积上限时抛出
+     */
+    private void prepareTorrentContent(DownloadContext context, boolean fatal) {
+        if (context.getParams().type != DownloadType.TORRENT) {
+            return;
+        }
+        boolean alreadyAvailable = SfcStringUtils.hasText(context.getParams().torrentBase64);
+        try {
+            aria2Engine.ensureTorrentBase64(context);
+        } catch (RuntimeException e) {
+            if (fatal) {
+                throw e;
+            }
+            log.warn("{}获取种子文件内容失败，本次接管降级继续（做种指纹可能缺失）: downloadId={}, cause={}",
+                    LOG_PREFIX, context.getDownloadId(), describe(e));
+            context.log("获取种子文件内容失败，降级继续: " + describe(e));
+            return;
+        }
+        if (!alreadyAvailable && SfcStringUtils.hasText(context.getParams().torrentBase64)) {
+            log.info("{}已获取种子文件内容（用于同种子复用匹配与做种指纹）: downloadId={}",
+                    LOG_PREFIX, context.getDownloadId());
         }
     }
 

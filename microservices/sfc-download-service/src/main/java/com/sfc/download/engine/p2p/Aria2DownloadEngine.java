@@ -120,6 +120,9 @@ public class Aria2DownloadEngine implements DownloadEngine {
             "errorMessage",
             "files",
             "bittorrent",
+            // torrent infohash 是 tellStatus 的顶层字段（bittorrent 对象里通常没有 infoHash）；
+            // 用于检查点记录与做种登记的复用匹配，缺失会导致同种子无法复用。
+            "infoHash",
             // 做种判定：配置 seed-time>0 时，下载完成后 aria2 的任务仍是 active，但 seeder=true
             // （内容已完整、正在做种），必须据此提前判定「下载完成」，否则要等到做种结束才拿到 complete。
             "seeder",
@@ -508,7 +511,12 @@ public class Aria2DownloadEngine implements DownloadEngine {
         // 跨容器部署时排障最关键的信息就是这层映射，执行开始即输出一次到任务日志
         context.log("aria2 下载目录映射: " + aria2Workspace.describeMapping());
 
-        String gid = submit(context, params, options, aria2Config);
+        String gid;
+        try {
+            gid = submit(context, params, options, aria2Config);
+        } catch (Aria2RpcException e) {
+            throw translateSubmitFailure(context, e);
+        }
         Aria2TaskSession session = new Aria2TaskSession(gid);
         context.log("已提交 aria2 下载任务: gid=" + gid);
         log.info("{}aria2 任务已提交: downloadId={}, gid={}, type={}, aria2Dir={}, localDir={}",
@@ -517,6 +525,40 @@ public class Aria2DownloadEngine implements DownloadEngine {
         // 而不是只移除最初提交的那个元数据 gid
         context.registerCanceller(() -> session.gids().forEach(aria2Client::forceRemove));
         return session;
+    }
+
+    /**
+     * 确保 TORRENT 任务参数中的 {@code torrentBase64} 已就绪（URL 形式种子先拉取并回填）。
+     *
+     * <p><b>解决的问题：</b>用 {@code .torrent} URL 创建种子任务时任务参数里没有种子内容，导致：</p>
+     * <ul>
+     *   <li>做种登记算不出 {@code torrent_sha256}，以后同种子无法复用；</li>
+     *   <li>提交前的「同种子复用查询」也没有可匹配的种子内容。</li>
+     * </ul>
+     * <p>本方法在复用查询之前把种子内容拉取并回填到 {@link DownloadTaskParams#torrentBase64}：命中复用则
+     * 不提交 aria2；未命中则正常提交（{@code submit} 看到已回填内容不再二次拉取），且做种登记可以使用该
+     * 内容计算指纹。已带内容（客户端直传 Base64）时直接返回。</p>
+     *
+     * <p><b>任务目录：</b>拉取过程中的临时 {@code .torrent} 文件写入 JVM 临时工作区（
+     * {@link DownloadFileUtils#getTempDir()}）而不是任务目录——复用命中时任务目录要切换为做种目录，
+     * 不能在此之前创建默认任务目录。</p>
+     *
+     * @param context 执行上下文
+     * @throws SfcJsonException 种子地址为空、拉取失败、内容为空、超过体积上限或临时目录不可用时抛出
+     */
+    public void ensureTorrentBase64(DownloadContext context) {
+        DownloadTaskParams params = context.getParams();
+        if (params.type != DownloadType.TORRENT || SfcStringUtils.hasText(params.torrentBase64)) {
+            return;
+        }
+        Path tempRoot;
+        try {
+            tempRoot = DownloadFileUtils.getTempDir();
+        } catch (IOException e) {
+            throw new SfcJsonException(500, "创建种子文件临时目录失败: " + describe(e));
+        }
+        params.torrentBase64 = fetchTorrentBase64(context, params.url, configService.getAria2(), tempRoot);
+        context.log("种子文件内容已就绪（用于同种子复用匹配与做种指纹）");
     }
 
     /**
@@ -665,12 +707,30 @@ public class Aria2DownloadEngine implements DownloadEngine {
     }
 
     /**
-     * 按 URL 拉取 {@code .torrent} 文件内容并编码为 Base64。
+     * 转换提交阶段 aria2 协议错误为可读的业务异常（目前只处理 infohash 重复注册）。
      *
-     * <p>响应体流式写入任务临时目录下的临时文件，写入过程中强制
-     * {@code download.aria2.torrent-max-size}（core 统一配置）上限；校验通过后读取文件内容并编码为
-     * Base64，临时文件在方法返回前删除。代理取自任务参数的代理快照（HTTP / SOCKS 均支持），
-     * 未配置代理时直连。</p>
+     * <p>同一 infohash 已在 aria2 中注册（通常是另一任务正在做种保留）时，aria2 返回
+     * {@code InfoHash ... is already registered}；这里映射为 409 业务异常并给出可操作提示，
+     * 避免原始协议错误直接暴露给用户。</p>
+     *
+     * @param context 执行上下文（用于写任务日志）
+     * @param e       提交阶段捕获的 aria2 RPC 异常
+     * @return 可直接抛出的异常（未命中特殊错误时原样返回 {@code e}）
+     */
+    private static RuntimeException translateSubmitFailure(DownloadContext context, Aria2RpcException e) {
+        String message = e.getMessage() == null ? "" : e.getMessage().toLowerCase(Locale.ROOT);
+        if (message.contains("infohash") && message.contains("already registered")) {
+            log.warn("{}提交种子失败（aria2 已注册相同 infohash）: downloadId={}, cause={}",
+                    LOG_PREFIX, context.getDownloadId(), e.getMessage());
+            context.log("该种子正在做种保留中（aria2 已注册相同 infohash），本次提交被拒绝");
+            return new SfcJsonException(409,
+                    "该种子正在做种保留中（aria2 已注册相同 infohash），请稍后重试或等待做种保留到期");
+        }
+        return e;
+    }
+
+    /**
+     * 按 URL 拉取 {@code .torrent} 文件内容并编码为 Base64（临时文件写入任务目录）。
      *
      * @param context     执行上下文
      * @param url         种子文件地址
@@ -679,6 +739,26 @@ public class Aria2DownloadEngine implements DownloadEngine {
      * @throws SfcJsonException 地址为空、拉取失败、内容为空、超过体积上限或临时文件读写失败时抛出
      */
     private String fetchTorrentBase64(DownloadContext context, String url, Aria2Property aria2Config) {
+        return fetchTorrentBase64(context, url, aria2Config, context.getTempDir());
+    }
+
+    /**
+     * 按 URL 拉取 {@code .torrent} 文件内容并编码为 Base64。
+     *
+     * <p>响应体流式写入指定临时目录下的临时文件，写入过程中强制
+     * {@code download.aria2.torrent-max-size}（core 统一配置）上限；校验通过后读取文件内容并编码为
+     * Base64，临时文件在方法返回前删除。代理取自任务参数的代理快照（HTTP / SOCKS 均支持），
+     * 未配置代理时直连。</p>
+     *
+     * @param context     执行上下文
+     * @param url         种子文件地址
+     * @param aria2Config 本次任务使用的 aria2 运行参数快照（提供种子体积上限）
+     * @param tempDir     临时 {@code .torrent} 文件写入目录（必须已存在）
+     * @return 种子内容的 Base64 编码
+     * @throws SfcJsonException 地址为空、拉取失败、内容为空、超过体积上限或临时文件读写失败时抛出
+     */
+    private String fetchTorrentBase64(DownloadContext context, String url, Aria2Property aria2Config,
+                                      Path tempDir) {
         if (!SfcStringUtils.hasText(url)) {
             throw new SfcJsonException(400, "种子下载需要 .torrent 文件地址或种子文件内容（torrentBase64）");
         }
@@ -692,7 +772,7 @@ public class Aria2DownloadEngine implements DownloadEngine {
         long maxBytes = maxTorrentBytes(aria2Config);
         Path torrentFile;
         try {
-            torrentFile = Files.createTempFile(context.getTempDir(), TORRENT_TEMP_FILE_PREFIX, TORRENT_SUFFIX);
+            torrentFile = Files.createTempFile(tempDir, TORRENT_TEMP_FILE_PREFIX, TORRENT_SUFFIX);
         } catch (IOException e) {
             throw new SfcJsonException(500, "创建种子文件临时文件失败: " + describe(e));
         }
@@ -1126,14 +1206,21 @@ public class Aria2DownloadEngine implements DownloadEngine {
     /**
      * 从 aria2 状态快照中提取 torrent infohash 并写入会话。
      *
+     * <p>优先读取 tellStatus 的<b>顶层</b> {@code infoHash} 字段（aria2 的标准返回位置，
+     * 真实联调环境中 {@code bittorrent} 对象通常不含 infoHash）；兼容回退到
+     * {@code bittorrent.infoHash}。都为空时保持会话原值。</p>
+     *
      * @param session 本次任务会话
      * @param status  aria2 状态快照，允许为 {@code null}
      */
     private static void applyInfohash(Aria2TaskSession session, Map<String, Object> status) {
-        if (status == null || !(status.get("bittorrent") instanceof Map<?, ?> bittorrent)) {
+        if (status == null) {
             return;
         }
-        String infohash = text(bittorrent.get("infoHash"));
+        String infohash = text(status.get("infoHash"));
+        if (!SfcStringUtils.hasText(infohash) && status.get("bittorrent") instanceof Map<?, ?> bittorrent) {
+            infohash = text(bittorrent.get("infoHash"));
+        }
         if (SfcStringUtils.hasText(infohash)) {
             session.updateInfohash(infohash.trim().toLowerCase(Locale.ROOT));
         }

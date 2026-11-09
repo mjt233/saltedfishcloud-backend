@@ -3,6 +3,7 @@ package com.sfc.download.engine.p2p;
 import com.sfc.cloud.task.worker.SfcTaskDetachedException;
 import com.sfc.cloud.task.worker.SfcTaskExecution;
 import com.sfc.cloud.task.worker.SfcTaskProgress;
+import com.sfc.common.exception.SfcJsonException;
 import com.sfc.download.config.Aria2Properties;
 import com.sfc.download.config.SfcDownloadConfigService;
 import com.sfc.download.config.SfcDownloadInternalProperties;
@@ -10,16 +11,27 @@ import com.sfc.download.engine.DownloadContext;
 import com.sfc.download.engine.DownloadType;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.model.property.Aria2Property;
+import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -79,6 +91,12 @@ class Aria2DownloadEngineSessionTest {
      * 被测任务参数。
      */
     private DownloadTaskParams params;
+
+    /**
+     * 测试用临时目录（任务目录）。
+     */
+    @TempDir
+    Path tempRoot;
 
     /**
      * 初始化引擎与执行上下文桩。
@@ -225,6 +243,77 @@ class Aria2DownloadEngineSessionTest {
     }
 
     /**
+     * infohash 从 tellStatus 顶层 {@code infoHash} 字段提取（真实 aria2 返回位置；bittorrent 对象里没有）。
+     */
+    @Test
+    void shouldExtractTopLevelInfoHash() {
+        String infohash = "08ADA5A7A6183AAE1E09D831DF6748D566095A10";
+        when(aria2Client.tellStatus(eq("g1"), any())).thenReturn(Map.of(
+                "status", "complete",
+                "totalLength", "10",
+                "infoHash", infohash,
+                "bittorrent", Map.of("info", Map.of("name", "test")),
+                "files", List.of(Map.of("path", "/tmp/x/a.bin", "length", "10"))));
+        DownloadContext context = new DownloadContext(execution, params);
+        Aria2TaskSession session = new Aria2TaskSession("g1");
+
+        engine.awaitCompletion(context, session, null);
+
+        assertEquals(infohash.toLowerCase(), session.infohash());
+    }
+
+    /**
+     * URL 形式的种子任务：{@link Aria2DownloadEngine#ensureTorrentBase64(DownloadContext)} 拉取并回填
+     * {@code torrentBase64}，且已回填后不重复拉取。
+     *
+     * @throws IOException 启动本地 HTTP 服务失败
+     */
+    @Test
+    void shouldBackfillTorrentBase64ForUrlTorrent() throws IOException {
+        byte[] torrentBytes = "d4:infod4:name4:testee".getBytes(StandardCharsets.UTF_8);
+        AtomicInteger hits = new AtomicInteger();
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/a.torrent", exchange -> {
+            hits.incrementAndGet();
+            exchange.sendResponseHeaders(200, torrentBytes.length);
+            try (OutputStream out = exchange.getResponseBody()) {
+                out.write(torrentBytes);
+            }
+        });
+        server.start();
+        try {
+            params.type = DownloadType.TORRENT;
+            params.url = "http://127.0.0.1:" + server.getAddress().getPort() + "/a.torrent";
+            DownloadContext context = new DownloadContext(execution, params);
+
+            engine.ensureTorrentBase64(context);
+            engine.ensureTorrentBase64(context);
+
+            assertArrayEquals(torrentBytes, Base64.getDecoder().decode(params.torrentBase64));
+            assertEquals(1, hits.get(), "已回填种子内容后不应重复拉取");
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    /**
+     * 提交阶段 aria2 报 infohash 重复注册时，转换为 409 可读业务异常。
+     */
+    @Test
+    void shouldTranslateDuplicateInfoHashAsConflict() {
+        params.type = DownloadType.MAGNET;
+        params.url = "magnet:?xt=urn:btih:08ada5a7a6183aae1e09d831df6748d566095a10";
+        when(aria2Client.addUri(any(), any()))
+                .thenThrow(new Aria2RpcException(1, "InfoHash 08ada5a7a6183aae1e09d831df6748d566095a10 is already registered"));
+
+        SfcJsonException exception = assertThrows(SfcJsonException.class,
+                () -> engine.submitSession(newContext()));
+
+        assertEquals(409, exception.getRes().getCode());
+        assertTrue(exception.getMessage().contains("做种保留中"));
+    }
+
+    /**
      * 检测到挂起请求时抛 {@link SfcTaskDetachedException}，且不再向 aria2 发轮询请求。
      */
     @Test
@@ -263,5 +352,20 @@ class Aria2DownloadEngineSessionTest {
         assertEquals("g1", session.primaryGid());
         assertEquals(List.of("g1", "g2"), List.copyOf(session.gids()));
         assertFalse(session.gids().isEmpty());
+    }
+
+    /**
+     * 构造带真实任务目录的执行上下文（用于需要 {@code getTempDir()} 的提交类测试）。
+     *
+     * @return 执行上下文
+     */
+    private DownloadContext newContext() {
+        return new DownloadContext(execution, params, null, taskFlag -> {
+            try {
+                return Files.createDirectories(tempRoot.resolve("task-" + taskFlag));
+            } catch (IOException e) {
+                throw new IllegalStateException(e);
+            }
+        });
     }
 }

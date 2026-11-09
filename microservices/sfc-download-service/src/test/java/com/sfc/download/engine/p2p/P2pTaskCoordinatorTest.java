@@ -4,6 +4,7 @@ import com.sfc.cloud.task.worker.SfcTaskDetachedException;
 import com.sfc.cloud.task.worker.SfcTaskExecution;
 import com.sfc.cloud.task.worker.SfcTaskProgress;
 import com.sfc.common.exception.SfcJsonException;
+import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.download.config.SfcDownloadInternalProperties;
 import com.sfc.download.engine.DownloadArtifact;
 import com.sfc.download.engine.DownloadContext;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.ObjectProvider;
@@ -41,6 +43,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -264,6 +267,69 @@ class P2pTaskCoordinatorTest {
         assertEquals(P2pTaskState.Phase.DOWNLOADED, result.state().getPhase());
         assertTrue(result.state().isSeeding(), "做种中的 aria2 任务也必须完成做种登记");
         assertEquals(66L, lastCheckpoint().getSeedTaskId());
+    }
+
+    /**
+     * URL 形式种子（P5-D02）：复用查询之前必须先把种子内容拉取并回填到任务参数，否则
+     * {@code torrent_sha256} 复用键恒为空、同种子复用永远不生效。
+     *
+     * @throws IOException 创建做种目录失败
+     */
+    @Test
+    void shouldEnsureTorrentContentBeforeReuseLookup() throws IOException {
+        params.type = DownloadType.TORRENT;
+        params.url = "https://example.com/a.torrent";
+        params.torrentBase64 = null;
+        Path seedDir = Files.createDirectory(tempRoot.resolve("torrent-seed-dir"));
+        Files.writeString(seedDir.resolve("movie.mp4"), "data");
+        doAnswer(invocation -> {
+            DownloadContext context = invocation.getArgument(0);
+            context.getParams().torrentBase64 = "c29tZS10b3JyZW50";
+            return null;
+        }).when(aria2Engine).ensureTorrentBase64(any());
+        when(seedRegistrar.findReusable(any())).thenAnswer(invocation -> {
+            assertTrue(SfcStringUtils.hasText(params.torrentBase64), "复用查询前必须已回填种子内容");
+            return Optional.of(new P2pSeedReuseTarget(9L, 8L, "content-gid", "/downloads/seed",
+                    seedDir.toString(), new Date(System.currentTimeMillis() + 60_000L)));
+        });
+
+        P2pTaskCoordinator.P2pTaskResult result = coordinator.start(newContext());
+
+        assertEquals(1, result.artifacts().size());
+        assertTrue(result.state().isSeeding());
+        verify(aria2Engine, never()).submitSession(any());
+        InOrder inOrder = inOrder(aria2Engine, seedRegistrar);
+        inOrder.verify(aria2Engine).ensureTorrentBase64(any());
+        inOrder.verify(seedRegistrar).findReusable(any());
+    }
+
+    /**
+     * 接管恢复（DOWNLOADED 阶段）时同样回填种子内容，保证补登记做种能算出 {@code torrent_sha256}。
+     *
+     * @throws IOException 创建任务目录失败
+     */
+    @Test
+    void shouldEnsureTorrentContentOnResume() throws IOException {
+        params.type = DownloadType.TORRENT;
+        params.url = "https://example.com/a.torrent";
+        params.torrentBase64 = null;
+        Path taskDir = createTaskDir("100");
+        Files.writeString(taskDir.resolve("data.bin"), "x");
+        P2pTaskState state = state(P2pTaskState.Phase.DOWNLOADED, taskDir, List.of("g1"));
+        doAnswer(invocation -> {
+            DownloadContext context = invocation.getArgument(0);
+            context.getParams().torrentBase64 = "c29tZS10b3JyZW50";
+            return null;
+        }).when(aria2Engine).ensureTorrentBase64(any());
+        when(seedRegistrar.register(any(), any(), any())).thenAnswer(invocation -> {
+            assertTrue(SfcStringUtils.hasText(params.torrentBase64), "登记做种前必须已回填种子内容");
+            return false;
+        });
+
+        coordinator.resume(state, newContext());
+
+        verify(aria2Engine).ensureTorrentBase64(any());
+        verify(seedRegistrar).register(any(), any(), any());
     }
 
     /**
