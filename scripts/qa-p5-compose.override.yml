@@ -1,0 +1,88 @@
+# ============================================================================
+# P5 联调专用 docker compose override（配合仓库根 docker-compose-microservice-full.yml）
+#
+# 用途：
+#   1) 用「主机构建的最新 jar」以只读卷覆盖镜像内 jar —— 无需重建 6 分钟的镜像，
+#      同时保留容器的 SIGTERM 语义（优雅停机 / detach 用例必须依赖它）；
+#   2) 暴露固定的测试端口到宿主机，便于 PowerShell 脚本直接发 HTTP / JSON-RPC；
+#   3) 把 MySQL / 下载共享目录 / aria2 配置与下载目录指向独立 QA_DATA，避免污染仓库内 data/。
+#
+# 用法（在仓库根目录执行，由 scripts/aria2-resume-seed-e2e.ps1 自动完成）：
+#   $env:QA_DATA          = "$env:TEMP\sfc-p5-20261109"       # QA 运行数据根目录
+#   $env:QA_CORE_JAR      = (Resolve-Path release/sfc-core.jar).Path
+#   $env:QA_DOWNLOAD_JAR  = (Resolve-Path microservices/sfc-download-service/target/sfc-download-service-*.jar).Path
+#   $env:ARIA2_RPC_SECRET = "sfc-p5-secret"                   # 与脚本写入的 aria2.conf 保持一致
+#   docker compose -f docker-compose-microservice-full.yml `
+#                  -f scripts/qa-p5-compose.override.yml `
+#                  up -d mysql redis nacos sfc-core sfc-download-service aria2
+#
+# ⚠️ 注意：
+#   - 使用默认 compose 项目名（与仓库根目录同名），因为基础文件里写死了 container_name；
+#     若改项目名会与基础文件中的容器名冲突；
+#   - 端口 16800 是 aria2 RPC（本机 6800 已被一个原生 aria2c 实例占用，勿用 6800）；
+#   - QA_DATA 下的 aria2-config/aria2.conf 由联调脚本预生成（rpc-secret=ARIA2_RPC_SECRET），
+#     不依赖 p3terx 镜像首启时从 GitHub 拉取配置（本机容器访问 GitHub 偶发超时）。
+#   - 仅测试环境使用；生产部署请直接使用 docker-compose-microservice-full.yml。
+# ============================================================================
+services:
+  mysql:
+    # 独立容器名 + 独立数据目录：验收从空库开始（core 首次启动自动建表 + 初始化默认管理员 admin/admin666），
+    # 并与开发环境可能存在的默认命名容器（<project>-mysql-1）互不冲突
+    container_name: sfc-p5-mysql
+    volumes:
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/mysql:/var/lib/mysql
+
+  redis:
+    # 独立容器名，便于 Teardown 时精确清理
+    container_name: sfc-p5-redis
+
+  sfc-core:
+    # 暴露到宿主机：脚本用 admin Cookie 调配置/任务/文件接口
+    ports:
+      - "18087:8087"
+    volumes:
+      # 覆盖镜像内 jar（fat jar 内含本轮 P1~P4 全部改动）
+      - ${QA_CORE_JAR:?请先设置 QA_CORE_JAR 环境变量}:/saltedfish/sfc-core.jar:ro
+      # 独立 store，避免污染仓库 data/core/store
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/core/store:/saltedfish/store
+    environment:
+      # ⚠️ 测试栈改用 core 内置 local 注册中心（绕过 Nacos 鉴权/管理员初始化问题）：
+      #    core 作为 local registry 服务端（8087），下载服务作为客户端注册到 sfc-core:8087。
+      SFC_LOCAL_ENABLED: "true"
+      NACOS_ENABLED: "false"
+      SFC_LOCAL_REGISTRY_PASSWORD: "sfc-p5-local-registry"
+
+  sfc-download-service:
+    ports:
+      # 脚本直接对下载服务端口发请求（身份用 X-Sfc-Uid 信任头模拟网关）
+      - "18092:8092"
+    volumes:
+      # 覆盖镜像内 jar（本轮 P2/P3/P4 改动都在这个 fat jar 里）
+      - ${QA_DOWNLOAD_JAR:?请先设置 QA_DOWNLOAD_JAR 环境变量}:/app/app.jar:ro
+      # 独立 SQLite 库文件（默认 SQLite 模式；MySQL 模式见环境变量注释）
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/download:/data
+      # 与 aria2 容器共享的下载目录（本服务侧路径 /shared/download）
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/shared:/shared/download
+    environment:
+      # 改用 core 内置 local 注册中心（与 core 同密码），不再依赖 Nacos 鉴权
+      SFC_LOCAL_ENABLED: "true"
+      NACOS_ENABLED: "false"
+      SFC_LOCAL_REGISTRY_ADDR: "sfc-core:8087"
+      SFC_LOCAL_REGISTRY_PASSWORD: "sfc-p5-local-registry"
+      # 做种清理扫描间隔（毫秒）：测试缩短到 10s，便于观察 SeedTaskKeeper 到期清理
+      SFC_DOWNLOAD_SEED_CHECK_INTERVAL_MILLIS: "10000"
+      # aria2 孤儿任务对账周期（毫秒）：测试缩短到 15s；同时给出两种 Spring 宽松绑定写法，避免命中差异
+      SFC_DOWNLOAD_ARIA2_RECONCILE_INTERVAL_MILLIS: "15000"
+      SFC_DOWNLOAD_ARIA2_RECONCILEINTERVALMILLIS: "15000"
+
+  aria2:
+    ports:
+      # RPC：脚本直接查询/操作 aria2（观察 gid、做种状态、清理结果）
+      - "16800:6800"
+      # BT 端口（便于验证做种；p3terx 镜像默认 6888 tcp/udp）
+      - "16888:6888"
+    volumes:
+      # 预生成的 aria2.conf（rpc-secret 与 ARIA2_RPC_SECRET 一致）
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/aria2-config:/config
+      # 与下载服务共享的下载目录（aria2 侧路径 /downloads）
+      - ${QA_DATA:?请先设置 QA_DATA 环境变量}/shared:/downloads

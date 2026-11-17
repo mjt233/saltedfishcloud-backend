@@ -95,6 +95,21 @@ public interface AsyncTaskRecordRepo extends SfcBaseRepo<AsyncTaskRecord> {
     int abandonAndRequeue(@Param("taskId") Long taskId, @Param("maxRetry") int maxRetry);
 
     /**
+     * 放弃任务执行权但不消耗故障转移重试次数：把执行中的任务重置回等待中状态，<b>不累加 retryCount</b>。
+     * <p>用于「可挂起任务」的停机挂起与失联回收：这类任务已通过检查点保存了现场（例如外部下载器仍在工作），
+     * 换执行者接管属于正常流转而非故障重试；若消耗 retryCount，长任务会在服务重启数次后被误判失败。
+     * 接管预算由任务实现写在检查点内部（如 resumeCount）自行控制。</p>
+     *
+     * @param taskId 任务id
+     * @return 受影响行数，大于0表示重置成功
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE AsyncTaskRecord SET status = 0, claimedService = NULL, claimedWorker = NULL, claimedRole = NULL, "
+            + "claimedAt = NULL, lastReportAt = NULL WHERE id = :taskId AND status = 1")
+    int requeueDetached(@Param("taskId") Long taskId);
+
+    /**
      * 把执行中但已超过最大重试次数的任务标记为失败。
      *
      * @param taskId   任务id

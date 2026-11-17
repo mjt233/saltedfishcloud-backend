@@ -1,6 +1,7 @@
 package com.sfc.cloud.task.worker;
 
 import com.sfc.cloud.task.worker.protocol.TaskAbandonParam;
+import com.sfc.cloud.task.worker.protocol.TaskCheckpointSaveParam;
 import com.sfc.cloud.task.worker.protocol.TaskFinishReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskLogReportParam;
 import com.sfc.cloud.task.worker.protocol.TaskProgressReportParam;
@@ -111,13 +112,15 @@ class SfcTaskReporter {
     }
 
     /**
-     * 执行一次周期上报：刷新全部运行中任务的进度并批量上报日志。
+     * 执行一次周期上报：刷新全部运行中任务的进度并批量上报日志；检查点若存在待补发内容则先补发。
      */
     void tick() {
         Set<Long> activeTaskIds = new HashSet<>();
         for (SfcTaskExecution execution : registry.getRunningExecutions()) {
             activeTaskIds.add(execution.getTaskId());
             try {
+                // 先补发同步保存失败的检查点，保证任务被接手前 core 已拿到最新现场
+                flushPendingCheckpoint(execution);
                 reportExecution(execution);
             } catch (Throwable e) {
                 log.warn("{}任务[{}]进度/日志上报失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
@@ -205,27 +208,100 @@ class SfcTaskReporter {
     }
 
     /**
-     * 上报放弃任务执行权（任务会被 core 重置回等待中）；任务已标记结束则直接返回。
+     * 上报放弃任务执行权（任务会被 core 重置回等待中，按普通语义消耗故障转移重试次数）；
+     * 任务已标记结束则直接返回。
      *
      * @param execution 执行上下文
      */
     void reportAbandon(SfcTaskExecution execution) {
+        reportAbandon(execution, "执行者停机，放弃任务执行权");
+    }
+
+    /**
+     * 上报放弃任务执行权（任务会被 core 重置回等待中）；任务已标记结束则直接返回。
+     *
+     * <p>若执行上下文已收到挂起指令（{@link SfcTaskExecution#isDetachRequested()}），按「挂起」语义上报：
+     * core 会保留检查点且<b>不消耗</b>故障转移重试次数；否则按普通放弃处理（消耗重试次数）。</p>
+     *
+     * @param execution 执行上下文
+     * @param message   放弃原因说明，空白时按挂起/普通语义使用默认说明
+     */
+    void reportAbandon(SfcTaskExecution execution, String message) {
         synchronized (execution.getReportLock()) {
             if (!execution.markFinished()) {
                 return;
             }
             progressStates.remove(execution.getTaskId());
+            boolean detached = execution.isDetachRequested();
+            String reason = message == null || message.isBlank()
+                    ? (detached ? "执行者停机，任务已挂起，等待接管" : "执行者停机，放弃任务执行权")
+                    : message;
             try {
                 boolean accepted = withRetry("放弃", execution.getTaskId(),
                         () -> client.reportAbandon(new TaskAbandonParam(execution.getTaskId(),
-                                identity.getWorkerId(), "执行者停机，放弃任务执行权")));
+                                identity.getWorkerId(), reason, detached)));
                 if (!accepted) {
-                    log.warn("{}任务[{}]放弃上报未被接受（任务可能已被取消或达到最大重试次数）",
+                    log.warn("{}任务[{}]放弃上报未被接受（任务可能已被取消、已被回收或达到最大重试次数）",
                             LOG_PREFIX, execution.getTaskId());
                 }
             } catch (Throwable e) {
                 log.warn("{}任务[{}]放弃上报失败: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
             }
+        }
+    }
+
+    /**
+     * 同步保存一次任务检查点（带有限重试）。
+     *
+     * <p>保存失败只记录 WARN、把最新值记为待重发并返回 false，<b>不向任务实现抛异常</b>；
+     * 待重发内容由周期上报 {@link #tick()} 补发。任务已结束时不保存。</p>
+     *
+     * @param execution  执行上下文
+     * @param checkpoint 检查点内容
+     * @return 是否已成功保存到 core
+     */
+    boolean saveCheckpoint(SfcTaskExecution execution, String checkpoint) {
+        if (execution == null || checkpoint == null || checkpoint.isBlank() || execution.isFinished()) {
+            return false;
+        }
+        try {
+            boolean accepted = withRetry("检查点", execution.getTaskId(),
+                    () -> client.saveCheckpoint(new TaskCheckpointSaveParam(execution.getTaskId(),
+                            identity.getWorkerId(), execution.getTaskType(), checkpoint)));
+            if (accepted) {
+                execution.clearPendingCheckpoint(checkpoint);
+            } else {
+                execution.markPendingCheckpoint(checkpoint);
+                log.warn("{}任务[{}]检查点保存未被接受（任务可能已被回收），已记为待重发",
+                        LOG_PREFIX, execution.getTaskId());
+            }
+            return accepted;
+        } catch (Throwable e) {
+            execution.markPendingCheckpoint(checkpoint);
+            log.warn("{}任务[{}]检查点保存失败，已记为待重发: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
+            return false;
+        }
+    }
+
+    /**
+     * 补发一次待重发的检查点（周期上报调用）；失败保留待重发状态等下一轮。
+     *
+     * @param execution 执行上下文
+     */
+    private void flushPendingCheckpoint(SfcTaskExecution execution) {
+        String pending = execution.getPendingCheckpoint();
+        if (pending == null || execution.isFinished()) {
+            return;
+        }
+        try {
+            boolean accepted = client.saveCheckpoint(new TaskCheckpointSaveParam(execution.getTaskId(),
+                    identity.getWorkerId(), execution.getTaskType(), pending));
+            if (accepted) {
+                execution.clearPendingCheckpoint(pending);
+                log.info("{}任务[{}]待重发检查点已补发成功", LOG_PREFIX, execution.getTaskId());
+            }
+        } catch (Throwable e) {
+            log.debug("{}任务[{}]补发检查点失败，等待下一轮: {}", LOG_PREFIX, execution.getTaskId(), describe(e));
         }
     }
 

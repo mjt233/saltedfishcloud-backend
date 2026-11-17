@@ -4,6 +4,7 @@ import com.sfc.common.annotations.ConfigPropertiesGroup;
 import com.sfc.common.annotations.ConfigProperty;
 import com.sfc.common.annotations.ConfigPropertyEntity;
 import lombok.Data;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * aria2 P2P 下载运行期配置实体。
@@ -21,6 +22,7 @@ import lombok.Data;
  *
  * @see com.sfc.download.config.SfcDownloadConfigService
  */
+@Slf4j
 @Data
 @ConfigPropertyEntity(prefix = "download.aria2", groups = {
         @ConfigPropertiesGroup(id = "base", name = "P2P 下载参数")
@@ -82,4 +84,48 @@ public class Aria2Property {
             defaultValue = "2"
     )
     private Integer torrentMaxSize = 2;
+
+    /**
+     * 做种保留时长（分钟）。
+     *
+     * <p>默认 {@code 10080}（7 天）。磁力 / 种子下载完成后保留本地文件做种分享的时长；{@code 0} 表示
+     * 不做种（下载完成即清理本地文件与 aria2 任务结果），与改造前的 {@code seed-time=0} 行为一致。</p>
+     *
+     * <p><b>生效时机：</b>任务提交给 aria2 时读取快照，修改后仅对<b>新任务</b>生效；进行中任务沿用提交时
+     * 的值。取值规则见 {@link #resolveSeedTimeMinutes()}。</p>
+     */
+    @ConfigProperty(
+            title = "做种保留时长(分钟)",
+            describe = "磁力/种子下载完成后保留本地文件做种分享的时长（分钟）；0=不做种，完成后立即清理本地文件",
+            defaultValue = "10080"
+    )
+    private Integer seedTimeMinutes = 10080;
+
+    /**
+     * 做种保留时长的配置上限（分钟）：1 年。
+     */
+    public static final int MAX_SEED_TIME_MINUTES = 525600;
+
+    /**
+     * 解析实际生效的做种保留时长（分钟）。
+     *
+     * <p>规则：{@code null} 或 {@code <= 0} 一律按 {@code 0}（不做种）处理；超过
+     * {@link #MAX_SEED_TIME_MINUTES} 时按上限取值并记录一次 WARN（防止配置误填导致文件长期不清理）。
+     * P2P 下载引擎（提交 aria2 时）与做种生命周期（计算到期时间时）都必须使用本方法，保证两处取值一致。
+     * </p>
+     *
+     * @return 生效的做种时长（分钟），范围 {@code [0, 525600]}
+     */
+    public int resolveSeedTimeMinutes() {
+        Integer configured = seedTimeMinutes;
+        if (configured == null || configured <= 0) {
+            return 0;
+        }
+        if (configured > MAX_SEED_TIME_MINUTES) {
+            log.warn("做种保留时长配置超过上限，按上限生效: configured={}分钟, limit={}分钟",
+                    configured, MAX_SEED_TIME_MINUTES);
+            return MAX_SEED_TIME_MINUTES;
+        }
+        return configured;
+    }
 }

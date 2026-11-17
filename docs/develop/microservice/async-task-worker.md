@@ -32,7 +32,10 @@ Worker（微服务内嵌 / core 内嵌）认领任务 ──► 本地线程池�
 - **SDK 调用 core**：经 Spring Cloud LoadBalancer 按服务名选取 `sfc-core` 实例（多实例默认轮询），
   每次出站请求重新选路；**必须注册到与 core 相同的注册中心**，不支持直连兜底地址；
 - **协议唯一来源**：执行者与调度面之间的报文类型定义在 `com.sfc.cloud.task.worker.protocol`，
-  core 的 `TaskWorkerInternalController` / `TaskInterruptRouter` 直接复用同一份类型，微服务侧不要另行定义 DTO。
+  core 的 `TaskWorkerInternalController` / `TaskInterruptRouter` 直接复用同一份类型，微服务侧不要另行定义 DTO；
+- **检查点与挂起**：认领时 core 会把任务已有检查点随 `TaskDispatchInfo.checkpoint` 下发；声明
+  `SfcTaskHandler#supportsDetach()` 为 `true` 的任务在执行者优雅停机时先保存检查点再退出，任务回到等待中，
+  由其它实例带着检查点接管——**不消耗** core 的故障转移重试次数（详见 3.4 与第 8 节）。
 
 > **部署前提**：单节点部署使用 core 默认的进程内 local 注册表（`spring.cloud.sfc-local.registry.enabled=true`）；
 > **多个 core 节点部署必须启用 Nacos**（`SFC_LOCAL_ENABLED=false` + `NACOS_ENABLED=true`），否则各节点看不到彼此的实例，会把对方执行的任务误判为失联。
@@ -46,7 +49,7 @@ Worker（微服务内嵌 / core 内嵌）认领任务 ──► 本地线程池�
 | 任务类型来源 | 容器中的全部 `AsyncTaskFactory` Bean（`AsyncTaskWorkerConfiguration` 桥接为 `SfcTaskHandler`） | 容器中的全部 `SfcTaskHandler` Bean |
 | 角色 `sfc.task.worker.role` | 部署配置中显式设为 `CORE` | 默认 `SERVICE`（保持默认即可） |
 | 调度面 | 本进程内的调度与控制面，经服务发现 + 内部 HTTP 调用（单机同样需要内部密钥） | core 集群 |
-| 执行侧实现 | **同一套**：认领循环、`max-concurrent-tasks` 槽位、线程池、进度/日志上报、中断端点、停机放弃 | 同左 |
+| 执行侧实现 | **同一套**：认领循环、`max-concurrent-tasks` 槽位、线程池、进度/日志上报、中断端点、检查点与停机挂起、停机放弃 | 同左 |
 
 角色随认领请求上报并记录到任务记录的 `claimed_role` 字段，供管理接口展示与排障使用；
 中断指令的下发方式与角色无关：core 一律按服务发现定位执行者实例地址后走内部 HTTP。
@@ -132,10 +135,72 @@ public class ReportExportTaskHandler implements SfcTaskHandler {
 | 输出日志 | `log("...")` 或 `getLogWriter()`（按行缓冲，SDK 定期批量上报） |
 | 更新进度 | `getProgress().setTotal(n)` / `setLoaded(n)` / `addLoaded(n)`；速度由 SDK 计算，约 1 秒上报一次 |
 | 响应中断 | 周期性调用 `checkInterrupted()`；或用 `onInterrupt(Runnable)` 注册打断阻塞、关闭资源的回调 |
+| 读取/保存检查点 | `getCheckpoint()` 读取认领时下发的检查点（无则 `null`）；`saveCheckpoint(String)` 同步上报最新现场，失败不抛异常（SDK 记为待重发，由周期上报补发） |
+| 支持停机挂起 | 覆写 `supportsDetach()` 返回 `true`；周期性调用 `isDetachRequested()`（或 `onDetach(Runnable)`）检测挂起请求，保存检查点后抛 `SfcTaskDetachedException`（也可正常返回）提前退出，不写终态 |
 | 任务失败 | 直接抛出异常，SDK 会上报 FAILED 并携带异常信息与尾部日志 |
 
 > 宿主内嵌执行者还可以通过 `setProgressSource(Supplier<Map<String,Object>>)` 提供包含扩展字段的完整进度快照；
 > 微服务处理器无需使用该方法，直接更新 `getProgress()` 即可。
+
+### 3.4 接入示例：支持停机挂起（detach）的处理器
+
+任务拥有可保留的外部工作现场（例如交给外部下载器的长任务）时，可声明支持挂起：执行者优雅停机时 SDK 不会中断它，
+而是让它保存检查点后退出；任务回到等待中，下一个认领者收到检查点并恢复现场继续执行。
+
+```java
+package com.example.task;
+
+import com.sfc.cloud.task.worker.SfcTaskDetachedException;
+import com.sfc.cloud.task.worker.SfcTaskExecution;
+import com.sfc.cloud.task.worker.SfcTaskHandler;
+import org.springframework.stereotype.Component;
+
+@Component
+public class ResumableDownloadTaskHandler implements SfcTaskHandler {
+
+    @Override
+    public String taskType() {
+        return "resumable-download";
+    }
+
+    @Override
+    public boolean supportsDetach() {
+        // 声明支持挂起：执行者停机时先保存检查点，而不是直接中断
+        return true;
+    }
+
+    @Override
+    public void execute(SfcTaskExecution execution) throws Exception {
+        // 1. 恢复现场：首次执行为 null；被接管时为上一次保存的检查点（JSON 文本，语义由任务实现自定义）
+        String checkpoint = execution.getCheckpoint();
+        JobState state = checkpoint == null ? JobState.start(execution.getParams()) : JobState.parse(checkpoint);
+
+        while (!state.isDone()) {
+            // 2. 周期性检查挂起请求：保存检查点后以 SfcTaskDetachedException 退出本次执行
+            if (execution.isDetachRequested()) {
+                execution.saveCheckpoint(state.toJson());
+                throw new SfcTaskDetachedException("执行者停机，任务已挂起，等待接管");
+            }
+            // 3. 推进任务；现场变化时主动保存检查点（如每完成一个分片）
+            state.tick();
+            execution.saveCheckpoint(state.toJson());
+            execution.getProgress().setLoaded(state.loaded());
+            execution.getProgress().setTotal(state.total());
+        }
+        execution.log("任务完成");
+    }
+}
+```
+
+约定与注意：
+
+- 检查点内容由任务实现自定义（建议 JSON），**框架不会解析**；单条上限 1MB，超出会被 core 拒绝保存
+  （保留原有检查点），因此不要把大对象直接塞进检查点；
+- `saveCheckpoint(String)` 同步上报失败**不抛异常**，SDK 会记为待重发并在约 1 秒的周期上报中补发；
+- 挂起与中断相互独立：`onDetach(Runnable)` 可注册「置停止标志」等快速动作，耗时逻辑仍应在执行循环中轮询
+  `isDetachRequested()`；用户中断时仍走 `onInterrupt` / `checkInterrupted()` 并最终置为已取消；
+- 声明支持挂起不代表一定会被挂起：没有停机指令时任务按普通方式执行到完成；
+- **默认不支持挂起**（`supportsDetach()` 返回 `false`）：既有处理器无需任何改动，停机时仍按「中断 + 普通放弃」处理。
 
 ## 4. 配置项（前缀 `sfc.task.worker`）
 
@@ -146,6 +211,7 @@ public class ReportExportTaskHandler implements SfcTaskHandler {
 | `role` | `SERVICE` | 本实例的执行者角色：`CORE` = core 节点内嵌 Worker，`SERVICE` = 微服务实例；留空按 `SERVICE` 处理 |
 | `claim-wait-seconds` | `30` | 认领任务的长轮询等待秒数，≤0 表示不等待；满载时 SDK 自动缩短为不超过 3 秒 |
 | `max-concurrent-tasks` | CPU 核数 | 普通任务的最大并发槽位；达到上限后只认领紧急任务（紧急任务不受该上限限制） |
+| `detach-await-seconds` | `10` | 停机时为可挂起任务保留的退出窗口（秒）：SDK 先请求挂起并等待其保存检查点后退出，超时才中断并兜底放弃（已收到挂起指令的仍按挂起语义上报） |
 
 共享密钥（来自 sfc-auth SDK，必须与 core 完全一致）：
 
@@ -262,15 +328,16 @@ taskWorkerClient.cancel(taskId);
 | 环节 | 行为 |
 |---|---|
 | 启动自检 | `SmartLifecycle` 在 Web 容器启动后拉起 Worker：先检查内部接口鉴权密钥是否已配置、是否启用服务发现，任一不满足即打印 ERROR 并禁用认领（应用继续运行）；负载均衡拦截器、凭证签发器与服务注册信息缺失则应用在启动阶段直接失败（Spring Boot 依赖注入兜底）。认领线程随后等待「本实例已在服务注册中心可见」，最多 60 秒，超时打印 ERROR 并停止认领 |
-| 认领 | 单线程长轮询 `claim`，携带 `serviceId`、`workerId`（`host:port`）、`role`（配置项，默认 `SERVICE`）、支持的任务类型；无任务时最多等待 `claim-wait-seconds` |
+| 认领 | 单线程长轮询 `claim`，携带 `serviceId`、`workerId`（`host:port`）、`role`（配置项，默认 `SERVICE`）、支持的任务类型；无任务时最多等待 `claim-wait-seconds`。认领到的任务会带上已有检查点（`TaskDispatchInfo.checkpoint`，无则 `null`） |
 | 紧急车道 | 满载（运行中任务数 + 已认领未开始任务数 ≥ `max-concurrent-tasks`）时以 `urgentOnly=true` 只认领紧急任务，且不占用并发槽位；等容量释放后回到普通车道 |
 | 执行 | 弹性线程池（核心线程数 = `max-concurrent-tasks`，上限 1024）：普通任务由认领槽位限流，紧急任务可超出槽位立即执行；任务开始前上报 `report/start`（任务已被取消时跳过执行） |
 | 进度上报 | 约 1 秒节流上报；速度由 SDK 根据两次采样差值计算。任务上报的进度快照若包含扩展字段，会作为协议字段 `extensions` 一并上报 |
 | 日志上报 | 执行上下文按行缓冲日志（单任务最多缓存 5000 行，超出丢弃最旧行并在日志中提示），每个上报周期按批提交（单批最多 500 行、每周期最多 10 批）；实时监听通过 core 的 MQ 主题推送 |
-| 结束上报 | 结束前补发一次最终进度快照（保证完成态进度与 total 一致），再上报 `report/finish`（FINISH/FAILED/CANCEL）+ 尚未上报的尾部日志（最多 5000 行） |
+| 结束上报 | 结束前补发一次最终进度快照（保证完成态进度与 total 一致），再上报 `report/finish`（FINISH/FAILED/CANCEL）+ 尚未上报的尾部日志（最多 5000 行）。收到挂起指令或任务抛出 `SfcTaskDetachedException` 时**不写终态**，改为上报 `report/abandon` 且 `detached=true`（任务回队列、保留检查点、不消耗重试次数） |
+| 检查点上报 | `saveCheckpoint(String)` 同步上报 `POST /api/internal/task/checkpoint/save`（带有限重试）：失败只记录 WARN 并记为待重发，由周期上报补发；core 校验「任务运行中且由本执行者认领」，不满足返回 `false` |
 | 可靠上报 | 开始/结束/放弃上报失败时自动重试（最多 3 次，退避 500/1000ms），降低网络瞬断导致任务状态卡在运行中的风险；进度与日志允许随下一次周期重发 |
 | 中断 | core 从服务注册中心查出本实例的 `host:port`，向 `http://host:port/api/internal/task/interrupt` 下发中断指令；SDK 触发中断标记与回调，任务尚未开始执行时先暂存指令、开始执行后立即生效；中断幂等且尽力而为 |
-| 优雅停机 | 停止认领 → 对运行中任务上报 `report/abandon`（普通任务回到队列，临时任务置失败）→ 最多等待数秒让执行线程退出；实例从注册中心消失后，core 的健康检查会兜底回收漏报的任务 |
+| 优雅停机 | 停止认领 → 停止上报调度 → 遍历运行中任务：`supportsDetach()` 为 `true` 的任务**只请求挂起**（`requestDetach()`，不中断、不注销，由任务线程保存检查点后自行上报挂起），其余任务立即中断并上报普通放弃 → 关闭线程池并最多等待 `detach-await-seconds`（默认 10 秒）→ 最后清扫仍登记的执行上下文（已收到挂起指令的按挂起语义上报，保留检查点）。实例从注册中心消失后，core 的健康检查会兜底回收漏报的任务 |
 
 > **上报目的地**：Worker 的每次内部调用都以服务名作为 URL 的 host（默认 `http://sfc-core`），
 > 由 Spring Cloud LoadBalancer 官方拦截器在请求发出前改写为真实实例地址（多实例默认轮询）。
@@ -306,4 +373,14 @@ taskWorkerClient.cancel(taskId);
   该要求对单机部署的 core 同样适用（core 内嵌 Worker 也走内部 HTTP）；
 - **多 core 部署**：必须使用 `nacos` 作为注册中心，并使用共享缓存与共享 MQ，否则跨节点查询运行日志/进度可能缺失；
 - `/api/internal/**` 属于内部接口前缀，网关会直接拒绝外部访问，微服务与 core 只应部署在内网；
-- 中断是「尽力而为」：处理器应周期性调用 `checkInterrupted()` 或注册中断回调，否则 core 只能等待任务自然结束。
+- 中断是「尽力而为」：处理器应周期性调用 `checkInterrupted()` 或注册中断回调，否则 core 只能等待任务自然结束；
+- **检查点与挂起是新增能力、默认关闭**：`supportsDetach()` 默认 `false`，既有处理器零迁移；启用后请保证
+  「保存检查点」发生在退出之前（`saveCheckpoint` 是同步调用，失败不抛异常但可能尚未落库，必要时可先重试一次）；
+- **停机和带检查点的失联回收不消耗重试次数**：执行者主动停机挂起（detached）与带检查点任务的失联回收重新排队
+  但不累加 `retry_count`，因此**接管次数预算必须由任务实现自己写在检查点里**（例如累计接管次数超限后主动抛异常失败），
+  否则可能无限接管；
+- **core 与 Worker SDK 必须同版本升级**：检查点协议（`TaskDispatchInfo.checkpoint`、`TaskCheckpointSaveParam`、
+  `TaskAbandonParam.detached`）为同仓库同次发布的新增字段，旧 core 与新 SDK（或反之）混用会导致字段被忽略 /
+  挂起语义退化为普通放弃；
+- **可挂起任务仍需响应用户取消**：挂起（停机）与中断（用户取消）是两条独立路径，任务实现应按需同时实现
+  `checkInterrupted()` / `onInterrupt(...)` 与 `isDetachRequested()` / `onDetach(...)`。

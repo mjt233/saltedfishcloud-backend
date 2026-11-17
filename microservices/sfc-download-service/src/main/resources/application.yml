@@ -61,28 +61,37 @@ spring:
           sfc.plugin.info: /api/meta/pluginInfo
           sfc.plugin.autoload: /static/index.umd.js,/static/style.css
   datasource:
-    driver-class-name: org.sqlite.JDBC
-    # 本服务独立的下载任务库，与 core 的数据库无关（历史下载数据不迁移）。
+    # 数据源可切换（契约 D）：默认值保持 SQLite 行为完全不变；多实例共享状态时用环境变量切换到 MySQL。
+    #   · 默认（SQLite）：单文件库，无需额外数据库部署，适合单实例/轻量部署；
+    #   · MySQL：多实例共享下载任务库（跨实例接管的前提之一），需提前建库，表由 ddl-auto=update 自动创建。
+    # ⚠️ 不做数据迁移：切换数据库即使用新库，SQLite 中的历史下载任务数据不会迁移。
+    # 切换 MySQL 的环境变量示例：
+    #   SFC_DOWNLOAD_DB_DRIVER=com.mysql.cj.jdbc.Driver
+    #   SFC_DOWNLOAD_DB_URL=jdbc:mysql://127.0.0.1:3306/sfc_download?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    #   SFC_DOWNLOAD_DB_USERNAME=sfc / SFC_DOWNLOAD_DB_PASSWORD=******
+    #   SFC_DOWNLOAD_DB_POOL_SIZE=8 / SFC_DOWNLOAD_DB_MIN_IDLE=2
+    driver-class-name: ${SFC_DOWNLOAD_DB_DRIVER:org.sqlite.JDBC}
+    # SQLite 专属 URL 参数（journal_mode=WAL / busy_timeout=5000）只体现在默认值里，切 MySQL 时由 env 整体覆盖。
     #
     # ⚠️ 并发写加固（T7 联调发现 SQLITE_BUSY）：本服务默认 8 个并发下载任务，任务在开始/收尾时
     #    会集中回写 download_task（status/size/name/finish_at），而 SQLite 默认写锁冲突立即失败。
     #      · journal_mode=WAL —— 读写可并发：写事务进行时读请求不再被阻塞，显著降低"等待中任务列表"
     #        与"任务进度回写"之间的锁冲突；
     #      · busy_timeout=5000 —— 写锁被占用时最多等待 5 秒再报错，覆盖多个任务同时落盘/收尾的瞬间。
-    #    仍建议生产环境按实际并发量调低 sfc.task.worker.max-concurrent-tasks，或改用更高并发的数据库；
-    #    本服务当前只支持 SQLite（无需额外数据库部署，适合轻量部署场景）。
     #    容器部署：镜像 ENV SFC_DOWNLOAD_DB_URL 已把数据文件指向 /data/download.db（配合数据卷持久化）
     url: "${SFC_DOWNLOAD_DB_URL:jdbc:sqlite:./download.db?journal_mode=WAL&busy_timeout=5000}"
-    # ⚠️ SQLite 单写者：固定单连接，让所有并发写事务在连接池排队后串行执行（T9 §7-9 收口）。
+    # SQLite 无账号体系，默认留空即可；MySQL 部署时由 SFC_DOWNLOAD_DB_USERNAME / SFC_DOWNLOAD_DB_PASSWORD 覆盖
+    username: "${SFC_DOWNLOAD_DB_USERNAME:}"
+    password: "${SFC_DOWNLOAD_DB_PASSWORD:}"
+    # ⚠️ SQLite 单写者：默认固定单连接，让所有并发写事务在连接池排队后串行执行（T9 §7-9 收口）。
     #    背景：8 个请求同时创建任务时，Hibernate merge 会「先 SELECT 再 UPDATE」——若期间存在另一个
     #    写连接，WAL 下该事务的读快照会失效，抛 SQLITE_BUSY_SNAPSHOT；这类快照冲突不受 busy_timeout
     #    等待策略覆盖（busy handler 只处理锁竞争，不处理快照失效），因此仅靠 URL 参数无法修复。
     #    单连接同时消除 INSERT 竞争与快照升级冲突：写事务在池内排队，同一时刻只会有本连接一个写者。
-    #    本服务的 DB 操作均为毫秒级短事务（创建/回写状态、分页查询），单连接不会成为瓶颈；
-    #    若未来换成 MySQL 等支持并发写的数据库，移除下面两条限制即可恢复连接池并发。
+    #    MySQL 支持并发写：用 SFC_DOWNLOAD_DB_POOL_SIZE / SFC_DOWNLOAD_DB_MIN_IDLE 覆盖为更大的值即可。
     hikari:
-      maximum-pool-size: 1
-      minimum-idle: 1
+      maximum-pool-size: ${SFC_DOWNLOAD_DB_POOL_SIZE:1}
+      minimum-idle: ${SFC_DOWNLOAD_DB_MIN_IDLE:1}
   jpa:
     # default = 由 Hibernate 自行探测方言（SQLite 方言来自 hibernate-community-dialects）
     database: default

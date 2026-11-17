@@ -5,6 +5,7 @@ import com.sfc.cloud.auth.client.SfcInternalTokenRequestInitializer;
 import com.sfc.cloud.constants.SfcServiceName;
 import com.sfc.cloud.task.worker.protocol.TaskAbandonParam;
 import com.sfc.cloud.task.worker.protocol.TaskCancelParam;
+import com.sfc.cloud.task.worker.protocol.TaskCheckpointSaveParam;
 import com.sfc.cloud.task.worker.protocol.TaskClaimParam;
 import com.sfc.cloud.task.worker.protocol.TaskDispatchInfo;
 import com.sfc.cloud.task.worker.protocol.TaskFinishReportParam;
@@ -48,6 +49,7 @@ import java.util.List;
  *
  * <p>对外公开的能力：{@link #submit(TaskSubmitParam)}（提交任务）、
  * {@link #queryTasks(Collection)}（批量查询任务状态与进度）、{@link #cancel(Long)}（取消任务）、
+ * {@link #saveCheckpoint(TaskCheckpointSaveParam)}（同步任务检查点，由执行上下文内部使用）、
  * {@link #interruptWorker(String, Long)}（core 向指定 worker 实例下发中断指令，仅供 core 内部回环使用）、
  * {@link #isAuthConfigured()}（内部鉴权配置自检）。</p>
  *
@@ -118,6 +120,11 @@ public class SfcTaskWorkerClient {
      * 取消任务
      */
     private static final String PATH_CANCEL = PATH_PREFIX + "/cancel";
+
+    /**
+     * 保存任务检查点
+     */
+    private static final String PATH_CHECKPOINT_SAVE = PATH_PREFIX + "/checkpoint/save";
 
     /**
      * 连接 sfc-core 的超时时间
@@ -276,6 +283,27 @@ public class SfcTaskWorkerClient {
         }
         post(PATH_CANCEL, new TaskCancelParam(taskId), new ParameterizedTypeReference<SfcJsonResult<Object>>() {
         });
+    }
+
+    /**
+     * 保存（新建或覆盖）任务检查点。
+     *
+     * <p>把任务自定义的现场快照同步上报到 core，用于任务被挂起或执行者失联后由其他执行者接管时恢复现场；
+     * core 会校验任务处于运行中且由本执行者认领，校验不通过时返回 false（任务已结束或已被回收）。
+     * 检查点内容为空白时 core 视为删除检查点。</p>
+     *
+     * @param param 检查点保存参数
+     * @return core 是否已保存（任务已结束或不属于本执行者时返回 false）
+     * @throws SfcJsonException 参数为空、网络失败或 core 返回错误时抛出
+     */
+    public boolean saveCheckpoint(TaskCheckpointSaveParam param) {
+        if (param == null) {
+            throw new SfcJsonException(400, "保存检查点的参数不能为空");
+        }
+        Boolean accepted = post(PATH_CHECKPOINT_SAVE, param,
+                new ParameterizedTypeReference<>() {
+                });
+        return Boolean.TRUE.equals(accepted);
     }
 
     // TODO 后续考虑把「core → worker 中断回调」迁移到 core 内部实现（例如 sfc-core-task 内的专用客户端），

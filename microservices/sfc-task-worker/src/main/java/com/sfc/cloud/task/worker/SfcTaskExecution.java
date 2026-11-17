@@ -14,6 +14,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
 
 /**
@@ -29,10 +30,12 @@ import java.util.function.Supplier;
  *     <li>完整进度快照：{@link #setProgressSource(Supplier)}，供内嵌执行者（如 core 本地任务）提供
  *         包含扩展字段的进度快照；</li>
  *     <li>中断协作：{@link #onInterrupt(Runnable)} 注册回调、{@link #isInterruptRequested()} 查询、
- *         {@link #checkInterrupted()} 在已中断时抛出 {@link SfcTaskInterruptedException}。</li>
+ *         {@link #checkInterrupted()} 在已中断时抛出 {@link SfcTaskInterruptedException}；</li>
+ *     <li>检查点与挂起协作：{@link #getCheckpoint()} / {@link #saveCheckpoint(String)} 持久化任务现场，
+ *         {@link #isDetachRequested()} / {@link #onDetach(Runnable)} 响应执行者停机挂起。</li>
  * </ul>
  *
- * <p>日志写入与中断回调注册均可在多线程场景下安全使用；日志行建议保持在单线程内顺序写入。</p>
+ * <p>日志写入、中断回调与挂起回调注册均可在多线程场景下安全使用；日志行建议保持在单线程内顺序写入。</p>
  */
 @Slf4j
 public final class SfcTaskExecution {
@@ -82,6 +85,35 @@ public final class SfcTaskExecution {
      */
     @Getter
     private final String workerId;
+
+    /**
+     * 任务检查点：认领时由 core 下发，之后随 {@link #saveCheckpoint(String)} 更新。
+     *
+     * <p>首次返回认领时 core 下发的检查点，之后返回最近一次保存写入的值（即使该次同步上报最终失败，
+     * 返回值仍是最新内容，便于任务实现对比与重试）；没有检查点时返回 null。</p>
+     */
+    @Getter
+    private volatile String checkpoint;
+
+    /**
+     * 检查点保存器（由 Worker SDK 绑定，负责同步上报 core 与标记待重发）
+     */
+    private final CheckpointSaver checkpointSaver;
+
+    /**
+     * 待补发的检查点（同步上报失败时记录，由上报 tick 补发）
+     */
+    private final AtomicReference<String> pendingCheckpoint = new AtomicReference<>();
+
+    /**
+     * 挂起回调集合
+     */
+    private final List<Runnable> detachCallbacks = new CopyOnWriteArrayList<>();
+
+    /**
+     * 是否已收到挂起指令（执行者停机）
+     */
+    private final AtomicBoolean detachRequested = new AtomicBoolean(false);
 
     /**
      * 进度快照
@@ -163,16 +195,19 @@ public final class SfcTaskExecution {
     /**
      * 构造执行上下文（仅由 Worker SDK 调用）。
      *
-     * @param dispatchInfo 下发的任务信息
-     * @param workerId     执行者标识
+     * @param dispatchInfo    下发的任务信息
+     * @param workerId        执行者标识
+     * @param checkpointSaver 检查点保存器（由 Worker SDK 绑定，任务实现无需关心）
      */
-    SfcTaskExecution(TaskDispatchInfo dispatchInfo, String workerId) {
+    SfcTaskExecution(TaskDispatchInfo dispatchInfo, String workerId, CheckpointSaver checkpointSaver) {
         this.taskId = dispatchInfo.id();
         this.taskName = dispatchInfo.name();
         this.taskType = dispatchInfo.taskType();
         this.uid = dispatchInfo.uid();
         this.params = dispatchInfo.params();
         this.workerId = workerId;
+        this.checkpoint = dispatchInfo.checkpoint();
+        this.checkpointSaver = checkpointSaver;
         this.logWriter = new PrintWriter(new LineBufferingWriter(), true);
     }
 
@@ -183,6 +218,39 @@ public final class SfcTaskExecution {
      */
     Supplier<Map<String, Object>> getProgressSource() {
         return progressSource;
+    }
+
+    /**
+     * 保存任务检查点。
+     *
+     * <p>把任务自定义的现场快照同步上报到 core（带有限重试）；上报失败只记录 WARN 并把最新值记为
+     * 待重发，由 SDK 的周期上报补发，<b>不会向任务实现抛出异常</b>。任务已结束时不保存。</p>
+     *
+     * @param checkpoint 检查点内容（JSON 文本，语义由任务实现自定义）；空白值视为不保存
+     * @return 本次是否已成功同步到 core
+     */
+    public boolean saveCheckpoint(String checkpoint) {
+        if (checkpoint == null || checkpoint.isBlank()) {
+            return false;
+        }
+        if (isFinished() || checkpointSaver == null) {
+            log.debug("{}任务[{}]已结束或未绑定检查点保存器，忽略检查点保存", LOG_PREFIX, taskId);
+            return false;
+        }
+        this.checkpoint = checkpoint;
+        try {
+            boolean accepted = checkpointSaver.save(this, checkpoint);
+            if (!accepted) {
+                // 保存器可能只返回失败而不记录待重发，这里统一兜底记录，保证 tick 会补发
+                pendingCheckpoint.set(checkpoint);
+            }
+            return accepted;
+        } catch (Throwable e) {
+            // 保存器按约定不抛异常，这里兜底保证任务实现不被打断
+            log.warn("{}任务[{}]保存检查点异常: {}", LOG_PREFIX, taskId, describe(e));
+            pendingCheckpoint.set(checkpoint);
+            return false;
+        }
     }
 
     /**
@@ -223,7 +291,7 @@ public final class SfcTaskExecution {
         }
         interruptCallbacks.add(callback);
         if (interruptRequested.get()) {
-            runCallbackSafely(callback);
+            runCallbackSafely(callback, "中断");
         }
     }
 
@@ -248,6 +316,36 @@ public final class SfcTaskExecution {
     }
 
     /**
+     * 判断是否已收到挂起指令（执行者停机）。
+     *
+     * <p>可挂起任务（{@link SfcTaskHandler#supportsDetach()} 返回 true）应轮询本方法检查是否需要
+     * 保存检查点并退出本次执行。挂起与中断相互独立。</p>
+     *
+     * @return 已收到挂起指令返回 true
+     */
+    public boolean isDetachRequested() {
+        return detachRequested.get();
+    }
+
+    /**
+     * 注册挂起回调。
+     *
+     * <p>执行者停机时 SDK 会下发挂起指令并触发全部挂起回调，典型实现为「保存检查点 + 设置停止标志」；
+     * 回调应快速返回，耗时逻辑请异步处理。注册时若挂起指令已到达则立即执行一次。挂起回调与中断回调相互独立。</p>
+     *
+     * @param callback 挂起回调，为 null 时忽略
+     */
+    public void onDetach(Runnable callback) {
+        if (callback == null) {
+            return;
+        }
+        detachCallbacks.add(callback);
+        if (detachRequested.get()) {
+            runCallbackSafely(callback, "挂起");
+        }
+    }
+
+    /**
      * 标记任务已收到中断指令并触发全部中断回调（仅由 Worker SDK 调用）。
      *
      * <p>重复调用无副作用。</p>
@@ -258,8 +356,50 @@ public final class SfcTaskExecution {
         }
         log(LOG_PREFIX + "收到任务中断指令，正在通知执行逻辑尽快停止");
         for (Runnable callback : interruptCallbacks) {
-            runCallbackSafely(callback);
+            runCallbackSafely(callback, "中断");
         }
+    }
+
+    /**
+     * 标记任务已收到挂起指令并触发全部挂起回调（仅由 Worker SDK 在停机流程中调用）。
+     *
+     * <p>重复调用无副作用；与 {@link #requestInterrupt()} 相互独立，不会触发中断回调。</p>
+     */
+    void requestDetach() {
+        if (!detachRequested.compareAndSet(false, true)) {
+            return;
+        }
+        log(LOG_PREFIX + "收到任务挂起指令，正在通知执行逻辑保存检查点并退出");
+        for (Runnable callback : detachCallbacks) {
+            runCallbackSafely(callback, "挂起");
+        }
+    }
+
+    /**
+     * 获取待补发的检查点（仅由 Worker SDK 的周期上报使用）。
+     *
+     * @return 待补发的检查点，没有时返回 null
+     */
+    String getPendingCheckpoint() {
+        return pendingCheckpoint.get();
+    }
+
+    /**
+     * 记录待补发的检查点（仅由 Worker SDK 在同步上报失败时调用）。
+     *
+     * @param checkpoint 待补发的检查点
+     */
+    void markPendingCheckpoint(String checkpoint) {
+        pendingCheckpoint.set(checkpoint);
+    }
+
+    /**
+     * 清除待补发的检查点（仅由 Worker SDK 在补发成功后调用）。
+     *
+     * @param checkpoint 已成功补发的检查点；只有与当前待补发值一致时才会清除，避免覆盖更新的内容
+     */
+    void clearPendingCheckpoint(String checkpoint) {
+        pendingCheckpoint.compareAndSet(checkpoint, null);
     }
 
     /**
@@ -339,16 +479,17 @@ public final class SfcTaskExecution {
     }
 
     /**
-     * 执行单个中断回调，异常只记录日志不影响其他回调。
+     * 执行单个回调，异常只记录日志不影响其他回调。
      *
-     * @param callback 中断回调
+     * @param callback 回调
+     * @param action   回调类型（用于日志，如「中断」「挂起」）
      */
-    private void runCallbackSafely(Runnable callback) {
+    private void runCallbackSafely(Runnable callback, String action) {
         try {
             callback.run();
         } catch (Throwable e) {
-            log(LOG_PREFIX + "中断回调执行失败: " + describe(e));
-            SfcTaskExecution.log.warn("{}任务[{}]中断回调执行失败", LOG_PREFIX, taskId, e);
+            log(LOG_PREFIX + action + "回调执行失败: " + describe(e));
+            SfcTaskExecution.log.warn("{}任务[{}]{}回调执行失败", LOG_PREFIX, taskId, action, e);
         }
     }
 
@@ -374,6 +515,22 @@ public final class SfcTaskExecution {
     private static String describe(Throwable e) {
         String message = e.getMessage();
         return message == null || message.isBlank() ? e.getClass().getSimpleName() : message;
+    }
+
+    /**
+     * 检查点同步保存器（由 Worker SDK 实现并绑定到执行上下文）。
+     */
+    @FunctionalInterface
+    interface CheckpointSaver {
+
+        /**
+         * 同步保存一次检查点。
+         *
+         * @param execution  执行上下文
+         * @param checkpoint 检查点内容
+         * @return 是否已成功保存到 core
+         */
+        boolean save(SfcTaskExecution execution, String checkpoint);
     }
 
     /**

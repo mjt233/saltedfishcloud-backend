@@ -2,6 +2,7 @@ package com.sfc.task.controller.internal;
 
 import com.sfc.cloud.task.worker.protocol.TaskAbandonParam;
 import com.sfc.cloud.task.worker.protocol.TaskCancelParam;
+import com.sfc.cloud.task.worker.protocol.TaskCheckpointSaveParam;
 import com.sfc.cloud.task.worker.protocol.TaskClaimParam;
 import com.sfc.cloud.task.worker.protocol.TaskDispatchInfo;
 import com.sfc.cloud.task.worker.protocol.TaskFinishReportParam;
@@ -20,6 +21,7 @@ import com.sfc.task.model.AsyncTaskCreateParam;
 import com.sfc.task.model.AsyncTaskRecord;
 import com.sfc.task.prog.ProgressRecord;
 import com.sfc.task.repo.AsyncTaskRecordRepo;
+import com.sfc.task.report.TaskCheckpointService;
 import com.sfc.task.report.TaskReportService;
 import com.sfc.task.schedule.TaskClaimService;
 import com.xiaotao.saltedfishcloud.annotations.AllowAnonymous;
@@ -66,6 +68,11 @@ public class TaskWorkerInternalController {
     public static final String PREFIX = "/api/internal/task";
 
     /**
+     * 日志前缀
+     */
+    private static final String LOG_PREFIX = "[任务内部协议]";
+
+    /**
      * 单次批量查询任务状态允许的最大任务数量
      */
     private static final int MAX_QUERY_TASK_COUNT = 500;
@@ -73,6 +80,8 @@ public class TaskWorkerInternalController {
     private final TaskClaimService claimService;
 
     private final TaskReportService reportService;
+
+    private final TaskCheckpointService checkpointService;
 
     private final AsyncTaskManager asyncTaskManager;
 
@@ -109,12 +118,12 @@ public class TaskWorkerInternalController {
     }
 
     /**
-     * 由任务记录构建下发给执行者的任务信息。
+     * 由任务记录构建下发给执行者的任务信息，并附上已有的检查点（任务被挂起后接管时用于恢复现场）。
      *
      * @param record 任务记录
      * @return 下发给执行者的任务信息
      */
-    private static TaskDispatchInfo toDispatchInfo(AsyncTaskRecord record) {
+    private TaskDispatchInfo toDispatchInfo(AsyncTaskRecord record) {
         return new TaskDispatchInfo(
                 record.getId(),
                 record.getName(),
@@ -123,7 +132,8 @@ public class TaskWorkerInternalController {
                 record.getUid(),
                 record.getCpuOverhead(),
                 record.getRetryCount(),
-                record.getCreateAt());
+                record.getCreateAt(),
+                checkpointService.find(record.getId()));
     }
 
     /**
@@ -284,6 +294,40 @@ public class TaskWorkerInternalController {
     @NotBlock
     public SfcJsonResult<Boolean> reportFinish(@RequestBody TaskFinishReportParam param) {
         return SfcJsonResult.getInstance(reportService.reportFinish(param));
+    }
+
+    /**
+     * 保存（新建或覆盖）一个任务检查点。
+     *
+     * <p>执行者在任务执行过程中通过该端点同步任务自定义的现场快照，供任务被挂起或执行者失联后
+     * 由其他执行者接管时恢复现场；core 只做归属校验与持久化，不解析检查点内容。</p>
+     *
+     * <p>校验规则：任务存在、处于运行中（status=1）且由该执行者认领；任一不满足时返回 false，
+     * 不抛出异常（执行者按过期上报处理）。检查点内容为空白时视为删除该任务的检查点。</p>
+     *
+     * @param param 检查点保存参数
+     * @return 是否已保存；任务不存在、已结束或不属于该执行者时返回 false
+     */
+    @PostMapping("checkpoint/save")
+    @AllowAnonymous
+    @NotBlock
+    public SfcJsonResult<Boolean> saveCheckpoint(@RequestBody TaskCheckpointSaveParam param) {
+        if (param == null || param.taskId() == null || !SfcStringUtils.hasText(param.workerId())) {
+            return SfcJsonResult.getInstance(false);
+        }
+        AsyncTaskRecord record = taskRecordRepo.findById(param.taskId()).orElse(null);
+        if (record == null
+                || !AsyncTaskConstants.Status.RUNNING.equals(record.getStatus())
+                || !Objects.equals(param.workerId(), record.getClaimedWorker())) {
+            log.warn("{}忽略过期的检查点上报：taskId={}, workerId={}, status={}, claimedWorker={}",
+                    LOG_PREFIX, param.taskId(), param.workerId(),
+                    record == null ? null : record.getStatus(),
+                    record == null ? null : record.getClaimedWorker());
+            return SfcJsonResult.getInstance(false);
+        }
+        String taskType = SfcStringUtils.hasText(param.taskType()) ? param.taskType() : record.getTaskType();
+        checkpointService.save(record.getId(), taskType, param.checkpoint());
+        return SfcJsonResult.getInstance(true);
     }
 
     /**

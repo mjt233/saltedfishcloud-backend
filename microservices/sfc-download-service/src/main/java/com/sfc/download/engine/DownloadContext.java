@@ -1,10 +1,12 @@
 package com.sfc.download.engine;
 
+import com.sfc.cloud.task.worker.SfcTaskDetachedException;
 import com.sfc.cloud.task.worker.SfcTaskExecution;
 import com.sfc.cloud.task.worker.SfcTaskInterruptedException;
 import com.sfc.common.exception.SfcJsonException;
 import com.sfc.common.utils.SfcStringUtils;
 import com.sfc.download.constant.DownloadTaskConstants;
+import com.sfc.download.engine.p2p.P2pTaskState;
 import com.sfc.download.model.DownloadTaskParams;
 import com.sfc.download.util.DownloadFileUtils;
 
@@ -77,6 +79,14 @@ public class DownloadContext {
      * 本次任务的临时目录（懒创建）。
      */
     private volatile Path tempDir;
+
+    /**
+     * P2P 任务的检查点镜像（由 {@link com.sfc.download.engine.p2p.P2pTaskCoordinator} 挂载）。
+     *
+     * <p>非 P2P 任务始终为 {@code null}；任务处理器在失败/取消收口时据此决定 aria2 任务结果与本地目录
+     * 是否清理（生命周期收口矩阵）。</p>
+     */
+    private volatile P2pTaskState p2pState;
 
     /**
      * 构造执行上下文（不上报任务展示名，使用默认的临时目录策略）。
@@ -178,6 +188,102 @@ public class DownloadContext {
             }
             return tempDir;
         }
+    }
+
+    /**
+     * 采用一个已存在的任务目录（P2P 接管场景复用检查点记录的目录）。
+     *
+     * <p>正常情况下任务目录由 {@link #getTempDir()} 按注入策略懒创建；但 P2P 任务停机恢复时必须复用
+     * 检查点中的同一个目录（配合 aria2 的 {@code continue=true} 才能续传），因此由 P2P 协调器在读取
+     * 检查点后调用本方法把目录直接挂到上下文上。本方法<b>不创建</b>目录，目录是否存在由调用方负责
+     * （续传场景会自行创建缺失目录）。</p>
+     *
+     * <p>一旦任务目录已创建，再次采用不同目录会抛业务异常——避免同一任务写入两个目录造成产物不一致。</p>
+     *
+     * @param existingDir 要采用的任务目录（会被归一化为绝对路径），不能为 {@code null}
+     * @throws SfcJsonException 入参为 {@code null}，或与已创建的任务目录不一致时抛出（HTTP 500 语义）
+     */
+    public void useTempDir(Path existingDir) {
+        if (existingDir == null) {
+            throw new SfcJsonException(500, "复用任务目录失败: 目录不能为空");
+        }
+        Path normalized = existingDir.toAbsolutePath().normalize();
+        synchronized (this) {
+            if (tempDir == null) {
+                this.tempDir = normalized;
+                return;
+            }
+            if (!tempDir.equals(normalized)) {
+                throw new SfcJsonException(500,
+                        "复用任务目录失败: 任务目录已创建且不一致（existing=" + tempDir + ", requested=" + normalized + "）");
+            }
+        }
+    }
+
+    /**
+     * 获取认领时下发的检查点（之后为最近一次保存的内容）。
+     *
+     * <p>检查点的语义由任务实现自定义：P2P 任务存放 {@code P2pTaskState} JSON；其它下载类型不使用。</p>
+     *
+     * @return 检查点文本；没有检查点时返回 {@code null}
+     */
+    public String getCheckpoint() {
+        return execution.getCheckpoint();
+    }
+
+    /**
+     * 保存任务检查点。
+     *
+     * <p>同步上报 core；失败不抛异常（SDK 会记录待补发并在周期上报中重试），调用方无需重试。</p>
+     *
+     * @param checkpoint 检查点文本（JSON），空白值视为不保存
+     * @return 本次是否已同步到 core
+     */
+    public boolean saveCheckpoint(String checkpoint) {
+        return execution.saveCheckpoint(checkpoint);
+    }
+
+    /**
+     * 判断执行者是否已请求挂起（停机）。
+     *
+     * <p>可挂起任务（{@code SfcTaskHandler#supportsDetach()} 返回 {@code true}）在耗时循环中应周期性
+     * 检查本方法，检测到后保存检查点并抛 {@link SfcTaskDetachedException} 退出，等待其它实例接管。</p>
+     *
+     * @return 已收到挂起请求返回 {@code true}
+     */
+    public boolean isDetachRequested() {
+        return execution.isDetachRequested();
+    }
+
+    /**
+     * 检查执行者是否已请求挂起，已请求时抛出挂起异常。
+     *
+     * <p>抛出前不触发取消回调——挂起语义是「保留外部现场后退出」，与取消（中断并清理）不同。</p>
+     *
+     * @throws SfcTaskDetachedException 已收到挂起请求时抛出
+     */
+    public void checkDetach() {
+        if (isDetachRequested()) {
+            throw new SfcTaskDetachedException("执行者停机，任务已挂起并等待接管");
+        }
+    }
+
+    /**
+     * 获取本次 P2P 任务的检查点镜像。
+     *
+     * @return P2P 检查点；非 P2P 任务或尚未挂载时返回 {@code null}
+     */
+    public P2pTaskState getP2pState() {
+        return p2pState;
+    }
+
+    /**
+     * 挂载本次 P2P 任务的检查点镜像（仅由 P2P 协调器调用）。
+     *
+     * @param state P2P 检查点，允许为 {@code null}
+     */
+    public void attachP2pState(P2pTaskState state) {
+        this.p2pState = state;
     }
 
     /**

@@ -1,3 +1,27 @@
+# ============================================================================
+# 轻量 NAS 低内存运行示例（目标机型：4GB 内存）
+#
+# 只给 4 个 Java 服务加内存约束（Nacos / MySQL / Redis / aria2 未纳入本次限额，保持镜像默认行为）：
+#   · deploy.resources.limits.memory —— 容器内存上限，防止单个容器涨爆整机；
+#   · JVM 堆/元空间/代码缓存/堆外/线程栈 —— Java 服务真正的常驻内存来源。
+#
+# 4 个限额服务的容器内存上限合计 = 4096M（4G）：
+#   sfc-core 2560M | sfc-gateway 512M | sfc-ai-service 512M | sfc-download-service 512M
+#   ⚠️ 上限是「峰值上限」而不是预留，可超卖：Java 侧常驻由各自的固定堆决定（本机实测
+#      core≈0.70G、gateway≈0.27G、ai≈0.34G、download≈0.36G，合计≈1.67G），上限只是给
+#      元空间/代码缓存/堆外/线程栈留余量。整机实际占用还要加上未限额的 Nacos/MySQL/Redis/aria2：
+#      本机（32 核）实测 Nacos 默认 JVM 约 1.77G、MySQL 约 0.38G，整机约 3.8G；2～4 核 NAS 上
+#      Nacos 的线程池更小（预计约 1.1～1.3G），整机预计约 3.1～3.3G。Nacos 未限额且默认堆为 1g，
+#      是整机内存最大的不确定项，需要进一步压低时再单独调它的 JVM_XMS/JVM_XMX。
+#      因此 4GB NAS 可运行，但不要再叠加其它负载；8GB 及以上机型更宽裕。
+#
+# 调参方法：容器上限 ≈ 堆 × (1 + 40%~50%) 的 JVM 非堆开销（元空间 + 代码缓存 + 堆外 + 线程栈）。
+#   改容器上限时按同一比例改对应的 -Xmx，两侧不要脱节。
+#   4GB 是运行本全量微服务栈的下限；2GB 机型请改用单机模式（docker-compose.yml）。
+#
+# 兼容性：deploy.resources.limits 需要 Docker Compose V2（docker compose）才生效；
+#   旧版 docker-compose v1 会静默忽略该字段，此时把该段替换为等值的 `mem_limit: <值>`。
+# ============================================================================
 services:
   # 服务发现/注册中心 Nacos
   nacos:
@@ -97,6 +121,16 @@ services:
       SFC_DOWNLOAD_ARIA2_SECRET: ${ARIA2_RPC_SECRET:-sfc-aria2-dev-secret}
       SFC_DOWNLOAD_ARIA2_SHARED_DIR: /shared/download
       SFC_DOWNLOAD_ARIA2_REMOTE_DIR: /downloads
+      # 内存：固定堆 128M（-Xms=-Xmx，堆一次分配到位、避免运行期扩张），其余项均为「非堆开销上限」。
+      #   -XX:+UseSerialGC：小堆下内存与线程最省（低内存优先），如需 G1 删掉该参数即可；
+      #   -XX:ActiveProcessorCount=2：让 JVM 按 2 核估算 GC/JIT/线程数，避免按物理核数铺开线程；
+      #   -Xss512k：降低单线程栈；元空间/代码缓存/堆外均设上限，保证最坏情况总和不超过容器上限。
+      JAVA_OPTS: "-Xms128m -Xmx128m -Xss512k -XX:+UseSerialGC -XX:ActiveProcessorCount=2 -XX:MaxMetaspaceSize=192m -XX:ReservedCodeCacheSize=64m -XX:MaxDirectMemorySize=48m -Dfile.encoding=UTF-8"
+    # 内存上限 512M = 堆 128M + 元空间/代码缓存/堆外/线程栈 预留（实测常驻约 0.36G）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # AI 助手服务
   sfc-ai-service:
@@ -123,11 +157,18 @@ services:
       NACOS_USERNAME: ${NACOS_USERNAME:-nacos}
       NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
       SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+      # 内存：固定堆 128M，各参数含义同 sfc-download-service 注释。
+      JAVA_OPTS: "-Xms128m -Xmx128m -Xss512k -XX:+UseSerialGC -XX:ActiveProcessorCount=2 -XX:MaxMetaspaceSize=192m -XX:ReservedCodeCacheSize=64m -XX:MaxDirectMemorySize=48m -Dfile.encoding=UTF-8"
     volumes:
       # SQLite 数据库 ai.db 所在目录（镜像内 /data），重建容器不丢数据
       - ./data/ai:/data
     expose:
       - 8091
+    # 内存上限 512M = 堆 128M + 元空间/代码缓存/堆外/线程栈 预留（实测常驻约 0.34G）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # 网关服务
   sfc-gateway:
@@ -154,10 +195,18 @@ services:
       NACOS_PASSWORD: ${NACOS_PASSWORD:?未设置 NACOS_PASSWORD：请在 .env 或部署环境中配置 Nacos 管理员密码（首次访问 8080 控制台时初始化）}
       SFC_JWT_SECRET: ${SFC_JWT_SECRET:?未设置 SFC_JWT_SECRET：请在 .env 或部署环境中配置恰好 32 字符的 JWT 会话密钥}
       SFC_INTERNAL_KEY: ${SFC_INTERNAL_KEY:?未设置 SFC_INTERNAL_KEY：请在 .env 或部署环境中配置不少于 32 字符的内部接口共享密钥}
+      # 内存：固定堆 128M（网关是 WebFlux/Reactor-Netty，主要内存是少量堆 + 堆外直接内存）。
+      #   参数含义同 sfc-download-service；网关会代理大文件上传/下载，堆外直接内存给到 64M。
+      JAVA_OPTS: "-Xms128m -Xmx128m -Xss512k -XX:+UseSerialGC -XX:ActiveProcessorCount=2 -XX:MaxMetaspaceSize=160m -XX:ReservedCodeCacheSize=64m -XX:MaxDirectMemorySize=64m -Dfile.encoding=UTF-8"
     expose:
       - 9090
     ports:
       - 9090:9090
+    # 内存上限 512M = 堆 128M + 元空间/代码缓存/堆外/线程栈 预留（实测常驻约 0.27G）
+    deploy:
+      resources:
+        limits:
+          memory: 512M
 
   # 核心服务
   sfc-core:
@@ -196,6 +245,12 @@ services:
       #    Docker 不保证网卡顺序，自动探测可能选中 xyy-backend-net 的 IP，导致只接 nacos 网络的服务连接超时。
       #    修改本服务名 / container_name 时需同步修改。
       ADVERTISE_ADDRESS: sfc-core
+      # 内存：固定堆 512M（core 是主应用，堆给最大的服务），其余项为非堆开销上限。
+      #   镜像 Dockerfile 的 CMD 没有使用 JAVA_OPTS，因此这里用 JVM 会自动读取的 JAVA_TOOL_OPTIONS 注入；
+      #   启动日志会打印 "Picked up JAVA_TOOL_OPTIONS: ..."，可用于确认参数已生效。
+      #   -XX:+UseSerialGC 低内存优先（如需 G1 删掉该参数）；-XX:ActiveProcessorCount=2 限制
+      #   GC/JIT/线程按 2 核铺开；-Xss512k 降线程栈；元空间/代码缓存/堆外均设上限。
+      JAVA_TOOL_OPTIONS: "-Xms512m -Xmx512m -Xss512k -XX:+UseSerialGC -XX:ActiveProcessorCount=2 -XX:MaxMetaspaceSize=320m -XX:ReservedCodeCacheSize=160m -XX:MaxDirectMemorySize=96m -Dfile.encoding=UTF-8"
     networks:
       - nacos
       - xyy-backend-net
@@ -205,6 +260,12 @@ services:
       - ./data/core/store:/saltedfish/store
       # 映射静态链接的ffmpeg程序目录，以便插件的视频增强插件能够直接调用到ffmpeg二进制程序
 #      - /usr/local/ffmpeg:/usr/local/ffmpeg
+    # 内存上限 2560M：常驻由固定堆 512M 决定（实测约 0.70G），上限给元空间/代码缓存/堆外/线程栈
+    #   留足峰值余量（最坏情况约 1.2G），同时它是 4 个服务合计≈4G 上限预算里的主份额。
+    deploy:
+      resources:
+        limits:
+          memory: 2560M
 
   # Redis 缓存
   redis:

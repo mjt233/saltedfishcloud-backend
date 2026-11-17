@@ -13,6 +13,7 @@ import java.util.Date;
  * @param cpuOverhead 任务的 CPU 开销指数
  * @param retryCount  已被故障转移重试的次数
  * @param createAt    任务创建时间
+ * @param checkpoint  任务检查点（JSON 文本，语义由任务实现自定义），任务没有检查点时为 null
  */
 public record TaskDispatchInfo(
         Long id,
@@ -22,6 +23,7 @@ public record TaskDispatchInfo(
         Long uid,
         Integer cpuOverhead,
         Integer retryCount,
-        Date createAt
+        Date createAt,
+        String checkpoint
 ) {
 }

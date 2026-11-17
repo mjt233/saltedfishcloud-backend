@@ -180,6 +180,61 @@ public class Aria2Client {
     }
 
     /**
+     * 查询全部正在下载（{@code active}）的 aria2 任务。
+     *
+     * <p>对应 aria2 标准 RPC {@code aria2.tellActive}。用于孤儿任务对账：aria2 是独立守护进程，
+     * 服务停机期间其任务仍会继续下载，重启后需要对账清理已终态任务的残留。</p>
+     *
+     * @param keys 需要返回的字段名列表，为空表示返回全部字段
+     * @return 任务状态键值对列表；没有活动任务时返回空列表
+     * @throws Aria2RpcException 查询失败或返回格式非法时抛出
+     */
+    public List<Map<String, Object>> tellActive(List<String> keys) {
+        List<Object> params = new ArrayList<>(1);
+        params.add(keys == null ? List.of() : keys);
+        return requireStatusList(call("aria2.tellActive", params), "tellActive");
+    }
+
+    /**
+     * 查询等待中（{@code waiting}）的 aria2 任务。
+     *
+     * <p>对应 aria2 标准 RPC {@code aria2.tellWaiting}。</p>
+     *
+     * @param offset 起始偏移（从 0 开始）
+     * @param num    最多返回的条数
+     * @param keys   需要返回的字段名列表，为空表示返回全部字段
+     * @return 任务状态键值对列表；没有等待任务时返回空列表
+     * @throws Aria2RpcException 查询失败或返回格式非法时抛出
+     */
+    public List<Map<String, Object>> tellWaiting(int offset, int num, List<String> keys) {
+        List<Object> params = new ArrayList<>(3);
+        params.add(Math.max(0, offset));
+        params.add(Math.max(0, num));
+        params.add(keys == null ? List.of() : keys);
+        return requireStatusList(call("aria2.tellWaiting", params), "tellWaiting");
+    }
+
+    /**
+     * 查询已停止（{@code stopped}）的 aria2 任务结果。
+     *
+     * <p>对应 aria2 标准 RPC {@code aria2.tellStopped}。做种中的任务在 aria2 侧处于
+     * {@code active/waiting} 而非 {@code stopped}，因此做种保护由调用方按目录判断，不依赖本方法。</p>
+     *
+     * @param offset 起始偏移（从 0 开始）
+     * @param num    最多返回的条数
+     * @param keys   需要返回的字段名列表，为空表示返回全部字段
+     * @return 任务状态键值对列表；没有已停止任务时返回空列表
+     * @throws Aria2RpcException 查询失败或返回格式非法时抛出
+     */
+    public List<Map<String, Object>> tellStopped(int offset, int num, List<String> keys) {
+        List<Object> params = new ArrayList<>(3);
+        params.add(Math.max(0, offset));
+        params.add(Math.max(0, num));
+        params.add(keys == null ? List.of() : keys);
+        return requireStatusList(call("aria2.tellStopped", params), "tellStopped");
+    }
+
+    /**
      * 强制移除下载任务（尽力而为）。
      *
      * <p>用于任务中断：aria2 会立即停止该 GID 的下载。任务已经结束时 aria2 会返回错误，
@@ -306,6 +361,38 @@ public class Aria2Client {
         }
         throw new Aria2RpcException(Aria2RpcException.UNKNOWN_CODE,
                 "aria2 未返回有效的下载任务标识: " + result);
+    }
+
+    /**
+     * 把 RPC 返回的 {@code result} 节点转换为任务状态列表。
+     *
+     * <p>{@code tellActive / tellWaiting / tellStopped} 的返回值都是「状态对象数组」；这里把每个
+     * 状态对象的键统一归一化为字符串，与 {@link #tellStatus(String, List)} 的返回形态保持一致。</p>
+     *
+     * @param result {@code result} 节点
+     * @param method 方法名，仅用于异常消息
+     * @return 任务状态列表；结果为空数组时返回空列表
+     * @throws Aria2RpcException 结果不是数组时抛出
+     */
+    private static List<Map<String, Object>> requireStatusList(Object result, String method) {
+        if (!(result instanceof List<?> rawList)) {
+            throw new Aria2RpcException(Aria2RpcException.UNKNOWN_CODE,
+                    "aria2 返回的 " + method + " 结果格式非法");
+        }
+        List<Map<String, Object>> statuses = new ArrayList<>(rawList.size());
+        for (Object item : rawList) {
+            if (!(item instanceof Map<?, ?> statusMap)) {
+                continue;
+            }
+            Map<String, Object> status = new LinkedHashMap<>(statusMap.size());
+            statusMap.forEach((key, value) -> {
+                if (key != null) {
+                    status.put(String.valueOf(key), value);
+                }
+            });
+            statuses.add(status);
+        }
+        return statuses;
     }
 
     /**

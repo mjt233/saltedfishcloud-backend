@@ -16,12 +16,15 @@ import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -96,6 +99,14 @@ public final class DownloadFileUtils {
      * 是否已经执行过「历史临时目录残留」的一次性清理。
      */
     private static final AtomicBoolean STALE_TEMP_DIR_CLEANED = new AtomicBoolean(false);
+
+    /**
+     * 做种保护目录探测器：为 {@code true} 的目录在陈旧清理时必须跳过。
+     *
+     * <p>由 aria2 工作区组件在启动时注入（桥接 {@code P2pSeedRegistrar#isProtectedDirectory}）。
+     * 默认不保护任何目录（未装配做种能力时的既有行为）。</p>
+     */
+    private static volatile Predicate<Path> protectedDirectoryProbe = dir -> false;
 
     /**
      * 工具类禁止实例化。
@@ -643,6 +654,19 @@ public final class DownloadFileUtils {
     }
 
     /**
+     * 设置「做种保护目录」探测器。
+     *
+     * <p>陈旧清理在删除任何条目之前，会先用该探测器逐个判断待清理目录；探测器返回 {@code true} 的目录
+     * 会被跳过（做种保留中的文件不能删）。探测器抛出异常时按 fail-safe 处理：<b>跳过整轮清理</b>，
+     * 绝不在无法确认保护状态时冒险删除。传入 {@code null} 表示恢复默认（不保护任何目录）。</p>
+     *
+     * @param probe 做种保护目录探测器，允许为 {@code null}
+     */
+    public static void setProtectedDirectoryProbe(Predicate<Path> probe) {
+        protectedDirectoryProbe = probe == null ? dir -> false : probe;
+    }
+
+    /**
      * 尽力清理临时根目录下超过指定时长未修改的残留目录/文件。
      *
      * <p>用于服务重启后回收上次异常退出遗留的临时文件。清理过程完全 best-effort：任何单个条目
@@ -665,7 +689,11 @@ public final class DownloadFileUtils {
      *
      * <p>与 {@link #cleanupStaleTempDirs(Duration)} 行为一致，只是把根目录换成调用方指定的目录，
      * 供共享目录场景（{@code <sharedDir>/offline-download}）清理历史残留。根目录不存在、不可读或
-     * 删除失败都只记录 DEBUG 日志，不影响调用方。</p>
+     * 删除失败都只记录日志，不影响调用方。</p>
+     *
+     * <p><b>做种保护（fail-safe）：</b>删除前先用 {@link #setProtectedDirectoryProbe(Predicate)}
+     * 注册的探测器过滤待清理目录——受保护目录跳过；探测器查询失败时跳过<b>整轮</b>清理并记录 WARN，
+     * 避免在无法确认保护状态时误删做种中的文件。</p>
      *
      * @param root   待清理的根目录，为 {@code null} 时直接返回
      * @param maxAge 最大保留时长；为 {@code null} 或负数时使用默认值 7 天
@@ -676,14 +704,39 @@ public final class DownloadFileUtils {
         }
         Duration age = (maxAge == null || maxAge.isNegative()) ? STALE_TEMP_DIR_MAX_AGE : maxAge;
         long threshold = System.currentTimeMillis() - age.toMillis();
+        List<Path> staleChildren = new ArrayList<>();
         try (Stream<Path> children = Files.list(root)) {
-            children.filter(child -> isStale(child, threshold))
-                    .forEach(DownloadFileUtils::deleteQuietly);
+            children.filter(child -> isStale(child, threshold)).forEach(staleChildren::add);
         } catch (IOException | RuntimeException e) {
             // best-effort：清理失败不影响下载流程，但保留调试日志便于排查
             log.debug("{}清理历史临时目录失败: root={}, cause={}: {}",
                     DownloadTaskConstants.LOG_PREFIX, root, e.getClass().getSimpleName(), e.getMessage());
+            return;
         }
+        if (staleChildren.isEmpty()) {
+            return;
+        }
+        Predicate<Path> probe = protectedDirectoryProbe;
+        List<Path> deletable = new ArrayList<>(staleChildren.size());
+        for (Path child : staleChildren) {
+            boolean protectedDir;
+            try {
+                protectedDir = probe.test(child);
+            } catch (RuntimeException e) {
+                // fail-safe：做种保护查询失败时整轮跳过，宁可残留也不误删做种中的文件
+                log.warn("{}查询做种保护目录失败，跳过本轮陈旧清理: root={}, cause={}: {}",
+                        DownloadTaskConstants.LOG_PREFIX, root, e.getClass().getSimpleName(), e.getMessage());
+                return;
+            }
+            if (!protectedDir) {
+                deletable.add(child);
+            }
+        }
+        int skipped = staleChildren.size() - deletable.size();
+        if (skipped > 0) {
+            log.info("{}陈旧清理跳过做种保护目录: root={}, 跳过数={}", DownloadTaskConstants.LOG_PREFIX, root, skipped);
+        }
+        deletable.forEach(DownloadFileUtils::deleteQuietly);
     }
 
     // ==================== 内部辅助方法 ====================
