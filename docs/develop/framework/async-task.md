@@ -17,11 +17,11 @@
 
 > 微服务接入指引见 [微服务异步任务 Worker 接入](../microservice/async-task-worker.md)。
 
-> **代码组织**：
-> - 契约与模型：`sfc-api`（`com.sfc.task`：`AsyncTask`、`AsyncTaskFactory`、`AsyncTaskManager`、`AsyncTaskRecord`、`AsyncTaskCheckpoint`、`AsyncTaskCheckpointRepo`、仓库接口等）；
-> - 调度与控制面：`sfc-core-task`（同包名 `com.sfc.task`：`AsyncTaskFactoryRegistry`、`TaskClaimService`、`TaskHealthChecker`、`TaskReportService`、`TaskCheckpointService`、`TaskInterruptRouter`、`TaskLogBufferService`、管理接口 `/api/asyncTask/**` 与内部协议控制器 `/api/internal/task/**`）；
-> - 执行侧 SDK：`microservices/sfc-task-worker`（`com.sfc.cloud.task.worker`：`SfcTaskWorkerRuntime`、`SfcTaskWorkerClient`、`SfcTaskExecution`、`SfcTaskReporter`、`SfcTaskHandler`、`SfcTaskDetachedException`、`SfcTaskWorkerRegistry`、`SfcTaskWorkerIdentity` 与 `protocol` 包）；
-> - `sfc-core` 依赖上述两个模块，通过 `@EnableAsyncTask` 引入控制面，并由 `com.xiaotao.saltedfishcloud.task.worker.AsyncTaskWorkerConfiguration` 把容器中全部 `AsyncTaskFactory` 桥接为 SDK 的 `SfcTaskHandler`，内嵌 `CORE` 角色的 Worker。
+> **代码组织**：  
+> - 契约与模型：`sfc-api`（`com.sfc.task`：`AsyncTask`、`AsyncTaskFactory`、`AsyncTaskManager`、`AsyncTaskRecord`、`AsyncTaskCheckpoint`、`AsyncTaskCheckpointRepo`、仓库接口等）；  
+> - 调度与控制面：`sfc-core-task`（同包名 `com.sfc.task`：`AsyncTaskFactoryRegistry`、`TaskClaimService`、`TaskHealthChecker`、`TaskReportService`、`TaskCheckpointService`、`TaskInterruptRouter`、`TaskLogBufferService`、管理接口 `/api/asyncTask/**` 与内部协议控制器 `/api/internal/task/**`）；  
+> - 执行侧 SDK：`microservices/sfc-task-worker`（`com.sfc.cloud.task.worker`：`SfcTaskWorkerRuntime`、`SfcTaskWorkerClient`、`SfcTaskExecution`、`SfcTaskReporter`、`SfcTaskHandler`、`SfcTaskDetachedException`、`SfcTaskWorkerRegistry`、`SfcTaskWorkerIdentity` 与 `protocol` 包）；  
+> - `sfc-core` 依赖上述两个模块，通过 `@EnableAsyncTask` 引入控制面，并由 `com.xiaotao.saltedfishcloud.task.worker.AsyncTaskWorkerConfiguration` 把容器中全部 `AsyncTaskFactory` 桥接为 SDK 的 `SfcTaskHandler`，内嵌 `CORE` 角色的 Worker。  
 
 ## 2. 总体架构
 
@@ -40,33 +40,33 @@
 
 ### 2.2 核心调度模型：类型路由认领 + 紧急车道
 
-```
-任务提交 ──► 写入 async_task_record（status = 0 等待中，priority = NORMAL / URGENT）
-                    │
-                    └─► 广播 async_task_publish 唤醒正在长轮询的执行者
-                                │
-        ┌───────────────────────┘
-        ▼
- Worker 认领循环（core 内嵌 Worker / 微服务 Worker，规则完全一致）：
-   有容量（运行中 + 已认领未开始 < max-concurrent-tasks）：
-       SELECT ... WHERE status = 0 AND taskType IN (本 worker 支持的类型)
-              ORDER BY priority DESC, create_at LIMIT 1
-   满载：
-       SELECT ... WHERE status = 0 AND taskType IN (...)
-              AND priority >= URGENT ORDER BY create_at LIMIT 1   -- 只领紧急任务，不占并发槽位
-   认领：
-       UPDATE ... SET status = 1, claimed_service / claimed_worker / claimed_role = 本实例
-       WHERE id = ? AND status = 0                                -- 乐观锁，并发只有一个成功
-       并读取 async_task_checkpoint 中的检查点，随 TaskDispatchInfo 一并下发（无检查点为 null）
-        │
-        ▼
-  执行任务（Worker SDK 线程池）──► 约 1 秒节流上报进度、按批上报运行日志
-        │
-        ▼
-  上报最终状态（完成 / 失败 / 取消）；
-  或执行者停机 / 失联时：
-     - 可挂起任务（supportsDetach=true）：保存检查点 → 上报挂起（detached=true）→ 任务回到等待中（不消耗 retry_count）
-     - 其它任务：中断 + 上报普通放弃 → 任务回到等待中（retry_count + 1，达到上限 3 次置为失败）
+```mermaid
+flowchart TD
+    SUBMIT["任务提交"] --> ENQUEUE["写入 async_task_record<br/>status = 0（等待中）<br/>priority = NORMAL / URGENT"]
+    ENQUEUE --> BROADCAST["广播 async_task_publish<br/>唤醒正在长轮询的执行者"]
+
+    BROADCAST --> SLOT{"Worker 认领循环<br/>core 内嵌 Worker / 微服务 Worker 规则完全一致<br/>是否还有并发容量？"}
+
+    SLOT -->|"有容量"| PICK_ALL["SELECT ... WHERE status = 0<br/>AND task_type IN（本 worker 支持的类型）<br/>ORDER BY priority DESC, create_at LIMIT 1"]
+    SLOT -->|"满载"| PICK_URGENT["SELECT ... WHERE status = 0<br/>AND task_type IN（本 worker 支持的类型）<br/>AND priority ≥ URGENT<br/>ORDER BY create_at LIMIT 1<br/>只领紧急任务，不占并发槽位"]
+
+    PICK_ALL --> CLAIM["原子认领<br/>UPDATE ... SET status = 1<br/>claimed_service / claimed_worker / claimed_role = 本实例<br/>WHERE id = ? AND status = 0<br/>（乐观锁，并发只有一个成功）"]
+    PICK_URGENT --> CLAIM
+
+    CLAIM --> DISPATCH["读取 async_task_checkpoint<br/>随 TaskDispatchInfo 一并下发<br/>（无检查点为 null）"]
+    DISPATCH --> EXEC["执行任务（Worker SDK 线程池）<br/>约 1 秒节流上报进度、按批上报运行日志"]
+
+    EXEC --> RESULT{"本次执行如何结束？"}
+    RESULT -->|"正常结束"| FINAL["上报最终状态<br/>完成 / 失败 / 取消"]
+    RESULT -->|"任务挂起"| DETACH["保存检查点 → 上报挂起<br/>detached = true"]
+    RESULT -->|"普通放弃"| ABANDON["中断 → 上报普通放弃"]
+
+    DETACH --> SUSPENDED["任务回到等待中（status = 0）<br/>保留检查点，不累加 retry_count"]
+    ABANDON --> REQUEUE["任务回到等待中（status = 0）<br/>retry_count + 1<br/>达到上限 3 次置为失败"]
+
+    SUSPENDED -->|"重新广播"| BROADCAST
+    REQUEUE -->|"重新广播"| BROADCAST
+    FINAL --> STOP(["任务结束"])
 ```
 
 关键点：
@@ -161,7 +161,7 @@
 
 ### 4.2 状态机
 
-- `0` - 等待中：任务提交后的初始状态，等待具备能力的执行者认领
+- `0` - 等待中：任务提交后的初始状态，等待具备能力的执行者认领；**挂起中的任务也处于该状态**（见下）
 - `1` - 运行中：已被执行者认领（`claimed_worker` 非空）
 - `2` - 执行完成
 - `3` - 任务失败
@@ -171,20 +171,33 @@
 ```mermaid
 graph LR
   CREATE((创建)) --> WAIT[0 - 等待中]
-  WAIT -->|被具备能力的执行者认领| RUN[1 - 运行中]
-  WAIT -->|用户中断| CANCEL[4 - 已取消]
+  WAIT -->|执行者认领| RUN[1 - 运行中]
+  WAIT -->|用户取消| CANCEL[4 - 已取消]
   RUN -->|成功| FINISH[2 - 执行完成]
   RUN -->|异常| FAILED[3 - 执行失败]
   RUN -->|用户中断| CANCEL
-  RUN -->|执行者失联/优雅停机| WAIT
+  RUN -->|"停机挂起"| WAIT
+  RUN -->|"放弃重排"| WAIT
+  RUN -->|"重试超限"| FAILED
   FINISH --> END((结束))
   FAILED --> END
   CANCEL --> END
 ```
 
-> **状态值不新增**：挂起 / 接管复用「等待中（0）」。可挂起任务被停机挂起后，任务回到 `0` 且 `retry_count` 不变；
-> 无检查点的其它任务执行者失联 / 放弃则回到 `0` 且 `retry_count + 1`（超过 3 次置失败）。两种回收都会重新广播任务发布事件，
-> 由具备该任务类型的执行者认领（有检查点的任务因此可以接续执行，见 4.3）。
+**挂起（detach）不是独立状态**：框架不为挂起新增状态值，挂起中的任务就是 `0 - 等待中`，区别只在于它**带着检查点**回到队列、且**不消耗 `retry_count`**。挂起的进入、等待与退出：
+
+- **进入挂起**：执行者优雅停机时，SDK 对 `SfcTaskHandler#supportsDetach() = true` 的任务只下发挂起指令
+  （`SfcTaskExecution#isDetachRequested()` / `onDetach(Runnable)`），不触发中断回调；任务实现保存检查点后退出，
+  执行者以 `detached = true` 上报放弃。core 通过 `AsyncTaskRecordRepo#requeueDetached` 把任务从 `1` 改回 `0`
+  （清空 `claimed_*`、**不累加 `retry_count`**）并重新广播任务发布事件。执行者失联但任务留有检查点时，
+  健康检查回收同样走挂起语义（见 4.3、第 7 节）。
+- **挂起中**：任务按等待中处理，由任意具备该任务类型的执行者认领；检查点随 `TaskDispatchInfo.checkpoint` 下发，
+  认领者据此恢复现场继续执行。挂起**没有超时、也不会被框架置为失败**，长时间无人认领只会触发健康检查的聚合告警；
+  唯一例外是超过 30 天未更新的残留检查点会被每日兜底清理，此后任务虽仍可被认领，但只能从头执行。
+- **退出挂起**：任务被认领后回到 `1 - 运行中`，之后与普通任务一样走向 `2` / `3` / `4`；
+  用户中断挂起中的任务会直接置为 `4 - 已取消`，不再等待接管。
+- **不影响不支持挂起的任务**：`supportsDetach() = false`（默认）或没有检查点的任务，停机 / 失联时仍按普通放弃处理
+  （回到 `0` 且 `retry_count + 1`，达到上限 3 次置为失败）；临时任务（`is_temp = true`）不参与挂起，放弃 / 失联直接置为失败。
 
 ### 4.3 任务检查点与可挂起任务（detach）
 
@@ -215,6 +228,44 @@ graph LR
 - 任务回到等待中后，任意具备该任务类型的执行者认领时都会拿到检查点，由任务实现自行恢复现场继续执行。
 - 挂起与中断相互独立：挂起只让任务退出本次执行并保留现场；用户中断仍走中断回调并最终置为已取消（4）。
 - 不支持挂起的任务零迁移（接口默认 `supportsDetach()=false`）：停机时仍按原有「中断 + 普通放弃」语义处理。
+
+### 4.4 检查点接入速览
+
+检查点让任务在**执行者停机或换人接管**后接着跑，而不是从头开始（机制与生命周期见 4.3）。只有 Worker SDK 的
+`SfcTaskHandler` 支持，core 宿主的 `AsyncTask` 没有检查点 API（见第 5 节）。接入只需三步：
+
+1. **恢复**：`execute()` 开头读 `execution.getCheckpoint()`，为 `null` 表示首次执行，否则按自定义格式恢复现场；
+2. **保存**：现场变化时（如每完成一个分片）调用 `execution.saveCheckpoint(json)`；
+3. **挂起**：需要停机续传时覆写 `supportsDetach()` 返回 `true`，在循环中检测 `execution.isDetachRequested()`，
+   保存检查点后抛 `SfcTaskDetachedException` 退出（也可正常返回）。
+
+```java
+@Override
+public boolean supportsDetach() {
+    return true; // 声明可挂起：停机时先保存检查点，而不是被中断
+}
+
+@Override
+public void execute(SfcTaskExecution execution) throws Exception {
+    // 1. 恢复现场：首次执行 getCheckpoint() 为 null，按初始状态开始
+    State state = State.parse(execution.getCheckpoint());
+
+    while (!state.done()) {
+        // 2. 收到挂起指令（执行者停机）：保存现场后退出，任务回到等待中等待接管
+        if (execution.isDetachRequested()) {
+            execution.saveCheckpoint(state.toJson());
+            throw new SfcTaskDetachedException("执行者停机，任务已挂起");
+        }
+        // 3. 推进任务，并在现场变化时保存检查点（示例为每完成一个分片）
+        state.step();
+        execution.saveCheckpoint(state.toJson());
+    }
+}
+```
+
+> 检查点内容由任务实现自定义（建议 JSON，框架不解析），单条上限 1MB；`saveCheckpoint` 同步上报失败不抛异常
+> （SDK 记为待重发并周期补发）；任务进入终态后检查点自动删除。完整示例见
+> [微服务异步任务 Worker 接入](../microservice/async-task-worker.md)。
 
 ## 5. 自定义异步任务（core 宿主侧）
 
